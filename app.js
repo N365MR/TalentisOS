@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         await navigator.serviceWorker.register("./service-worker.js");
       } catch (_error) {
-        // Fail quietly so direct local file opens never surface console noise.
+        // Fail quietly so local file opens stay clean.
       }
     });
   }
@@ -21,82 +21,64 @@ document.addEventListener("DOMContentLoaded", () => {
   const header = document.querySelector(".site-header");
   const menuToggle = document.querySelector(".menu-toggle");
   const mobileMenu = document.querySelector("#mobile-navigation");
+  const desktopNav = document.querySelector(".site-nav--desktop");
+  const quickActions = document.querySelector(".site-header__quick-actions");
   const mobileLinks = mobileMenu
-    ? mobileMenu.querySelectorAll("a")
+    ? mobileMenu.querySelectorAll(".mobile-menu__link")
     : [];
-  const faqTriggers = document.querySelectorAll(".faq-item__trigger");
+  const sectionLinks = document.querySelectorAll("[data-section-link]");
+  const sections = document.querySelectorAll("[data-view-section]");
   const revealItems = document.querySelectorAll(".reveal");
   const yearNode = document.querySelector("#current-year");
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
 
-  const raf =
-    window.requestAnimationFrame ||
-    ((callback) => window.setTimeout(callback, 16));
-
   if (yearNode) {
     yearNode.textContent = String(new Date().getFullYear());
   }
 
-  const setFaqState = (activeTrigger) => {
-    const isExpanded =
-      activeTrigger.getAttribute("aria-expanded") === "true";
-
-    faqTriggers.forEach((item) => {
-      const controls = item.getAttribute("aria-controls");
-      const panel = controls ? document.getElementById(controls) : null;
-      item.setAttribute("aria-expanded", "false");
-      if (panel) {
-        panel.style.maxHeight = "0px";
-        panel.setAttribute("hidden", "");
-      }
-    });
-
-    if (!isExpanded) {
-      const controls = activeTrigger.getAttribute("aria-controls");
-      const panel = controls ? document.getElementById(controls) : null;
-      activeTrigger.setAttribute("aria-expanded", "true");
-      if (panel) {
-        panel.removeAttribute("hidden");
-        panel.style.maxHeight = `${panel.scrollHeight}px`;
-      }
-    }
-  };
-
-  const initializeFaq = () => {
-    faqTriggers.forEach((trigger) => {
-      const controls = trigger.getAttribute("aria-controls");
-      const panel = controls ? document.getElementById(controls) : null;
-
-      if (!panel) {
-        return;
-      }
-
-      if (trigger.getAttribute("aria-expanded") === "true") {
-        panel.removeAttribute("hidden");
-        panel.style.maxHeight = `${panel.scrollHeight}px`;
+  const setActiveLink = (sectionId) => {
+    sectionLinks.forEach((link) => {
+      const isActive = link.getAttribute("href") === `#${sectionId}`;
+      link.classList.toggle("is-active", isActive);
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
       } else {
-        panel.style.maxHeight = "0px";
+        link.removeAttribute("aria-current");
       }
     });
   };
 
-  document.addEventListener("click", (event) => {
-    const trigger = event.target.closest(".faq-item__trigger");
+  const updateViewportMode = () => {
+    const isDesktop = window.innerWidth >= 1024;
 
-    if (!trigger) {
-      return;
+    if (desktopNav) {
+      desktopNav.style.display = isDesktop ? "flex" : "none";
     }
 
-    setFaqState(trigger);
-  });
+    if (quickActions) {
+      quickActions.style.display = isDesktop ? "flex" : "none";
+    }
 
-  if (header && menuToggle && mobileMenu) {
+    if (menuToggle) {
+      menuToggle.style.display = isDesktop ? "none" : "inline-flex";
+    }
+  };
+
+  updateViewportMode();
+  window.addEventListener("resize", updateViewportMode);
+
+  if (header) {
     const updateScrollState = () => {
       header.classList.toggle("is-scrolled", window.scrollY > 12);
     };
 
+    updateScrollState();
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+  }
+
+  if (menuToggle && mobileMenu) {
     const setMenuState = (isOpen) => {
       menuToggle.setAttribute("aria-expanded", String(isOpen));
       menuToggle.setAttribute(
@@ -104,8 +86,10 @@ document.addEventListener("DOMContentLoaded", () => {
         isOpen ? "Close navigation menu" : "Open navigation menu"
       );
       mobileMenu.classList.toggle("is-open", isOpen);
-      header.classList.toggle("is-menu-open", isOpen);
       body.classList.toggle("menu-open", isOpen);
+      if (header) {
+        header.classList.toggle("is-menu-open", isOpen);
+      }
     };
 
     const closeMenu = (restoreFocus = false) => {
@@ -143,7 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
-
         if (isOpen) {
           closeMenu(true);
         }
@@ -151,28 +134,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     window.addEventListener("resize", () => {
-      if (window.innerWidth >= 1025) {
+      if (window.innerWidth >= 1024) {
         closeMenu(false);
       }
-
-      raf(() => {
-        faqTriggers.forEach((trigger) => {
-          if (trigger.getAttribute("aria-expanded") !== "true") {
-            return;
-          }
-
-          const controls = trigger.getAttribute("aria-controls");
-          const panel = controls ? document.getElementById(controls) : null;
-
-          if (panel) {
-            panel.style.maxHeight = `${panel.scrollHeight}px`;
-          }
-        });
-      });
     });
+  }
 
-    updateScrollState();
-    window.addEventListener("scroll", updateScrollState, { passive: true });
+  if (sections.length > 0) {
+    setActiveLink(sections[0].id);
+
+    if ("IntersectionObserver" in window) {
+      const sectionObserver = new IntersectionObserver(
+        (entries) => {
+          const visibleEntries = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+          if (visibleEntries[0]) {
+            setActiveLink(visibleEntries[0].target.id);
+          }
+        },
+        {
+          threshold: [0.2, 0.45, 0.7],
+          rootMargin: "-20% 0px -50% 0px",
+        }
+      );
+
+      sections.forEach((section) => {
+        sectionObserver.observe(section);
+      });
+    }
   }
 
   if (!prefersReducedMotion && "IntersectionObserver" in window) {
@@ -201,6 +192,4 @@ document.addEventListener("DOMContentLoaded", () => {
       item.classList.add("is-visible");
     });
   }
-
-  initializeFaq();
 });

@@ -2,13 +2,15 @@
 
 ## Purpose
 
-Starter documentation for the TalentisOS visual system.
+Starter documentation for the TalentisOS premium visual system and responsive
+app shell.
 
 ## Sections
 
 - Brand direction
-- Colour palette
+- Current premium colour system
 - Typography
 - Spacing
-- Components
+- Cards, buttons, badges and empty states
+- Sticky horizontal top navigation
 - Motion and accessibility
