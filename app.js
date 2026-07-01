@@ -146,11 +146,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const roleFormTitleNode = document.querySelector("[data-role-form-title]");
   const roleOwnerSelectNode = document.querySelector("[data-person-select]");
   const roleBackupSelectNode = document.querySelector("[data-backup-select]");
+  const taskSummaryDueTodayNode = document.querySelector(
+    "[data-task-summary-due-today]"
+  );
+  const taskSummaryOverdueNode = document.querySelector(
+    "[data-task-summary-overdue]"
+  );
+  const taskSummaryHighPriorityNode = document.querySelector(
+    "[data-task-summary-high-priority]"
+  );
+  const taskSummaryCompletedNode = document.querySelector(
+    "[data-task-summary-completed]"
+  );
+  const taskCardListNode = document.querySelector("[data-task-card-list]");
+  const taskProfileNameNode = document.querySelector("[data-task-profile-name]");
+  const taskProfileNode = document.querySelector("[data-task-profile]");
+  const taskFormNode = document.querySelector("[data-task-form]");
+  const taskFormTitleNode = document.querySelector("[data-task-form-title]");
+  const taskFormErrorNode = document.querySelector("[data-task-form-error]");
+  const taskOwnerSelectNode = document.querySelector("[data-task-owner-select]");
+  const taskPersonSelectNode = document.querySelector("[data-task-person-select]");
+  const taskMeetingSelectNode = document.querySelector("[data-task-meeting-select]");
+  const taskKpiSelectNode = document.querySelector("[data-task-kpi-select]");
+  const taskIssueSelectNode = document.querySelector("[data-task-issue-select]");
+  const taskSopSelectNode = document.querySelector("[data-task-sop-select]");
+  const taskOwnerFilterNode = document.querySelector("[data-task-owner-filter]");
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
   let selectedPersonId = null;
   let selectedRoleId = null;
+  let selectedTaskId = null;
+  let activeTaskFilter = "all";
+  let activeTaskOwnerFilter = "";
 
   if (yearNode) {
     yearNode.textContent = String(new Date().getFullYear());
@@ -214,6 +242,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const role = getRoleById(roleId);
     return role ? role.title : "No linked role";
   };
+
+  const getMeetingTitleById = (meetingId) => {
+    const meeting = appState.meetings.find((item) => item.id === meetingId);
+    return meeting ? meeting.title : "No linked meeting";
+  };
+
+  const getKpiNameById = (kpiId) => {
+    const kpi = appState.kpis.find((item) => item.id === kpiId || item.name === kpiId);
+    return kpi ? kpi.name : "No linked KPI";
+  };
+
+  const getIssueTitleById = (issueId) => {
+    const issue = appState.issues.find((item) => item.id === issueId);
+    return issue ? issue.title : "No linked issue";
+  };
+
+  const getSopTitleById = (sopId) => {
+    const sop = appState.sops.find((item) => item.id === sopId || item.title === sopId);
+    return sop ? sop.title : "No linked SOP";
+  };
+
+  const formatStatusLabel = (value) =>
+    String(value || "")
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (match) => match.toUpperCase());
 
   const formatDisplayDate = (value) => {
     const date = parseDateInput(value);
@@ -303,6 +356,24 @@ document.addEventListener("DOMContentLoaded", () => {
       trainingRequired: Array.isArray(role.trainingRequired)
         ? role.trainingRequired
         : [],
+    };
+  }
+
+  function createDefaultTask(task = {}) {
+    return {
+      id: task.id || generateId("task"),
+      title: task.title || "",
+      ownerId: task.ownerId || "",
+      status: task.status || "open",
+      priority: task.priority || "medium",
+      dueDate: task.dueDate || "",
+      category: task.category || "operations",
+      linkedPersonId: task.linkedPersonId || task.memberId || "",
+      linkedMeetingId: task.linkedMeetingId || "",
+      linkedKpiId: task.linkedKpiId || "",
+      linkedIssueId: task.linkedIssueId || "",
+      linkedSopId: task.linkedSopId || "",
+      completionNotes: task.completionNotes || "",
     };
   }
 
@@ -492,50 +563,63 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     state.tasks = [
-      {
-        id: generateId("task"),
+      createDefaultTask({
         title: "Close overdue field install defects",
         ownerId: state.teamMembers[1].id,
         status: "in_progress",
         priority: "high",
         dueDate: "2026-07-01",
+        category: "operations",
+        linkedPersonId: state.teamMembers[1].id,
         linkedMeetingId: "meeting_huddle",
         linkedKpiId: "kpi_first_time_fix",
         linkedIssueId: "issue_install_rework",
-      },
-      {
-        id: generateId("task"),
+      }),
+      createDefaultTask({
         title: "Prepare one-on-one follow-up for Mia",
         ownerId: state.managerProfile.id,
-        status: "due_today",
+        status: "open",
         priority: "medium",
         dueDate: "2026-07-01",
+        category: "people_action",
+        linkedPersonId: state.teamMembers[0].id,
         linkedMeetingId: "meeting_1on1_mia",
-        linkedKpiId: null,
-        linkedIssueId: null,
-      },
-      {
-        id: generateId("task"),
+      }),
+      createDefaultTask({
         title: "Review amber training completion report",
         ownerId: state.teamMembers[2].id,
         status: "blocked",
         priority: "medium",
         dueDate: "2026-07-02",
+        category: "kpi_action",
+        linkedPersonId: state.teamMembers[2].id,
         linkedMeetingId: "meeting_training_review",
         linkedKpiId: "kpi_training_completion",
         linkedIssueId: "issue_induction_gap",
-      },
-      {
-        id: generateId("task"),
+        linkedSopId: "Induction Checklist SOP",
+      }),
+      createDefaultTask({
         title: "Confirm owner for repeat service callback actions",
         ownerId: state.teamMembers[0].id,
         status: "open",
         priority: "high",
         dueDate: "2026-07-02",
+        category: "meeting_action",
+        linkedPersonId: state.teamMembers[0].id,
         linkedMeetingId: "meeting_l10",
         linkedKpiId: "kpi_service_callback_rate",
         linkedIssueId: "issue_callback_spike",
-      },
+      }),
+      createDefaultTask({
+        title: "Archive resolved huddle action notes",
+        ownerId: state.teamMembers[3].id,
+        status: "completed",
+        priority: "low",
+        dueDate: "2026-07-01",
+        category: "meeting_action",
+        linkedMeetingId: "meeting_huddle",
+        completionNotes: "Action notes consolidated into the dispatch close handover.",
+      }),
     ];
 
     state.meetings = [
@@ -875,6 +959,7 @@ document.addEventListener("DOMContentLoaded", () => {
       createDefaultPerson(member)
     );
     normalised.roles = normalised.roles.map((role) => createDefaultRole(role));
+    normalised.tasks = normalised.tasks.map((task) => createDefaultTask(task));
 
     normalised.lastSavedAt =
       typeof source.lastSavedAt === "string" ? source.lastSavedAt : null;
@@ -2196,6 +2281,427 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function ensureTaskSelection(filteredTasks = appState.tasks) {
+    if (!selectedTaskId || !appState.tasks.some((item) => item.id === selectedTaskId)) {
+      selectedTaskId = filteredTasks[0]?.id || appState.tasks[0]?.id || null;
+      return;
+    }
+
+    if (
+      filteredTasks.length > 0 &&
+      !filteredTasks.some((item) => item.id === selectedTaskId)
+    ) {
+      selectedTaskId = filteredTasks[0].id;
+    }
+  }
+
+  function populateTaskLinkOptions() {
+    const ownerOptions = [
+      { value: appState.managerProfile.id, label: appState.managerProfile.name || "Manager" },
+      ...appState.teamMembers.map((person) => ({
+        value: person.id,
+        label: person.name,
+      })),
+    ];
+
+    const renderOptions = (items, placeholder) =>
+      `<option value="">${placeholder}</option>${items
+        .map(
+          (item) =>
+            `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`
+        )
+        .join("")}`;
+
+    if (taskOwnerSelectNode) {
+      taskOwnerSelectNode.innerHTML = renderOptions(ownerOptions, "Select owner");
+    }
+
+    if (taskOwnerFilterNode) {
+      taskOwnerFilterNode.innerHTML = renderOptions(ownerOptions, "All owners");
+      taskOwnerFilterNode.value = activeTaskOwnerFilter;
+    }
+
+    if (taskPersonSelectNode) {
+      taskPersonSelectNode.innerHTML = renderOptions(
+        appState.teamMembers.map((person) => ({ value: person.id, label: person.name })),
+        "No linked person"
+      );
+    }
+
+    if (taskMeetingSelectNode) {
+      taskMeetingSelectNode.innerHTML = renderOptions(
+        appState.meetings.map((meeting) => ({
+          value: meeting.id,
+          label: meeting.title,
+        })),
+        "No linked meeting"
+      );
+    }
+
+    if (taskKpiSelectNode) {
+      taskKpiSelectNode.innerHTML = renderOptions(
+        appState.kpis.map((kpi) => ({ value: kpi.id, label: kpi.name })),
+        "No linked KPI"
+      );
+    }
+
+    if (taskIssueSelectNode) {
+      taskIssueSelectNode.innerHTML = renderOptions(
+        appState.issues.map((issue) => ({ value: issue.id, label: issue.title })),
+        "No linked issue"
+      );
+    }
+
+    if (taskSopSelectNode) {
+      taskSopSelectNode.innerHTML = renderOptions(
+        appState.sops.map((sop) => ({ value: sop.id, label: sop.title })),
+        "No linked SOP"
+      );
+    }
+  }
+
+  function getFilteredTasks() {
+    const todayKey = getTodayKey();
+
+    return appState.tasks.filter((task) => {
+      const matchesOwner =
+        activeTaskFilter !== "by_owner" ||
+        !activeTaskOwnerFilter ||
+        task.ownerId === activeTaskOwnerFilter;
+
+      if (!matchesOwner) {
+        return false;
+      }
+
+      switch (activeTaskFilter) {
+        case "due_today":
+          return !isTaskClosed(task) && task.dueDate === todayKey;
+        case "overdue":
+          return !isTaskClosed(task) && Boolean(task.dueDate) && task.dueDate < todayKey;
+        case "high_priority":
+          return !isTaskClosed(task) && task.priority === "high";
+        case "by_owner":
+          return activeTaskOwnerFilter ? task.ownerId === activeTaskOwnerFilter : true;
+        case "completed":
+          return isTaskClosed(task);
+        case "meeting_actions":
+          return task.category === "meeting_action" || Boolean(task.linkedMeetingId);
+        case "kpi_actions":
+          return task.category === "kpi_action" || Boolean(task.linkedKpiId);
+        case "people_actions":
+          return task.category === "people_action" || Boolean(task.linkedPersonId);
+        case "all":
+        default:
+          return true;
+      }
+    });
+  }
+
+  function openTaskForm(mode = "new") {
+    if (!taskFormNode) {
+      return;
+    }
+
+    populateTaskLinkOptions();
+    const selectedTask =
+      mode === "edit"
+        ? appState.tasks.find((task) => task.id === selectedTaskId)
+        : null;
+
+    taskFormNode.classList.add("is-open");
+    taskFormTitleNode.textContent = selectedTask ? "Edit task" : "Add task";
+    taskFormNode.elements.taskId.value = selectedTask?.id || "";
+    taskFormNode.elements.title.value = selectedTask?.title || "";
+    taskFormNode.elements.ownerId.value = selectedTask?.ownerId || "";
+    taskFormNode.elements.dueDate.value = selectedTask?.dueDate || "";
+    taskFormNode.elements.priority.value = selectedTask?.priority || "medium";
+    taskFormNode.elements.status.value = selectedTask?.status || "open";
+    taskFormNode.elements.category.value = selectedTask?.category || "operations";
+    taskFormNode.elements.linkedPersonId.value = selectedTask?.linkedPersonId || "";
+    taskFormNode.elements.linkedMeetingId.value = selectedTask?.linkedMeetingId || "";
+    taskFormNode.elements.linkedKpiId.value = selectedTask?.linkedKpiId || "";
+    taskFormNode.elements.linkedIssueId.value = selectedTask?.linkedIssueId || "";
+    taskFormNode.elements.linkedSopId.value = selectedTask?.linkedSopId || "";
+    taskFormNode.elements.completionNotes.value = selectedTask?.completionNotes || "";
+    if (taskFormErrorNode) {
+      taskFormErrorNode.hidden = true;
+      taskFormErrorNode.textContent = "";
+    }
+  }
+
+  function closeTaskForm() {
+    taskFormNode?.classList.remove("is-open");
+    if (taskFormNode) {
+      taskFormNode.reset();
+      taskFormNode.elements.taskId.value = "";
+    }
+    if (taskFormErrorNode) {
+      taskFormErrorNode.hidden = true;
+      taskFormErrorNode.textContent = "";
+    }
+  }
+
+  function validateTaskForm(form) {
+    const errors = [];
+
+    if (!form.elements.ownerId.value) {
+      errors.push("Task owner is required.");
+    }
+
+    if (!form.elements.dueDate.value) {
+      errors.push("Task due date is required.");
+    }
+
+    return errors;
+  }
+
+  function saveTaskFromForm(form) {
+    const errors = validateTaskForm(form);
+
+    if (errors.length > 0) {
+      if (taskFormErrorNode) {
+        taskFormErrorNode.textContent = errors.join(" ");
+        taskFormErrorNode.hidden = false;
+      }
+      return;
+    }
+
+    const taskId = form.elements.taskId.value || generateId("task");
+    const nextTask = createDefaultTask({
+      id: taskId,
+      title: form.elements.title.value.trim(),
+      ownerId: form.elements.ownerId.value,
+      dueDate: form.elements.dueDate.value,
+      priority: form.elements.priority.value,
+      status: form.elements.status.value,
+      category: form.elements.category.value,
+      linkedPersonId: form.elements.linkedPersonId.value,
+      linkedMeetingId: form.elements.linkedMeetingId.value,
+      linkedKpiId: form.elements.linkedKpiId.value,
+      linkedIssueId: form.elements.linkedIssueId.value,
+      linkedSopId: form.elements.linkedSopId.value,
+      completionNotes: form.elements.completionNotes.value.trim(),
+    });
+
+    const existingIndex = appState.tasks.findIndex((task) => task.id === taskId);
+
+    if (existingIndex >= 0) {
+      appState.tasks.splice(existingIndex, 1, nextTask);
+    } else {
+      appState.tasks.push(nextTask);
+    }
+
+    selectedTaskId = nextTask.id;
+    saveState(appState);
+    closeTaskForm();
+    showToast("Task saved", `${nextTask.title} was saved locally.`);
+  }
+
+  function deleteSelectedTask() {
+    const task = appState.tasks.find((item) => item.id === selectedTaskId);
+
+    if (!task) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      `Delete the task "${task.title}" from TalentisOS?`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    appState.tasks = appState.tasks.filter((item) => item.id !== task.id);
+    selectedTaskId = null;
+    saveState(appState);
+    closeTaskForm();
+    showToast("Task deleted", `${task.title} was removed locally.`);
+  }
+
+  function toggleSelectedTaskComplete() {
+    const task = appState.tasks.find((item) => item.id === selectedTaskId);
+
+    if (!task) {
+      return;
+    }
+
+    const isClosed = isTaskClosed(task);
+    task.status = isClosed ? "open" : "completed";
+
+    if (!isClosed && !task.completionNotes) {
+      task.completionNotes = "Completed and retained in the task history.";
+    }
+
+    saveState(appState);
+    showToast(
+      isClosed ? "Task reopened" : "Task completed",
+      `${task.title} was ${isClosed ? "reopened" : "completed"} locally.`
+    );
+  }
+
+  function renderTaskProfile(task) {
+    if (!task) {
+      return renderEmptyState("Select a task to view ownership, due date, links and completion notes.");
+    }
+
+    return `
+      <div class="management-profile">
+        <div class="profile-chip-row">
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(task.status))}</span>
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(task.priority))}</span>
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(task.category))}</span>
+        </div>
+        <div class="management-stat-grid">
+          <div class="management-stat">
+            <p class="management-stat__label">Owner</p>
+            <p class="management-stat__value">${escapeHtml(
+              getPersonNameById(task.ownerId)
+            )}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Due date</p>
+            <p class="management-stat__value">${escapeHtml(
+              task.dueDate ? formatDisplayDate(task.dueDate) : "Not set"
+            )}</p>
+          </div>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Linked context</h4>
+          <div class="task-link-summary">
+            <p>Linked person: ${escapeHtml(
+              task.linkedPersonId ? getPersonNameById(task.linkedPersonId) : "None"
+            )}</p>
+            <p>Linked meeting: ${escapeHtml(
+              task.linkedMeetingId ? getMeetingTitleById(task.linkedMeetingId) : "None"
+            )}</p>
+            <p>Linked KPI: ${escapeHtml(
+              task.linkedKpiId ? getKpiNameById(task.linkedKpiId) : "None"
+            )}</p>
+            <p>Linked issue: ${escapeHtml(
+              task.linkedIssueId ? getIssueTitleById(task.linkedIssueId) : "None"
+            )}</p>
+            <p>Linked SOP: ${escapeHtml(
+              task.linkedSopId ? getSopTitleById(task.linkedSopId) : "None"
+            )}</p>
+          </div>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Completion notes</h4>
+          <p class="management-profile__copy">${escapeHtml(
+            task.completionNotes || "No completion notes captured yet."
+          )}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderTasks() {
+    populateTaskLinkOptions();
+    const filteredTasks = getFilteredTasks();
+    ensureTaskSelection(filteredTasks);
+    const selectedTask =
+      appState.tasks.find((task) => task.id === selectedTaskId) || null;
+    const todayKey = getTodayKey();
+    const highPriorityCount = appState.tasks.filter(
+      (task) => !isTaskClosed(task) && task.priority === "high"
+    ).length;
+    const completedCount = appState.tasks.filter((task) => isTaskClosed(task)).length;
+
+    if (taskSummaryDueTodayNode) {
+      taskSummaryDueTodayNode.textContent = String(getTasksDueToday().length);
+    }
+
+    if (taskSummaryOverdueNode) {
+      taskSummaryOverdueNode.textContent = String(getOverdueTasks().length);
+    }
+
+    if (taskSummaryHighPriorityNode) {
+      taskSummaryHighPriorityNode.textContent = String(highPriorityCount);
+    }
+
+    if (taskSummaryCompletedNode) {
+      taskSummaryCompletedNode.textContent = String(completedCount);
+    }
+
+    document.querySelectorAll("[data-task-filter]").forEach((button) => {
+      const isActive = button.getAttribute("data-task-filter") === activeTaskFilter;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+
+    if (taskOwnerFilterNode) {
+      taskOwnerFilterNode.closest(".task-owner-filter")?.classList.toggle(
+        "is-visible",
+        activeTaskFilter === "by_owner"
+      );
+    }
+
+    if (taskCardListNode) {
+      taskCardListNode.innerHTML =
+        filteredTasks.length > 0
+          ? filteredTasks
+              .sort((left, right) => {
+                if (isTaskClosed(left) !== isTaskClosed(right)) {
+                  return isTaskClosed(left) ? 1 : -1;
+                }
+
+                return (left.dueDate || "").localeCompare(right.dueDate || "");
+              })
+              .map((task) => {
+                const dueLabel = task.dueDate
+                  ? task.dueDate < todayKey && !isTaskClosed(task)
+                    ? `Overdue ${formatDisplayDate(task.dueDate)}`
+                    : `Due ${formatDisplayDate(task.dueDate)}`
+                  : "No due date";
+
+                return `
+                  <button
+                    type="button"
+                    class="management-card task-card ${
+                      task.id === selectedTaskId ? "is-selected" : ""
+                    } ${isTaskClosed(task) ? "task-card--completed" : ""}"
+                    data-select-task="${escapeHtml(task.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      formatStatusLabel(task.category)
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(task.title)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      `${getPersonNameById(task.ownerId)} • ${dueLabel}`
+                    )}</p>
+                    <div class="task-card__status management-tags">
+                      <span class="tag-pill">${escapeHtml(
+                        formatStatusLabel(task.priority)
+                      )}</span>
+                      <span class="tag-pill">${escapeHtml(
+                        formatStatusLabel(task.status)
+                      )}</span>
+                    </div>
+                  </button>
+                `;
+              })
+              .join("")
+          : renderEmptyState("No tasks match the current filter.");
+    }
+
+    if (taskProfileNameNode) {
+      taskProfileNameNode.textContent = selectedTask
+        ? selectedTask.title
+        : "Select a task";
+    }
+
+    if (taskProfileNode) {
+      taskProfileNode.innerHTML = renderTaskProfile(selectedTask);
+    }
+
+    const toggleButton = document.querySelector('[data-task-action="toggle-complete"]');
+    if (toggleButton) {
+      toggleButton.textContent =
+        selectedTask && isTaskClosed(selectedTask) ? "Reopen task" : "Complete task";
+    }
+  }
+
   function getStatusCounts() {
     const todayItems = calculateTodayItems();
     const openTasks = appState.tasks.filter((task) => !isTaskClosed(task)).length;
@@ -2480,6 +2986,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const counts = getStatusCounts();
     renderTodayDashboard();
     renderPeopleAndRoles();
+    renderTasks();
 
     if (schemaVersionNode) {
       schemaVersionNode.textContent = String(appState.schemaVersion);
@@ -2531,6 +3038,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initCountUp,
     initProgressBars,
     renderPeopleAndRoles,
+    renderTasks,
     loadState,
     saveState,
     normaliseState,
@@ -2593,6 +3101,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (taskCardListNode) {
+    taskCardListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-task]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedTaskId = trigger.getAttribute("data-select-task");
+      renderStateSummary();
+    });
+  }
+
+  document.querySelectorAll("[data-task-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeTaskFilter = button.getAttribute("data-task-filter") || "all";
+      if (activeTaskFilter !== "by_owner") {
+        activeTaskOwnerFilter = "";
+      }
+      renderStateSummary();
+    });
+  });
+
+  if (taskOwnerFilterNode) {
+    taskOwnerFilterNode.addEventListener("change", (event) => {
+      activeTaskOwnerFilter = event.target.value;
+      activeTaskFilter = "by_owner";
+      renderStateSummary();
+    });
+  }
+
   document.addEventListener("click", (event) => {
     const personActionTrigger = event.target.closest("[data-person-action]");
 
@@ -2625,6 +3164,24 @@ document.addEventListener("DOMContentLoaded", () => {
         closeRoleForm();
       }
     }
+
+    const taskActionTrigger = event.target.closest("[data-task-action]");
+
+    if (taskActionTrigger) {
+      const action = taskActionTrigger.getAttribute("data-task-action");
+
+      if (action === "new") {
+        openTaskForm("new");
+      } else if (action === "edit" && selectedTaskId) {
+        openTaskForm("edit");
+      } else if (action === "delete" && selectedTaskId) {
+        deleteSelectedTask();
+      } else if (action === "toggle-complete" && selectedTaskId) {
+        toggleSelectedTaskComplete();
+      } else if (action === "cancel") {
+        closeTaskForm();
+      }
+    }
   });
 
   if (personFormNode) {
@@ -2638,6 +3195,13 @@ document.addEventListener("DOMContentLoaded", () => {
     roleFormNode.addEventListener("submit", (event) => {
       event.preventDefault();
       saveRoleFromForm(roleFormNode);
+    });
+  }
+
+  if (taskFormNode) {
+    taskFormNode.addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveTaskFromForm(taskFormNode);
     });
   }
 

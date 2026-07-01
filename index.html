@@ -14,8 +14,8 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f0f0f'/%3E%3Cpath d='M18 20h28v6H35v18h-6V26H18z' fill='%23d4af37'/%3E%3C/svg%3E"
     />
     <link rel="manifest" href="./manifest.json" />
-    <link rel="stylesheet" href="./styles.css?v=phase4-people-roles" />
-    <script src="./app.js?v=phase4-people-roles" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=phase5-tasks-commitments" />
+    <script src="./app.js?v=phase5-tasks-commitments" defer></script>
   </head>
   <body>
     <div id="top"></div>
@@ -773,40 +773,215 @@
             <p class="eyebrow">Action Flow</p>
             <h2 class="section-heading">Tasks</h2>
             <p class="section-copy">
-              Placeholder view for daily actions, commitments, owners, due dates
-              and linked execution context.
+              Manage commitments, ownership, due dates and execution links in one
+              local-first task workspace.
             </p>
           </div>
 
           <div class="module-grid">
             <article class="module-card reveal reveal-up">
               <div class="module-card__icon" aria-hidden="true"></div>
-              <h3 class="module-card__title">Due Today</h3>
-              <p class="module-card__copy">
-                Actions that need same-day follow-through.
-              </p>
+              <h3 class="module-card__title" data-task-summary-due-today>0</h3>
+              <p class="module-card__copy">Tasks due today</p>
             </article>
             <article class="module-card reveal reveal-up">
               <div class="module-card__icon" aria-hidden="true"></div>
-              <h3 class="module-card__title">Blocked</h3>
-              <p class="module-card__copy">
-                Tasks waiting on decisions, approvals or meetings.
-              </p>
+              <h3 class="module-card__title" data-task-summary-overdue>0</h3>
+              <p class="module-card__copy">Overdue commitments</p>
             </article>
             <article class="module-card reveal reveal-up">
               <div class="module-card__icon" aria-hidden="true"></div>
-              <h3 class="module-card__title">Owners</h3>
-              <p class="module-card__copy">
-                Clear responsibility with no hidden handoffs.
-              </p>
+              <h3 class="module-card__title" data-task-summary-high-priority>0</h3>
+              <p class="module-card__copy">High-priority actions</p>
             </article>
             <article class="module-card reveal reveal-up">
               <div class="module-card__icon" aria-hidden="true"></div>
-              <h3 class="module-card__title">Meetings Linked</h3>
-              <p class="module-card__copy">
-                Connect actions back to the conversation they came from.
-              </p>
+              <h3 class="module-card__title" data-task-summary-completed>0</h3>
+              <p class="module-card__copy">Completed retained</p>
             </article>
+          </div>
+
+          <div class="management-layout management-layout--tasks">
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Task list</p>
+                    <h3 class="card__title">Tasks and commitments</h3>
+                  </div>
+                  <button
+                    class="button button--secondary"
+                    type="button"
+                    data-task-action="new"
+                  >
+                    Add task
+                  </button>
+                </div>
+
+                <div class="task-filters">
+                  <div class="task-filter-row" role="tablist" aria-label="Task filters">
+                    <button class="task-filter is-active" type="button" data-task-filter="all">
+                      All
+                    </button>
+                    <button class="task-filter" type="button" data-task-filter="due_today">
+                      Due today
+                    </button>
+                    <button class="task-filter" type="button" data-task-filter="overdue">
+                      Overdue
+                    </button>
+                    <button class="task-filter" type="button" data-task-filter="high_priority">
+                      High priority
+                    </button>
+                    <button class="task-filter" type="button" data-task-filter="by_owner">
+                      By owner
+                    </button>
+                    <button class="task-filter" type="button" data-task-filter="completed">
+                      Completed
+                    </button>
+                    <button class="task-filter" type="button" data-task-filter="meeting_actions">
+                      Meeting actions
+                    </button>
+                    <button class="task-filter" type="button" data-task-filter="kpi_actions">
+                      KPI actions
+                    </button>
+                    <button class="task-filter" type="button" data-task-filter="people_actions">
+                      People actions
+                    </button>
+                  </div>
+                  <label class="management-field task-owner-filter">
+                    <span>Owner filter</span>
+                    <select data-task-owner-filter></select>
+                  </label>
+                </div>
+
+                <div class="management-card-grid task-card-grid" data-task-card-list></div>
+              </div>
+            </div>
+
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Task detail</p>
+                    <h3 class="card__title" data-task-profile-name>Select a task</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-task-action="edit"
+                    >
+                      Edit task
+                    </button>
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-task-action="toggle-complete"
+                    >
+                      Complete task
+                    </button>
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-task-action="delete"
+                    >
+                      Delete task
+                    </button>
+                  </div>
+                </div>
+                <div data-task-profile></div>
+              </div>
+
+              <form class="card management-panel management-form" data-task-form novalidate>
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Task editor</p>
+                    <h3 class="card__title" data-task-form-title>Add task</h3>
+                  </div>
+                  <button
+                    class="button button--ghost"
+                    type="button"
+                    data-task-action="cancel"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <input type="hidden" name="taskId" />
+                <label class="management-field">
+                  <span>Task title</span>
+                  <input name="title" type="text" required />
+                </label>
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Owner</span>
+                    <select name="ownerId" required data-task-owner-select></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Due date</span>
+                    <input name="dueDate" type="date" required />
+                  </label>
+                  <label class="management-field">
+                    <span>Priority</span>
+                    <select name="priority">
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Status</span>
+                    <select name="status">
+                      <option value="open">Open</option>
+                      <option value="in_progress">In progress</option>
+                      <option value="blocked">Blocked</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Category</span>
+                    <select name="category">
+                      <option value="operations">Operations</option>
+                      <option value="meeting_action">Meeting action</option>
+                      <option value="kpi_action">KPI action</option>
+                      <option value="people_action">People action</option>
+                      <option value="sop_action">SOP action</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked person</span>
+                    <select name="linkedPersonId" data-task-person-select></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked meeting</span>
+                    <select name="linkedMeetingId" data-task-meeting-select></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked KPI</span>
+                    <select name="linkedKpiId" data-task-kpi-select></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked issue</span>
+                    <select name="linkedIssueId" data-task-issue-select></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked SOP</span>
+                    <select name="linkedSopId" data-task-sop-select></select>
+                  </label>
+                </div>
+                <label class="management-field">
+                  <span>Completion notes</span>
+                  <textarea
+                    name="completionNotes"
+                    rows="3"
+                    placeholder="Capture how the commitment was closed out"
+                  ></textarea>
+                </label>
+                <p class="form-error" data-task-form-error hidden></p>
+                <div class="management-actions">
+                  <button class="button button--primary" type="submit">Save task</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>
