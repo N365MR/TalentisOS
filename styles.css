@@ -1279,6 +1279,35 @@ p {
   line-height: 1.55;
 }
 
+.meeting-card-grid {
+  grid-template-columns: 1fr;
+}
+
+.meetings-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.meeting-action-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.meeting-action-item {
+  padding: var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    rgba(24, 24, 24, 0.84);
+}
+
+.meeting-action-item__meta {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
 .form-error {
   margin: 0;
   color: var(--color-accent-soft);
@@ -2305,7 +2334,8 @@ p {
   }
 
   .management-layout,
-  .role-alert-grid {
+  .role-alert-grid,
+  .meetings-summary-grid {
     grid-template-columns: 1fr;
   }
 

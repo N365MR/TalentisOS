@@ -14,8 +14,8 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f0f0f'/%3E%3Cpath d='M18 20h28v6H35v18h-6V26H18z' fill='%23d4af37'/%3E%3C/svg%3E"
     />
     <link rel="manifest" href="./manifest.json" />
-    <link rel="stylesheet" href="./styles.css?v=phase5-tasks-commitments" />
-    <script src="./app.js?v=phase5-tasks-commitments" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=phase6-meetings-v3" />
+    <script src="./app.js?v=phase6-meetings-v3" defer></script>
   </head>
   <body>
     <div id="top"></div>
@@ -992,47 +992,203 @@
             <p class="eyebrow">Today’s Operating Rhythm</p>
             <h2 class="section-heading">Meetings</h2>
             <p class="section-copy">
-              Placeholder view for huddles, one-on-ones, EOS L10 sessions,
-              handovers and daily rhythm.
+              Run huddles, handovers, one-on-ones and L10-style meetings with
+              clear agendas, decisions and action conversion.
             </p>
           </div>
 
-          <div class="workflow-timeline" aria-label="Operating rhythm placeholder">
+          <div class="workflow-timeline meetings-summary-grid" aria-label="Meeting rhythm summary">
             <article class="workflow-step reveal reveal-side-left">
               <div class="workflow-step__marker">
-                <span class="workflow-step__number">01</span>
+                <span class="workflow-step__number" data-meeting-summary-today>0</span>
               </div>
               <div class="workflow-step__card">
-                <p class="workflow-step__eyebrow">Open the day</p>
-                <p class="workflow-step__copy">
-                  Review the agenda, priorities and immediate risks.
-                </p>
+                <p class="workflow-step__eyebrow">Meetings today</p>
+                <p class="workflow-step__copy">Rhythm moments scheduled for the day.</p>
               </div>
             </article>
 
             <article class="workflow-step reveal reveal-side-right">
               <div class="workflow-step__marker">
-                <span class="workflow-step__number">02</span>
+                <span class="workflow-step__number" data-meeting-summary-actions>0</span>
               </div>
               <div class="workflow-step__card">
-                <p class="workflow-step__eyebrow">Run huddle</p>
-                <p class="workflow-step__copy">
-                  Align service, installation and escalation commitments.
-                </p>
+                <p class="workflow-step__eyebrow">Open actions</p>
+                <p class="workflow-step__copy">Actions still waiting for follow-through.</p>
               </div>
             </article>
 
             <article class="workflow-step reveal reveal-side-left">
               <div class="workflow-step__marker">
-                <span class="workflow-step__number">03</span>
+                <span class="workflow-step__number" data-meeting-summary-rating>0</span>
               </div>
               <div class="workflow-step__card">
-                <p class="workflow-step__eyebrow">Close the loop</p>
-                <p class="workflow-step__copy">
-                  End with owners, dates and a clear next rhythm.
-                </p>
+                <p class="workflow-step__eyebrow">Average rating</p>
+                <p class="workflow-step__copy">Meeting quality saved from local state.</p>
               </div>
             </article>
+          </div>
+
+          <div class="management-layout management-layout--meetings">
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Meeting list</p>
+                    <h3 class="card__title">Leadership rhythm sessions</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button
+                      class="button button--secondary"
+                      type="button"
+                      data-meeting-action="new"
+                    >
+                      Add meeting
+                    </button>
+                    <a
+                      class="button button--ghost"
+                      href="#meetings"
+                      data-meeting-eod-cta
+                    >
+                      Open EOD
+                    </a>
+                  </div>
+                </div>
+                <div class="management-card-grid meeting-card-grid" data-meeting-card-list></div>
+              </div>
+            </div>
+
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Meeting detail</p>
+                    <h3 class="card__title" data-meeting-profile-name>Select a meeting</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-meeting-action="edit"
+                    >
+                      Edit meeting
+                    </button>
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-meeting-action="delete"
+                    >
+                      Delete meeting
+                    </button>
+                  </div>
+                </div>
+                <div data-meeting-profile></div>
+              </div>
+
+              <form class="card management-panel management-form" data-meeting-form novalidate>
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Meeting editor</p>
+                    <h3 class="card__title" data-meeting-form-title>Add meeting</h3>
+                  </div>
+                  <button
+                    class="button button--ghost"
+                    type="button"
+                    data-meeting-action="cancel"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <input type="hidden" name="meetingId" />
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Meeting title</span>
+                    <input name="title" type="text" required />
+                  </label>
+                  <label class="management-field">
+                    <span>Meeting type</span>
+                    <select name="type" data-meeting-type-select>
+                      <option value="morning_huddle">Morning Huddle</option>
+                      <option value="eod_handover">End-of-Day Handover</option>
+                      <option value="one_on_one">One-on-One</option>
+                      <option value="l10">L10 EOS Meeting</option>
+                      <option value="team_meeting">Team Meeting</option>
+                      <option value="weekly_review">Weekly Review</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Date</span>
+                    <input name="scheduledAt" type="datetime-local" required />
+                  </label>
+                  <label class="management-field">
+                    <span>Rating</span>
+                    <select name="rating">
+                      <option value="">No rating</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                      <option value="6">6</option>
+                      <option value="7">7</option>
+                      <option value="8">8</option>
+                      <option value="9">9</option>
+                      <option value="10">10</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="management-field">
+                  <span>Attendees</span>
+                  <textarea
+                    name="attendees"
+                    rows="3"
+                    placeholder="One attendee per line"
+                  ></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Agenda</span>
+                  <textarea name="agenda" rows="6" data-meeting-agenda></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Notes</span>
+                  <textarea name="notes" rows="4"></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Decisions</span>
+                  <textarea
+                    name="decisions"
+                    rows="3"
+                    placeholder="One decision per line"
+                  ></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Issues raised</span>
+                  <textarea
+                    name="issuesRaised"
+                    rows="3"
+                    placeholder="One issue per line"
+                  ></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Actions</span>
+                  <textarea
+                    name="actions"
+                    rows="5"
+                    placeholder="Format: Action title | Owner name or id | YYYY-MM-DD | category"
+                  ></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Follow-up notes</span>
+                  <textarea name="followUpNotes" rows="3"></textarea>
+                </label>
+                <p class="form-error" data-meeting-form-error hidden></p>
+                <div class="management-actions">
+                  <button class="button button--primary" type="submit">
+                    Save meeting
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>

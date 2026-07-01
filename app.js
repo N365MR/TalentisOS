@@ -171,6 +171,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const taskIssueSelectNode = document.querySelector("[data-task-issue-select]");
   const taskSopSelectNode = document.querySelector("[data-task-sop-select]");
   const taskOwnerFilterNode = document.querySelector("[data-task-owner-filter]");
+  const meetingSummaryTodayNode = document.querySelector("[data-meeting-summary-today]");
+  const meetingSummaryActionsNode = document.querySelector(
+    "[data-meeting-summary-actions]"
+  );
+  const meetingSummaryRatingNode = document.querySelector(
+    "[data-meeting-summary-rating]"
+  );
+  const meetingCardListNode = document.querySelector("[data-meeting-card-list]");
+  const meetingProfileNameNode = document.querySelector(
+    "[data-meeting-profile-name]"
+  );
+  const meetingProfileNode = document.querySelector("[data-meeting-profile]");
+  const meetingFormNode = document.querySelector("[data-meeting-form]");
+  const meetingFormTitleNode = document.querySelector(
+    "[data-meeting-form-title]"
+  );
+  const meetingFormErrorNode = document.querySelector(
+    "[data-meeting-form-error]"
+  );
+  const meetingTypeSelectNode = document.querySelector(
+    "[data-meeting-type-select]"
+  );
+  const meetingAgendaNode = document.querySelector("[data-meeting-agenda]");
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
@@ -179,6 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedTaskId = null;
   let activeTaskFilter = "all";
   let activeTaskOwnerFilter = "";
+  let selectedMeetingId = null;
 
   if (yearNode) {
     yearNode.textContent = String(new Date().getFullYear());
@@ -268,6 +292,73 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll("_", " ")
       .replace(/\b\w/g, (match) => match.toUpperCase());
 
+  const getMeetingTypeLabel = (type) =>
+    ({
+      morning_huddle: "Morning Huddle",
+      eod_handover: "End-of-Day Handover",
+      one_on_one: "One-on-One",
+      l10: "L10 EOS Meeting",
+      team_meeting: "Team Meeting",
+      weekly_review: "Weekly Review",
+    })[type] || formatStatusLabel(type);
+
+  const getAgendaTemplate = (type) =>
+    ({
+      morning_huddle: [
+        "Yesterday’s carryovers",
+        "Today’s priorities",
+        "Staff availability",
+        "Customer issues",
+        "KPI exceptions",
+        "Risks/blockers",
+        "Commitments",
+        "Recognition",
+      ],
+      eod_handover: [
+        "Completed today",
+        "Still open",
+        "Blocked",
+        "Customer risks",
+        "Team risks",
+        "Decisions made",
+        "Tomorrow’s priorities",
+        "Absence coverage notes",
+      ],
+      one_on_one: [
+        "Check-in",
+        "Priorities",
+        "Blockers",
+        "Support needed",
+        "Development",
+        "Feedback",
+        "Commitments",
+        "Follow-up actions",
+      ],
+      l10: [
+        "Segue",
+        "Scorecard",
+        "Rocks",
+        "Customer/employee headlines",
+        "To-do review",
+        "IDS",
+        "Conclude",
+        "Meeting rating",
+      ],
+      team_meeting: [
+        "Wins",
+        "Priorities",
+        "Cross-team blockers",
+        "Commitments",
+      ],
+      weekly_review: [
+        "Week in review",
+        "KPIs",
+        "People updates",
+        "Risks",
+        "Next week priorities",
+      ],
+    })[type] || [];
+
   const formatDisplayDate = (value) => {
     const date = parseDateInput(value);
 
@@ -289,6 +380,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const formatListText = (items) =>
     Array.isArray(items) && items.length > 0 ? items.join("\n") : "";
+
+  const formatDateTimeLocal = (value) => {
+    const date = parseDateInput(value);
+
+    if (!date) {
+      return "";
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   const differenceInDays = (leftDate, rightDate) => {
     const millisecondsPerDay = 24 * 60 * 60 * 1000;
@@ -374,6 +480,38 @@ document.addEventListener("DOMContentLoaded", () => {
       linkedIssueId: task.linkedIssueId || "",
       linkedSopId: task.linkedSopId || "",
       completionNotes: task.completionNotes || "",
+    };
+  }
+
+  function createDefaultMeetingAction(action = {}) {
+    return {
+      id: action.id || generateId("meeting_action"),
+      title: action.title || "",
+      ownerId: action.ownerId || "",
+      dueDate: action.dueDate || "",
+      category: action.category || "meeting_action",
+      convertedTaskId: action.convertedTaskId || "",
+    };
+  }
+
+  function createDefaultMeeting(meeting = {}) {
+    return {
+      id: meeting.id || generateId("meeting"),
+      title: meeting.title || "",
+      cadence: meeting.cadence || "",
+      ownerId: meeting.ownerId || "",
+      scheduledAt: meeting.scheduledAt || "",
+      type: meeting.type || "team_meeting",
+      attendees: Array.isArray(meeting.attendees) ? meeting.attendees : [],
+      agenda: Array.isArray(meeting.agenda) ? meeting.agenda : [],
+      notes: meeting.notes || "",
+      decisions: Array.isArray(meeting.decisions) ? meeting.decisions : [],
+      issuesRaised: Array.isArray(meeting.issuesRaised) ? meeting.issuesRaised : [],
+      actions: Array.isArray(meeting.actions)
+        ? meeting.actions.map((action) => createDefaultMeetingAction(action))
+        : [],
+      rating: meeting.rating ?? "",
+      followUpNotes: meeting.followUpNotes || "",
     };
   }
 
@@ -623,38 +761,140 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     state.meetings = [
-      {
+      createDefaultMeeting({
         id: "meeting_huddle",
         title: "Morning Huddle",
         cadence: "daily",
         ownerId: state.teamMembers[0].id,
-        scheduledAt: "2026-07-01T08:30:00+10:00",
-        type: "huddle",
-      },
-      {
+        scheduledAt: "2026-07-02T08:30:00+10:00",
+        type: "morning_huddle",
+        attendees: [state.teamMembers[0].name, state.teamMembers[1].name, state.teamMembers[3].name],
+        agenda: [
+          "Yesterday’s carryovers",
+          "Today’s priorities",
+          "Staff availability",
+          "Customer issues",
+          "KPI exceptions",
+          "Risks/blockers",
+          "Commitments",
+          "Recognition",
+        ],
+        notes: "Focus on repeat callbacks and install rework carryover.",
+        decisions: ["Escalate metro callback review by 10:00"],
+        issuesRaised: ["Install defect closure lag"],
+        actions: [
+          createDefaultMeetingAction({
+            title: "Close install carryover exception",
+            ownerId: state.teamMembers[1].id,
+            dueDate: "2026-07-02",
+            category: "meeting_action",
+          }),
+        ],
+        rating: 8,
+        followUpNotes: "Recheck outstanding defects before lunch.",
+      }),
+      createDefaultMeeting({
         id: "meeting_1on1_mia",
         title: "One-on-One: Mia Chen",
         cadence: "weekly",
         ownerId: state.managerProfile.id,
-        scheduledAt: "2026-07-01T11:00:00+10:00",
+        scheduledAt: "2026-07-02T11:00:00+10:00",
         type: "one_on_one",
-      },
-      {
+        attendees: [state.managerProfile.name, state.teamMembers[0].name],
+        agenda: [
+          "Check-in",
+          "Priorities",
+          "Blockers",
+          "Support needed",
+          "Development",
+          "Feedback",
+          "Commitments",
+          "Follow-up actions",
+        ],
+        notes: "Discuss service escalation coaching and delegation.",
+        decisions: ["Trial a clearer escalation close checklist"],
+        issuesRaised: ["Callbacks still consuming reactive time"],
+        actions: [
+          createDefaultMeetingAction({
+            title: "Review Mia coaching follow-up",
+            ownerId: state.managerProfile.id,
+            dueDate: "2026-07-03",
+            category: "people_action",
+          }),
+        ],
+        rating: 7,
+        followUpNotes: "Check progress next week.",
+      }),
+      createDefaultMeeting({
         id: "meeting_l10",
         title: "Leadership L10",
         cadence: "weekly",
         ownerId: state.managerProfile.id,
         scheduledAt: "2026-07-02T09:00:00+10:00",
         type: "l10",
-      },
-      {
-        id: "meeting_training_review",
-        title: "Training Risk Review",
-        cadence: "weekly",
-        ownerId: state.teamMembers[2].id,
-        scheduledAt: "2026-07-03T14:00:00+10:00",
-        type: "review",
-      },
+        attendees: [state.managerProfile.name, state.teamMembers[0].name, state.teamMembers[2].name],
+        agenda: [
+          "Segue",
+          "Scorecard",
+          "Rocks",
+          "Customer/employee headlines",
+          "To-do review",
+          "IDS",
+          "Conclude",
+          "Meeting rating",
+        ],
+        notes: "Scorecard red flags reviewed ahead of IDS.",
+        decisions: ["Prioritise callback reduction rock support this week"],
+        issuesRaised: ["Training completion is still red"],
+        actions: [
+          createDefaultMeetingAction({
+            title: "Assign callback correction owner",
+            ownerId: state.teamMembers[0].id,
+            dueDate: "2026-07-02",
+            category: "kpi_action",
+          }),
+          createDefaultMeetingAction({
+            title: "Update training escalation review",
+            ownerId: state.teamMembers[2].id,
+            dueDate: "2026-07-03",
+            category: "meeting_action",
+          }),
+        ],
+        rating: 8,
+        followUpNotes: "Review IDS outcomes in tomorrow's huddle.",
+      }),
+      createDefaultMeeting({
+        id: "meeting_handover",
+        title: "End-of-Day Handover",
+        cadence: "daily",
+        ownerId: state.teamMembers[3].id,
+        scheduledAt: "2026-07-02T17:00:00+10:00",
+        type: "eod_handover",
+        attendees: [state.teamMembers[3].name, state.teamMembers[1].name],
+        agenda: [
+          "Completed today",
+          "Still open",
+          "Blocked",
+          "Customer risks",
+          "Team risks",
+          "Decisions made",
+          "Tomorrow’s priorities",
+          "Absence coverage notes",
+        ],
+        notes: "Prepare dispatch and install open loops for tomorrow.",
+        decisions: ["Carry open install defect review into morning huddle"],
+        issuesRaised: ["Late dispatch dependency still unresolved"],
+        actions: [
+          createDefaultMeetingAction({
+            title: "Prepare tomorrow dispatch priority list",
+            ownerId: state.teamMembers[3].id,
+            dueDate: "2026-07-02",
+            category: "meeting_action",
+          }),
+        ],
+        rating: 6,
+        followUpNotes: "Use handover notes to anchor tomorrow's open loop review.",
+      }),
     ];
 
     state.kpis = [
@@ -960,6 +1200,24 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     normalised.roles = normalised.roles.map((role) => createDefaultRole(role));
     normalised.tasks = normalised.tasks.map((task) => createDefaultTask(task));
+    normalised.meetings = normalised.meetings.map((meeting) =>
+      createDefaultMeeting(meeting)
+    );
+    const seededMeetings = seedSampleData().meetings.map((meeting) =>
+      createDefaultMeeting(meeting)
+    );
+    seededMeetings.forEach((seededMeeting) => {
+      const exists = normalised.meetings.some(
+        (meeting) =>
+          meeting.id === seededMeeting.id ||
+          (seededMeeting.type === "eod_handover" &&
+            meeting.type === "eod_handover")
+      );
+
+      if (!exists && seededMeeting.type === "eod_handover") {
+        normalised.meetings.push(seededMeeting);
+      }
+    });
 
     normalised.lastSavedAt =
       typeof source.lastSavedAt === "string" ? source.lastSavedAt : null;
@@ -2702,6 +2960,410 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function ensureMeetingSelection() {
+    if (
+      !selectedMeetingId ||
+      !appState.meetings.some((meeting) => meeting.id === selectedMeetingId)
+    ) {
+      selectedMeetingId = appState.meetings[0]?.id || null;
+    }
+  }
+
+  function parseMeetingActions(value) {
+    return String(value || "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [title = "", ownerRef = "", dueDate = "", category = "meeting_action"] =
+          line.split("|").map((item) => item.trim());
+        const matchedPerson = appState.teamMembers.find(
+          (person) => person.id === ownerRef || person.name === ownerRef
+        );
+        const ownerId =
+          ownerRef === appState.managerProfile.name || ownerRef === appState.managerProfile.id
+            ? appState.managerProfile.id
+            : matchedPerson?.id || ownerRef;
+
+        return createDefaultMeetingAction({
+          title,
+          ownerId,
+          dueDate,
+          category: category || "meeting_action",
+        });
+      });
+  }
+
+  function formatMeetingActionsText(actions) {
+    return actions
+      .map(
+        (action) =>
+          `${action.title} | ${getPersonNameById(action.ownerId)} | ${action.dueDate} | ${action.category}`
+      )
+      .join("\n");
+  }
+
+  function getMeetingOpenActionsCount() {
+    return appState.meetings.reduce((total, meeting) => {
+      const openCount = meeting.actions.filter((action) => !action.convertedTaskId).length;
+      return total + openCount;
+    }, 0);
+  }
+
+  function getAverageMeetingRating() {
+    const ratings = appState.meetings
+      .map((meeting) => Number(meeting.rating))
+      .filter((value) => Number.isFinite(value) && value > 0);
+
+    if (ratings.length === 0) {
+      return 0;
+    }
+
+    return Number((ratings.reduce((sum, value) => sum + value, 0) / ratings.length).toFixed(1));
+  }
+
+  function openMeetingForm(mode = "new") {
+    if (!meetingFormNode) {
+      return;
+    }
+
+    const selectedMeeting =
+      mode === "edit"
+        ? appState.meetings.find((meeting) => meeting.id === selectedMeetingId)
+        : null;
+
+    meetingFormNode.classList.add("is-open");
+    meetingFormTitleNode.textContent = selectedMeeting ? "Edit meeting" : "Add meeting";
+    meetingFormNode.elements.meetingId.value = selectedMeeting?.id || "";
+    meetingFormNode.elements.title.value = selectedMeeting?.title || "";
+    meetingFormNode.elements.type.value = selectedMeeting?.type || "morning_huddle";
+    meetingFormNode.elements.scheduledAt.value = selectedMeeting
+      ? formatDateTimeLocal(selectedMeeting.scheduledAt)
+      : "";
+    meetingFormNode.elements.rating.value = selectedMeeting?.rating ?? "";
+    meetingFormNode.elements.attendees.value = formatListText(selectedMeeting?.attendees);
+    meetingFormNode.elements.agenda.value = formatListText(
+      selectedMeeting?.agenda || getAgendaTemplate(meetingFormNode.elements.type.value)
+    );
+    meetingFormNode.elements.notes.value = selectedMeeting?.notes || "";
+    meetingFormNode.elements.decisions.value = formatListText(selectedMeeting?.decisions);
+    meetingFormNode.elements.issuesRaised.value = formatListText(
+      selectedMeeting?.issuesRaised
+    );
+    meetingFormNode.elements.actions.value = selectedMeeting
+      ? formatMeetingActionsText(selectedMeeting.actions)
+      : "";
+    meetingFormNode.elements.followUpNotes.value = selectedMeeting?.followUpNotes || "";
+    if (meetingTypeSelectNode) {
+      meetingTypeSelectNode.dataset.previousType = meetingFormNode.elements.type.value;
+    }
+    if (meetingFormErrorNode) {
+      meetingFormErrorNode.hidden = true;
+      meetingFormErrorNode.textContent = "";
+    }
+  }
+
+  function closeMeetingForm() {
+    meetingFormNode?.classList.remove("is-open");
+    if (meetingFormNode) {
+      meetingFormNode.reset();
+      meetingFormNode.elements.meetingId.value = "";
+    }
+    if (meetingFormErrorNode) {
+      meetingFormErrorNode.hidden = true;
+      meetingFormErrorNode.textContent = "";
+    }
+  }
+
+  function saveMeetingFromForm(form) {
+    const errors = [];
+
+    if (!form.elements.title.value.trim()) {
+      errors.push("Meeting title is required.");
+    }
+
+    if (!form.elements.scheduledAt.value) {
+      errors.push("Meeting date is required.");
+    }
+
+    if (errors.length > 0) {
+      if (meetingFormErrorNode) {
+        meetingFormErrorNode.textContent = errors.join(" ");
+        meetingFormErrorNode.hidden = false;
+      }
+      return;
+    }
+
+    const meetingId = form.elements.meetingId.value || generateId("meeting");
+    const existingMeeting = appState.meetings.find((meeting) => meeting.id === meetingId);
+    const parsedActions = parseMeetingActions(form.elements.actions.value).map((action) => {
+      const existingAction = existingMeeting?.actions.find(
+        (item) => item.title === action.title && item.dueDate === action.dueDate
+      );
+
+      return createDefaultMeetingAction({
+        ...action,
+        id: existingAction?.id || action.id,
+        convertedTaskId: existingAction?.convertedTaskId || "",
+      });
+    });
+
+    const nextMeeting = createDefaultMeeting({
+      id: meetingId,
+      title: form.elements.title.value.trim(),
+      type: form.elements.type.value,
+      scheduledAt: form.elements.scheduledAt.value,
+      rating: form.elements.rating.value ? Number(form.elements.rating.value) : "",
+      attendees: parseTextList(form.elements.attendees.value),
+      agenda: parseTextList(form.elements.agenda.value),
+      notes: form.elements.notes.value.trim(),
+      decisions: parseTextList(form.elements.decisions.value),
+      issuesRaised: parseTextList(form.elements.issuesRaised.value),
+      actions: parsedActions,
+      followUpNotes: form.elements.followUpNotes.value.trim(),
+      ownerId: existingMeeting?.ownerId || appState.managerProfile.id,
+      cadence: existingMeeting?.cadence || "",
+    });
+
+    const existingIndex = appState.meetings.findIndex(
+      (meeting) => meeting.id === meetingId
+    );
+
+    if (existingIndex >= 0) {
+      appState.meetings.splice(existingIndex, 1, nextMeeting);
+    } else {
+      appState.meetings.push(nextMeeting);
+    }
+
+    selectedMeetingId = nextMeeting.id;
+    saveState(appState);
+    closeMeetingForm();
+    showToast("Meeting saved", `${nextMeeting.title} was saved locally.`);
+  }
+
+  function deleteSelectedMeeting() {
+    const meeting = appState.meetings.find((item) => item.id === selectedMeetingId);
+
+    if (!meeting) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      `Delete the meeting "${meeting.title}" from TalentisOS?`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    appState.meetings = appState.meetings.filter((item) => item.id !== meeting.id);
+    selectedMeetingId = null;
+    saveState(appState);
+    closeMeetingForm();
+    showToast("Meeting deleted", `${meeting.title} was removed locally.`);
+  }
+
+  function convertMeetingActionToTask(meetingId, actionId) {
+    const meeting = appState.meetings.find((item) => item.id === meetingId);
+    const action = meeting?.actions.find((item) => item.id === actionId);
+
+    if (!meeting || !action) {
+      return;
+    }
+
+    if (!action.ownerId || !action.dueDate) {
+      showToast(
+        "Action not ready",
+        "Meeting action requires an owner and due date before converting to a task.",
+        "error"
+      );
+      return;
+    }
+
+    if (action.convertedTaskId) {
+      showToast(
+        "Already converted",
+        "This meeting action already exists as a task."
+      );
+      return;
+    }
+
+    const nextTask = createDefaultTask({
+      title: action.title,
+      ownerId: action.ownerId,
+      dueDate: action.dueDate,
+      priority: "medium",
+      status: "open",
+      category: action.category || "meeting_action",
+      linkedMeetingId: meeting.id,
+      completionNotes: `Converted from ${meeting.title}.`,
+    });
+
+    appState.tasks.push(nextTask);
+    action.convertedTaskId = nextTask.id;
+    selectedTaskId = nextTask.id;
+    saveState(appState);
+    showToast("Action converted", `${action.title} was added to Tasks.`);
+  }
+
+  function renderMeetingProfile(meeting) {
+    if (!meeting) {
+      return renderEmptyState("Select a meeting to view agenda, decisions, issues and actions.");
+    }
+
+    return `
+      <div class="management-profile">
+        <div class="profile-chip-row">
+          <span class="tag-pill">${escapeHtml(getMeetingTypeLabel(meeting.type))}</span>
+          <span class="tag-pill">${escapeHtml(
+            meeting.rating ? `Rating ${meeting.rating}/10` : "No rating"
+          )}</span>
+          <span class="tag-pill">${escapeHtml(
+            meeting.scheduledAt ? formatDisplayDate(meeting.scheduledAt) : "No date"
+          )}</span>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Attendees</h4>
+          ${
+            meeting.attendees.length > 0
+              ? `<ul class="management-profile__list">${meeting.attendees
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+              : `<p class="management-profile__copy">No attendees captured yet.</p>`
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Agenda</h4>
+          ${
+            meeting.agenda.length > 0
+              ? `<ul class="management-profile__list">${meeting.agenda
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+              : `<p class="management-profile__copy">No agenda captured yet.</p>`
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Notes and decisions</h4>
+          <p class="management-profile__copy">${escapeHtml(
+            meeting.notes || "No notes captured yet."
+          )}</p>
+          ${
+            meeting.decisions.length > 0
+              ? `<ul class="management-profile__list">${meeting.decisions
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+              : ""
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Issues raised</h4>
+          ${
+            meeting.issuesRaised.length > 0
+              ? `<ul class="management-profile__list">${meeting.issuesRaised
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+              : `<p class="management-profile__copy">No issues captured yet.</p>`
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Actions</h4>
+          ${
+            meeting.actions.length > 0
+              ? `<div class="meeting-action-list">${meeting.actions
+                  .map(
+                    (action) => `
+                      <div class="meeting-action-item">
+                        <p class="management-profile__heading">${escapeHtml(action.title)}</p>
+                        <p class="meeting-action-item__meta">${escapeHtml(
+                          `${getPersonNameById(action.ownerId)} • ${
+                            action.dueDate ? formatDisplayDate(action.dueDate) : "No due date"
+                          } • ${formatStatusLabel(action.category)}`
+                        )}</p>
+                        <div class="management-actions">
+                          <button
+                            class="button button--ghost"
+                            type="button"
+                            data-convert-meeting-action="${escapeHtml(action.id)}"
+                            data-convert-meeting-parent="${escapeHtml(meeting.id)}"
+                          >
+                            ${action.convertedTaskId ? "Converted to task" : "Convert to task"}
+                          </button>
+                        </div>
+                      </div>
+                    `
+                  )
+                  .join("")}</div>`
+              : `<p class="management-profile__copy">No actions captured yet.</p>`
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Follow-up notes</h4>
+          <p class="management-profile__copy">${escapeHtml(
+            meeting.followUpNotes || "No follow-up notes captured yet."
+          )}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMeetings() {
+    ensureMeetingSelection();
+    const selectedMeeting =
+      appState.meetings.find((meeting) => meeting.id === selectedMeetingId) || null;
+    const meetingsToday = getMeetingsToday();
+
+    if (meetingSummaryTodayNode) {
+      meetingSummaryTodayNode.textContent = String(meetingsToday.length);
+    }
+
+    if (meetingSummaryActionsNode) {
+      meetingSummaryActionsNode.textContent = String(getMeetingOpenActionsCount());
+    }
+
+    if (meetingSummaryRatingNode) {
+      meetingSummaryRatingNode.textContent = String(getAverageMeetingRating());
+    }
+
+    if (meetingCardListNode) {
+      meetingCardListNode.innerHTML =
+        appState.meetings.length > 0
+          ? appState.meetings
+              .slice()
+              .sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt))
+              .map(
+                (meeting) => `
+                  <button
+                    type="button"
+                    class="management-card ${meeting.id === selectedMeetingId ? "is-selected" : ""}"
+                    data-select-meeting="${escapeHtml(meeting.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      getMeetingTypeLabel(meeting.type)
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(meeting.title)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      `${meeting.scheduledAt ? formatDisplayDate(meeting.scheduledAt) : "No date"} • ${
+                        meeting.actions.length
+                      } action${meeting.actions.length === 1 ? "" : "s"}`
+                    )}</p>
+                  </button>
+                `
+              )
+              .join("")
+          : renderEmptyState("No meetings exist yet. Add the first meeting to build the leadership rhythm.");
+    }
+
+    if (meetingProfileNameNode) {
+      meetingProfileNameNode.textContent = selectedMeeting
+        ? selectedMeeting.title
+        : "Select a meeting";
+    }
+
+    if (meetingProfileNode) {
+      meetingProfileNode.innerHTML = renderMeetingProfile(selectedMeeting);
+    }
+  }
+
   function getStatusCounts() {
     const todayItems = calculateTodayItems();
     const openTasks = appState.tasks.filter((task) => !isTaskClosed(task)).length;
@@ -2987,6 +3649,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTodayDashboard();
     renderPeopleAndRoles();
     renderTasks();
+    renderMeetings();
 
     if (schemaVersionNode) {
       schemaVersionNode.textContent = String(appState.schemaVersion);
@@ -3039,6 +3702,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initProgressBars,
     renderPeopleAndRoles,
     renderTasks,
+    renderMeetings,
+    convertMeetingActionToTask,
     loadState,
     saveState,
     normaliseState,
@@ -3114,6 +3779,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (meetingCardListNode) {
+    meetingCardListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-meeting]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedMeetingId = trigger.getAttribute("data-select-meeting");
+      renderStateSummary();
+    });
+  }
+
   document.querySelectorAll("[data-task-filter]").forEach((button) => {
     button.addEventListener("click", () => {
       activeTaskFilter = button.getAttribute("data-task-filter") || "all";
@@ -3182,6 +3860,37 @@ document.addEventListener("DOMContentLoaded", () => {
         closeTaskForm();
       }
     }
+
+    const meetingActionTrigger = event.target.closest("[data-meeting-action]");
+
+    if (meetingActionTrigger) {
+      const action = meetingActionTrigger.getAttribute("data-meeting-action");
+
+      if (action === "new") {
+        openMeetingForm("new");
+      } else if (action === "edit" && selectedMeetingId) {
+        openMeetingForm("edit");
+      } else if (action === "delete" && selectedMeetingId) {
+        deleteSelectedMeeting();
+      } else if (action === "cancel") {
+        closeMeetingForm();
+      }
+    }
+
+    const convertMeetingActionTrigger = event.target.closest(
+      "[data-convert-meeting-action]"
+    );
+
+    if (convertMeetingActionTrigger) {
+      const meetingId = convertMeetingActionTrigger.getAttribute(
+        "data-convert-meeting-parent"
+      );
+      const actionId = convertMeetingActionTrigger.getAttribute(
+        "data-convert-meeting-action"
+      );
+
+      convertMeetingActionToTask(meetingId, actionId);
+    }
   });
 
   if (personFormNode) {
@@ -3204,6 +3913,42 @@ document.addEventListener("DOMContentLoaded", () => {
       saveTaskFromForm(taskFormNode);
     });
   }
+
+  if (meetingFormNode) {
+    meetingFormNode.addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveMeetingFromForm(meetingFormNode);
+    });
+  }
+
+  if (meetingTypeSelectNode && meetingAgendaNode) {
+    meetingTypeSelectNode.addEventListener("change", () => {
+      const currentAgenda = meetingAgendaNode.value.trim();
+      const currentTemplate = formatListText(
+        getAgendaTemplate(meetingTypeSelectNode.dataset.previousType || "")
+      );
+      const nextTemplate = formatListText(getAgendaTemplate(meetingTypeSelectNode.value));
+
+      if (!currentAgenda || currentAgenda === currentTemplate) {
+        meetingAgendaNode.value = nextTemplate;
+      }
+
+      meetingTypeSelectNode.dataset.previousType = meetingTypeSelectNode.value;
+    });
+  }
+
+  document.querySelectorAll("[data-meeting-eod-cta]").forEach((link) => {
+    link.addEventListener("click", () => {
+      const handoverMeeting = appState.meetings.find(
+        (meeting) => meeting.type === "eod_handover"
+      );
+
+      if (handoverMeeting) {
+        selectedMeetingId = handoverMeeting.id;
+        renderStateSummary();
+      }
+    });
+  });
 
   const setActiveLink = (sectionId) => {
     sectionLinks.forEach((link) => {
