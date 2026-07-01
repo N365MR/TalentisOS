@@ -14,8 +14,8 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f0f0f'/%3E%3Cpath d='M18 20h28v6H35v18h-6V26H18z' fill='%23d4af37'/%3E%3C/svg%3E"
     />
     <link rel="manifest" href="./manifest.json" />
-    <link rel="stylesheet" href="./styles.css?v=phase2-state" />
-    <script src="./app.js?v=phase2-state" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=phase3-today-dashboard" />
+    <script src="./app.js?v=phase3-today-dashboard" defer></script>
   </head>
   <body>
     <div id="top"></div>
@@ -122,9 +122,29 @@
                 coaching, training and follow-ups into one calm daily
                 leadership workspace.
               </p>
+              <div class="hero-focus-card">
+                <p class="hero-focus-card__label">Today’s Focus</p>
+                <h2 class="hero-focus-card__title" data-today-focus-title>
+                  Start the day with visible ownership.
+                </h2>
+                <p class="hero-focus-card__copy" data-today-focus-copy>
+                  TalentisOS is preparing your first leadership focus from local
+                  app state.
+                </p>
+              </div>
               <div class="button-row hero-actions">
-                <a class="button button--primary" href="#meetings">Start the Day</a>
-                <a class="button button--secondary" href="#tasks">
+                <a
+                  class="button button--primary"
+                  href="#meetings"
+                  data-quick-action-link="meetings"
+                >
+                  Start the Day
+                </a>
+                <a
+                  class="button button--secondary"
+                  href="#tasks"
+                  data-quick-action-link="tasks"
+                >
                   Review Open Actions
                 </a>
               </div>
@@ -145,50 +165,232 @@
                     <p class="dashboard-mockup__eyebrow">Today</p>
                     <h2 class="dashboard-mockup__title">Hero Command</h2>
                   </div>
-                  <span class="metric-chip metric-chip--accent" data-health-score>
-                    Calm Mode
+                  <span
+                    class="metric-chip metric-chip--accent"
+                    data-health-score-label
+                  >
+                    Health 0
                   </span>
                 </header>
+                <div class="dashboard-progress">
+                  <div class="dashboard-progress__meta">
+                    <span>Leadership Health Score</span>
+                    <strong data-health-score-value data-count-up>0</strong>
+                  </div>
+                  <div
+                    class="dashboard-progress__track"
+                    role="progressbar"
+                    aria-label="Leadership Health Score"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="0"
+                  >
+                    <span
+                      class="dashboard-progress__fill"
+                      data-progress-fill
+                      style="width: 0%"
+                    ></span>
+                  </div>
+                </div>
 
                 <div class="dashboard-mockup__rail">
                   <article class="dashboard-card dashboard-card--feature">
                     <div class="dashboard-card__topline">
                       <p class="dashboard-card__label">Today’s Top 3</p>
-                      <span class="dashboard-card__status">In focus</span>
+                      <span class="dashboard-card__status" data-top-three-status>
+                        In focus
+                      </span>
                     </div>
-                    <ul class="dashboard-list">
-                      <li>Review priorities and blocked tasks</li>
-                      <li>Coach the next leadership follow-up</li>
-                      <li>Prepare the operating rhythm for close</li>
+                    <ul class="dashboard-list" data-top-three-list>
+                      <li>Today priorities will appear here from local state.</li>
                     </ul>
                   </article>
 
                   <article class="dashboard-card">
                     <p class="dashboard-card__label">People pulse</p>
-                    <p class="dashboard-card__value" data-people-due>4</p>
-                    <p class="dashboard-card__meta">Conversations due today</p>
+                    <p class="dashboard-card__value" data-people-pulse-count data-count-up>
+                      0
+                    </p>
+                    <p class="dashboard-card__meta" data-people-pulse-meta>
+                      Leadership people signals for today
+                    </p>
                   </article>
 
                   <article class="dashboard-card">
                     <p class="dashboard-card__label">KPI exceptions</p>
-                    <p class="dashboard-card__value" data-kpi-exceptions>3</p>
-                    <p class="dashboard-card__meta">Tracked before surprises land</p>
+                    <p
+                      class="dashboard-card__value"
+                      data-kpi-exceptions-count
+                      data-count-up
+                    >
+                      0
+                    </p>
+                    <p class="dashboard-card__meta" data-kpi-exceptions-meta>
+                      Red and amber indicators tracked early
+                    </p>
                   </article>
 
                   <article class="dashboard-card">
-                    <p class="dashboard-card__label">War room</p>
-                    <p class="dashboard-card__value" data-open-issues>2</p>
-                    <p class="dashboard-card__meta">Issues waiting for ownership</p>
+                    <p class="dashboard-card__label">Critical alerts</p>
+                    <p
+                      class="dashboard-card__value"
+                      data-critical-alerts-count
+                      data-count-up
+                    >
+                      0
+                    </p>
+                    <p class="dashboard-card__meta" data-critical-alerts-meta>
+                      Highest-priority risks visible before the day runs away
+                    </p>
                   </article>
 
                   <article class="dashboard-card">
-                    <p class="dashboard-card__label">Training risk</p>
-                    <p class="dashboard-card__value" data-training-risk>1</p>
-                    <p class="dashboard-card__meta">Capability gap visible today</p>
+                    <p class="dashboard-card__label">Meetings today</p>
+                    <p
+                      class="dashboard-card__value"
+                      data-meetings-today-count
+                      data-count-up
+                    >
+                      0
+                    </p>
+                    <p class="dashboard-card__meta" data-meetings-today-meta>
+                      Rhythm moments scheduled for today
+                    </p>
                   </article>
                 </div>
               </section>
             </div>
+          </div>
+
+          <div class="today-grid">
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">Overdue tasks</p>
+                <span class="metric-chip" data-overdue-count>0</span>
+              </div>
+              <h3 class="card__title">Follow-through that needs attention now</h3>
+              <div data-overdue-tasks-list></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">Tasks due today</p>
+                <span class="metric-chip" data-due-today-count>0</span>
+              </div>
+              <h3 class="card__title">What needs same-day closure</h3>
+              <div data-due-today-list></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">KPI exceptions</p>
+                <span class="metric-chip metric-chip--accent" data-kpi-card-count>0</span>
+              </div>
+              <h3 class="card__title">Red and amber indicators</h3>
+              <div data-kpi-exceptions-list></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">People pulse</p>
+                <span class="metric-chip" data-people-risk-count>0</span>
+              </div>
+              <h3 class="card__title">People who need leader attention</h3>
+              <div data-people-pulse-list></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">Praise opportunities</p>
+                <span class="metric-chip" data-praise-gap-badge>On rhythm</span>
+              </div>
+              <h3 class="card__title">Recognition rhythm</h3>
+              <div data-praise-gap-content></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">Feedback follow-ups</p>
+                <span class="metric-chip" data-feedback-followup-count>0</span>
+              </div>
+              <h3 class="card__title">Conversations that should not go stale</h3>
+              <div data-feedback-followups-list></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">Rocks at risk</p>
+                <span class="metric-chip" data-rocks-at-risk-count>0</span>
+              </div>
+              <h3 class="card__title">Quarterly priorities needing intervention</h3>
+              <div data-rocks-at-risk-list></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">SOP reviews due</p>
+                <span class="metric-chip" data-sop-reviews-count>0</span>
+              </div>
+              <h3 class="card__title">Standard work that needs review</h3>
+              <div data-sop-reviews-list></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">Training risks</p>
+                <span class="metric-chip" data-training-risks-count>0</span>
+              </div>
+              <h3 class="card__title">Capability gaps affecting the day</h3>
+              <div data-training-risks-list></div>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">EOD handover</p>
+                <span class="metric-chip">Close</span>
+              </div>
+              <h3 class="card__title">Prepare the next shift with clarity</h3>
+              <p class="card__body" data-handover-summary>
+                Handover status will appear here from local state.
+              </p>
+              <a
+                class="button button--secondary"
+                href="#analytics"
+                data-quick-action-link="analytics"
+              >
+                Open Daily Close
+              </a>
+            </article>
+
+            <article class="card today-card reveal reveal-up">
+              <div class="dashboard-card__topline">
+                <p class="card__label">Quick actions</p>
+                <span class="metric-chip metric-chip--accent">Go</span>
+              </div>
+              <h3 class="card__title">Jump to the right workspace fast</h3>
+              <div class="quick-action-grid">
+                <a class="button button--ghost" href="#tasks" data-quick-action-link="tasks">
+                  Open tasks
+                </a>
+                <a
+                  class="button button--ghost"
+                  href="#feedback"
+                  data-quick-action-link="feedback"
+                >
+                  Review feedback
+                </a>
+                <a class="button button--ghost" href="#kpis" data-quick-action-link="kpis">
+                  Review KPIs
+                </a>
+                <a
+                  class="button button--ghost"
+                  href="#meetings"
+                  data-quick-action-link="meetings"
+                >
+                  Open meetings
+                </a>
+              </div>
+            </article>
           </div>
         </div>
       </section>

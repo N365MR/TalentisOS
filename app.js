@@ -43,11 +43,58 @@ document.addEventListener("DOMContentLoaded", () => {
   const importInput = document.querySelector("[data-import-input]");
   const resetSampleTrigger = document.querySelector("[data-reset-sample]");
   const clearDataTrigger = document.querySelector("[data-clear-data]");
-  const peopleDueNode = document.querySelector("[data-people-due]");
-  const kpiExceptionsNode = document.querySelector("[data-kpi-exceptions]");
-  const openIssuesNode = document.querySelector("[data-open-issues]");
-  const trainingRiskNode = document.querySelector("[data-training-risk]");
-  const healthScoreNode = document.querySelector("[data-health-score]");
+  const todayFocusTitleNode = document.querySelector("[data-today-focus-title]");
+  const todayFocusCopyNode = document.querySelector("[data-today-focus-copy]");
+  const healthScoreLabelNode = document.querySelector("[data-health-score-label]");
+  const healthScoreValueNode = document.querySelector("[data-health-score-value]");
+  const topThreeStatusNode = document.querySelector("[data-top-three-status]");
+  const topThreeListNode = document.querySelector("[data-top-three-list]");
+  const peoplePulseCountNode = document.querySelector("[data-people-pulse-count]");
+  const peoplePulseMetaNode = document.querySelector("[data-people-pulse-meta]");
+  const kpiExceptionsCountNode = document.querySelector(
+    "[data-kpi-exceptions-count]"
+  );
+  const kpiExceptionsMetaNode = document.querySelector(
+    "[data-kpi-exceptions-meta]"
+  );
+  const criticalAlertsCountNode = document.querySelector(
+    "[data-critical-alerts-count]"
+  );
+  const criticalAlertsMetaNode = document.querySelector(
+    "[data-critical-alerts-meta]"
+  );
+  const meetingsTodayCountNode = document.querySelector(
+    "[data-meetings-today-count]"
+  );
+  const meetingsTodayMetaNode = document.querySelector(
+    "[data-meetings-today-meta]"
+  );
+  const overdueCountNode = document.querySelector("[data-overdue-count]");
+  const dueTodayCountNode = document.querySelector("[data-due-today-count]");
+  const kpiCardCountNode = document.querySelector("[data-kpi-card-count]");
+  const peopleRiskCountNode = document.querySelector("[data-people-risk-count]");
+  const praiseGapBadgeNode = document.querySelector("[data-praise-gap-badge]");
+  const feedbackFollowupCountNode = document.querySelector(
+    "[data-feedback-followup-count]"
+  );
+  const rocksAtRiskCountNode = document.querySelector("[data-rocks-at-risk-count]");
+  const sopReviewsCountNode = document.querySelector("[data-sop-reviews-count]");
+  const trainingRisksCountNode = document.querySelector(
+    "[data-training-risks-count]"
+  );
+  const progressFillNode = document.querySelector("[data-progress-fill]");
+  const overdueTasksListNode = document.querySelector("[data-overdue-tasks-list]");
+  const dueTodayListNode = document.querySelector("[data-due-today-list]");
+  const kpiExceptionsListNode = document.querySelector("[data-kpi-exceptions-list]");
+  const peoplePulseListNode = document.querySelector("[data-people-pulse-list]");
+  const praiseGapContentNode = document.querySelector("[data-praise-gap-content]");
+  const feedbackFollowupsListNode = document.querySelector(
+    "[data-feedback-followups-list]"
+  );
+  const rocksAtRiskListNode = document.querySelector("[data-rocks-at-risk-list]");
+  const sopReviewsListNode = document.querySelector("[data-sop-reviews-list]");
+  const trainingRisksListNode = document.querySelector("[data-training-risks-list]");
+  const handoverSummaryNode = document.querySelector("[data-handover-summary]");
   const countTeamMembersNode = document.querySelector("[data-count-team-members]");
   const countOpenTasksNode = document.querySelector("[data-count-open-tasks]");
   const countMeetingsNode = document.querySelector("[data-count-meetings]");
@@ -68,6 +115,78 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     return JSON.parse(JSON.stringify(value));
+  };
+
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+
+  const formatDateKey = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const parseDateInput = (value) => {
+    if (!value || typeof value !== "string") {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return new Date(`${value}T12:00:00`);
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const getTodayDate = () => new Date();
+  const getTodayKey = () => formatDateKey(getTodayDate());
+
+  const isTaskClosed = (task) =>
+    task.status === "done" || task.status === "closed" || task.status === "completed";
+
+  const getPersonNameById = (personId) => {
+    if (personId === appState.managerProfile.id) {
+      return appState.managerProfile.name || "Manager";
+    }
+
+    const member = appState.teamMembers.find((item) => item.id === personId);
+    return member ? member.name : "Unassigned";
+  };
+
+  const formatDisplayDate = (value) => {
+    const date = parseDateInput(value);
+
+    if (!date) {
+      return "Date not set";
+    }
+
+    return date.toLocaleDateString("en-AU", {
+      day: "numeric",
+      month: "short",
+    });
+  };
+
+  const differenceInDays = (leftDate, rightDate) => {
+    const millisecondsPerDay = 24 * 60 * 60 * 1000;
+    const left = new Date(
+      leftDate.getFullYear(),
+      leftDate.getMonth(),
+      leftDate.getDate()
+    );
+    const right = new Date(
+      rightDate.getFullYear(),
+      rightDate.getMonth(),
+      rightDate.getDate()
+    );
+
+    return Math.round((left.getTime() - right.getTime()) / millisecondsPerDay);
   };
 
   function generateId(prefix = "item") {
@@ -159,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
         department: "Operations",
         managerId: state.managerProfile.id,
         oneOnOneDue: true,
-        status: "active",
+        status: "risk",
       },
     ];
 
@@ -379,7 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
         id: generateId("feedback"),
         memberId: state.teamMembers[1].id,
         note: "Tighten owner confirmation before install jobs leave planning.",
-        followUpDue: "2026-07-03",
+        followUpDue: "2026-07-02",
         status: "open",
       },
       {
@@ -476,7 +595,7 @@ document.addEventListener("DOMContentLoaded", () => {
         id: generateId("sop"),
         title: "Dispatch Close Handover SOP",
         ownerId: state.teamMembers[3].id,
-        reviewDate: "2026-07-04",
+        reviewDate: "2026-07-02",
         status: "review_due",
       },
       {
@@ -801,34 +920,693 @@ document.addEventListener("DOMContentLoaded", () => {
     showToast("Local data cleared", "All saved TalentisOS data was removed.");
   }
 
-  function getStatusCounts() {
-    const openTasks = appState.tasks.filter(
-      (task) => task.status !== "done" && task.status !== "closed"
-    ).length;
-    const dueConversations =
-      appState.teamMembers.filter((member) => member.oneOnOneDue).length +
-      appState.feedback.filter((item) => item.status === "open").length;
-    const kpiExceptions = appState.kpis.filter(
+  function getOverdueTasks() {
+    const todayKey = getTodayKey();
+
+    return appState.tasks
+      .filter((task) => {
+        if (isTaskClosed(task) || !task.dueDate) {
+          return false;
+        }
+
+        return task.dueDate < todayKey;
+      })
+      .sort((left, right) => left.dueDate.localeCompare(right.dueDate));
+  }
+
+  function getTasksDueToday() {
+    const todayKey = getTodayKey();
+
+    return appState.tasks.filter(
+      (task) => !isTaskClosed(task) && task.dueDate === todayKey
+    );
+  }
+
+  function getKpiExceptions() {
+    return appState.kpis.filter(
       (kpi) => kpi.status === "red" || kpi.status === "amber"
+    );
+  }
+
+  function getFeedbackFollowUps() {
+    const todayKey = getTodayKey();
+
+    return appState.feedback
+      .filter(
+        (item) =>
+          item.status !== "closed" &&
+          item.status !== "done" &&
+          item.followUpDue &&
+          item.followUpDue <= todayKey
+      )
+      .sort((left, right) => left.followUpDue.localeCompare(right.followUpDue));
+  }
+
+  function getSopReviewsDue() {
+    const todayKey = getTodayKey();
+
+    return appState.sops
+      .filter(
+        (item) =>
+          item.reviewDate &&
+          (item.reviewDate <= todayKey || item.status === "review_due")
+      )
+      .sort((left, right) => left.reviewDate.localeCompare(right.reviewDate));
+  }
+
+  function getTrainingRisks() {
+    const todayKey = getTodayKey();
+
+    return appState.trainingItems.filter(
+      (item) =>
+        item.status === "at_risk" ||
+        item.status === "blocked" ||
+        (item.dueDate &&
+          item.dueDate <= todayKey &&
+          item.status !== "completed" &&
+          item.status !== "done")
+    );
+  }
+
+  function getRocksAtRisk() {
+    const atRiskStatuses = new Set(["at_risk", "off_track", "blocked"]);
+    return appState.rocks.filter((rock) => atRiskStatuses.has(rock.status));
+  }
+
+  function getPraiseGap() {
+    if (appState.praise.length === 0) {
+      return {
+        hasGap: true,
+        daysSinceLastPraise: null,
+        lastPraiseAt: null,
+        summary: "No praise has been logged yet.",
+      };
+    }
+
+    const latestPraise = appState.praise
+      .map((entry) => parseDateInput(entry.loggedAt))
+      .filter(Boolean)
+      .sort((left, right) => right.getTime() - left.getTime())[0];
+
+    if (!latestPraise) {
+      return {
+        hasGap: true,
+        daysSinceLastPraise: null,
+        lastPraiseAt: null,
+        summary: "Praise history is missing a valid date.",
+      };
+    }
+
+    const daysSinceLastPraise = differenceInDays(getTodayDate(), latestPraise);
+
+    return {
+      hasGap: daysSinceLastPraise >= 7,
+      daysSinceLastPraise,
+      lastPraiseAt: latestPraise,
+      summary:
+        daysSinceLastPraise >= 7
+          ? `No praise has been logged in ${daysSinceLastPraise} days.`
+          : `Last praise was logged ${daysSinceLastPraise} day${
+              daysSinceLastPraise === 1 ? "" : "s"
+            } ago.`,
+    };
+  }
+
+  function getPeoplePulse() {
+    const lowSkillMemberIds = new Set(
+      appState.skillRatings
+        .filter((item) => Number(item.rating) <= 2)
+        .map((item) => item.memberId)
+    );
+
+    const followUpMemberIds = new Set(
+      getFeedbackFollowUps().map((item) => item.memberId)
+    );
+
+    return appState.teamMembers.filter(
+      (member) =>
+        member.status === "risk" ||
+        member.status === "at_risk" ||
+        member.oneOnOneDue ||
+        lowSkillMemberIds.has(member.id) ||
+        followUpMemberIds.has(member.id)
+    );
+  }
+
+  function getMeetingsToday() {
+    const todayKey = getTodayKey();
+
+    return appState.meetings
+      .filter((meeting) => {
+        const scheduledDate = parseDateInput(meeting.scheduledAt);
+        return scheduledDate ? formatDateKey(scheduledDate) === todayKey : false;
+      })
+      .sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt));
+  }
+
+  function getCriticalAlerts(todayItems) {
+    const alerts = [];
+
+    if (todayItems.overdueTasks.length > 0) {
+      alerts.push(
+        `${todayItems.overdueTasks.length} overdue task${
+          todayItems.overdueTasks.length === 1 ? "" : "s"
+        } need attention`
+      );
+    }
+
+    const redKpiCount = todayItems.kpiExceptions.filter(
+      (item) => item.status === "red"
     ).length;
+
+    if (redKpiCount > 0) {
+      alerts.push(`${redKpiCount} red KPI exception${redKpiCount === 1 ? "" : "s"}`);
+    }
+
+    if (todayItems.feedbackFollowUps.length > 0) {
+      alerts.push(
+        `${todayItems.feedbackFollowUps.length} feedback follow-up${
+          todayItems.feedbackFollowUps.length === 1 ? "" : "s"
+        } due now`
+      );
+    }
+
+    if (todayItems.trainingRisks.length > 0) {
+      alerts.push(
+        `${todayItems.trainingRisks.length} training risk${
+          todayItems.trainingRisks.length === 1 ? "" : "s"
+        } visible`
+      );
+    }
+
+    if (todayItems.rocksAtRisk.length > 0) {
+      alerts.push(
+        `${todayItems.rocksAtRisk.length} rock${
+          todayItems.rocksAtRisk.length === 1 ? "" : "s"
+        } at risk`
+      );
+    }
+
+    if (todayItems.peoplePulse.filter((member) => member.status === "risk").length > 0) {
+      alerts.push("At least one team member is marked as risk");
+    }
+
+    return alerts;
+  }
+
+  function calculateLeadershipHealthScore(todayItems) {
+    const penalties =
+      todayItems.overdueTasks.length * 7 +
+      todayItems.kpiExceptions.filter((item) => item.status === "red").length * 8 +
+      todayItems.kpiExceptions.filter((item) => item.status === "amber").length * 4 +
+      todayItems.feedbackFollowUps.length * 5 +
+      todayItems.trainingRisks.length * 6 +
+      todayItems.rocksAtRisk.length * 6 +
+      todayItems.peoplePulse.filter((member) => member.status === "risk").length * 7 +
+      todayItems.sopReviewsDue.length * 3;
+
+    const score = Math.max(38, Math.min(98, 100 - penalties));
+    let label = "Calm";
+
+    if (score < 60) {
+      label = "Urgent";
+    } else if (score < 78) {
+      label = "Watch";
+    }
+
+    return {
+      score,
+      label,
+      progress: score,
+    };
+  }
+
+  function calculateTodayItems() {
+    const overdueTasks = getOverdueTasks();
+    const tasksDueToday = getTasksDueToday();
+    const kpiExceptions = getKpiExceptions();
+    const feedbackFollowUps = getFeedbackFollowUps();
+    const sopReviewsDue = getSopReviewsDue();
+    const trainingRisks = getTrainingRisks();
+    const rocksAtRisk = getRocksAtRisk();
+    const praiseGap = getPraiseGap();
+    const peoplePulse = getPeoplePulse();
+    const meetingsToday = getMeetingsToday();
+    const criticalAlerts = getCriticalAlerts({
+      overdueTasks,
+      kpiExceptions,
+      feedbackFollowUps,
+      sopReviewsDue,
+      trainingRisks,
+      rocksAtRisk,
+      praiseGap,
+      peoplePulse,
+      meetingsToday,
+    });
+
+    const topThree = [
+      overdueTasks[0]
+        ? {
+            title: overdueTasks[0].title,
+            meta: `Overdue since ${formatDisplayDate(overdueTasks[0].dueDate)}`,
+          }
+        : null,
+      kpiExceptions[0]
+        ? {
+            title: `${kpiExceptions[0].name} needs review`,
+            meta: `${kpiExceptions[0].status.toUpperCase()} status with owner ${getPersonNameById(
+              kpiExceptions[0].ownerId
+            )}`,
+          }
+        : null,
+      feedbackFollowUps[0]
+        ? {
+            title: `Follow up with ${getPersonNameById(
+              feedbackFollowUps[0].memberId
+            )}`,
+            meta: `Due ${formatDisplayDate(feedbackFollowUps[0].followUpDue)}`,
+          }
+        : null,
+      meetingsToday[0]
+        ? {
+            title: `Run ${meetingsToday[0].title}`,
+            meta: `Scheduled ${parseDateInput(
+              meetingsToday[0].scheduledAt
+            )?.toLocaleTimeString("en-AU", {
+              hour: "numeric",
+              minute: "2-digit",
+            })}`,
+          }
+        : null,
+      tasksDueToday[0]
+        ? {
+            title: tasksDueToday[0].title,
+            meta: `Due today with ${getPersonNameById(tasksDueToday[0].ownerId)}`,
+          }
+        : null,
+    ]
+      .filter(Boolean)
+      .slice(0, 3);
+
+    const focus =
+      overdueTasks[0] ||
+      feedbackFollowUps[0] ||
+      kpiExceptions[0] ||
+      tasksDueToday[0] ||
+      meetingsToday[0] ||
+      null;
+
+    const health = calculateLeadershipHealthScore({
+      overdueTasks,
+      tasksDueToday,
+      kpiExceptions,
+      feedbackFollowUps,
+      sopReviewsDue,
+      trainingRisks,
+      rocksAtRisk,
+      praiseGap,
+      peoplePulse,
+      meetingsToday,
+    });
+
+    return {
+      overdueTasks,
+      tasksDueToday,
+      kpiExceptions,
+      feedbackFollowUps,
+      sopReviewsDue,
+      trainingRisks,
+      rocksAtRisk,
+      praiseGap,
+      peoplePulse,
+      meetingsToday,
+      criticalAlerts,
+      topThree,
+      focus,
+      health,
+    };
+  }
+
+  function initCountUp() {
+    document.querySelectorAll("[data-count-up]").forEach((node) => {
+      const target = Number(node.dataset.targetCount ?? node.textContent ?? "0");
+      const safeTarget = Number.isFinite(target) ? target : 0;
+      const currentValue = Number(node.dataset.countCurrent ?? "0");
+
+      if (prefersReducedMotion) {
+        node.textContent = String(Math.round(safeTarget));
+        node.dataset.countCurrent = String(Math.round(safeTarget));
+        return;
+      }
+
+      const startValue = Number.isFinite(currentValue) ? currentValue : 0;
+      const duration = 650;
+      const startTime = performance.now();
+
+      const step = (now) => {
+        const progress = Math.min(1, (now - startTime) / duration);
+        const nextValue = Math.round(
+          startValue + (safeTarget - startValue) * progress
+        );
+        node.textContent = String(nextValue);
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          node.textContent = String(Math.round(safeTarget));
+          node.dataset.countCurrent = String(Math.round(safeTarget));
+        }
+      };
+
+      requestAnimationFrame(step);
+    });
+  }
+
+  function initProgressBars() {
+    document.querySelectorAll("[data-progress-fill]").forEach((node) => {
+      const nextValue = Math.max(
+        0,
+        Math.min(100, Number(node.dataset.progressValue ?? "0"))
+      );
+      const track = node.parentElement;
+
+      if (track) {
+        track.setAttribute("aria-valuenow", String(Math.round(nextValue)));
+      }
+
+      if (prefersReducedMotion) {
+        node.style.width = `${nextValue}%`;
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        node.style.width = `${nextValue}%`;
+      });
+    });
+  }
+
+  function renderEmptyState(message) {
+    return `<div class="dashboard-empty-state">${escapeHtml(message)}</div>`;
+  }
+
+  function renderTodayList(items, options) {
+    const { emptyMessage, getTitle, getMeta, getEyebrow } = options;
+
+    if (!items.length) {
+      return renderEmptyState(emptyMessage);
+    }
+
+    return `
+      <ul class="today-list">
+        ${items
+          .map(
+            (item) => `
+              <li class="today-list__item">
+                <p class="today-list__eyebrow">${escapeHtml(getEyebrow(item))}</p>
+                <p class="today-list__title">${escapeHtml(getTitle(item))}</p>
+                <p class="today-list__meta">${escapeHtml(getMeta(item))}</p>
+              </li>
+            `
+          )
+          .join("")}
+      </ul>
+    `;
+  }
+
+  function getStatusCounts() {
+    const todayItems = calculateTodayItems();
+    const openTasks = appState.tasks.filter((task) => !isTaskClosed(task)).length;
+    const dueConversations =
+      todayItems.peoplePulse.length + todayItems.feedbackFollowUps.length;
     const openIssues = appState.issues.filter(
       (issue) => issue.status !== "resolved" && issue.status !== "closed"
     ).length;
-    const trainingRisk = appState.trainingItems.filter(
-      (item) => item.status === "at_risk" || item.status === "blocked"
-    ).length;
-    const totalSignals =
-      openTasks + dueConversations + kpiExceptions + openIssues + trainingRisk;
-    const healthScore = Math.max(61, 96 - totalSignals * 4);
 
     return {
       dueConversations,
-      kpiExceptions,
+      kpiExceptions: todayItems.kpiExceptions.length,
       openIssues,
-      trainingRisk,
+      trainingRisk: todayItems.trainingRisks.length,
       openTasks,
-      healthScore,
+      healthScore: todayItems.health.score,
     };
+  }
+
+  function renderTodayDashboard() {
+    if (!appState) {
+      return;
+    }
+
+    const todayItems = calculateTodayItems();
+    const latestHandover = appState.handovers
+      .slice()
+      .sort((left, right) => right.shiftDate.localeCompare(left.shiftDate))[0];
+
+    if (todayFocusTitleNode) {
+      todayFocusTitleNode.textContent = todayItems.focus
+        ? todayItems.focus.title
+        : "The dashboard is calm and ready.";
+    }
+
+    if (todayFocusCopyNode) {
+      todayFocusCopyNode.textContent = todayItems.focus
+        ? "Start here first, then move through the rest of the operating rhythm with visible follow-through."
+        : "No urgent items are currently blocking the day. Use the quick actions to review meetings, tasks and KPIs.";
+    }
+
+    if (healthScoreLabelNode) {
+      healthScoreLabelNode.textContent = `${todayItems.health.label} ${todayItems.health.score}`;
+    }
+
+    if (healthScoreValueNode) {
+      healthScoreValueNode.dataset.targetCount = String(todayItems.health.score);
+    }
+
+    if (progressFillNode) {
+      progressFillNode.dataset.progressValue = String(todayItems.health.progress);
+    }
+
+    if (topThreeStatusNode) {
+      topThreeStatusNode.textContent =
+        todayItems.topThree.length > 0 ? "In focus" : "Clear";
+    }
+
+    if (topThreeListNode) {
+      topThreeListNode.innerHTML = todayItems.topThree.length
+        ? todayItems.topThree
+            .map(
+              (item) =>
+                `<li><strong>${escapeHtml(item.title)}</strong><br>${escapeHtml(
+                  item.meta
+                )}</li>`
+            )
+            .join("")
+        : "<li>The day is clear. Use this space to set your next three priorities.</li>";
+    }
+
+    if (peoplePulseCountNode) {
+      peoplePulseCountNode.dataset.targetCount = String(todayItems.peoplePulse.length);
+    }
+
+    if (peoplePulseMetaNode) {
+      peoplePulseMetaNode.textContent =
+        todayItems.peoplePulse.length > 0
+          ? `${todayItems.peoplePulse.length} people need leader attention today`
+          : "No people risks are currently visible";
+    }
+
+    if (kpiExceptionsCountNode) {
+      kpiExceptionsCountNode.dataset.targetCount = String(
+        todayItems.kpiExceptions.length
+      );
+    }
+
+    if (kpiExceptionsMetaNode) {
+      kpiExceptionsMetaNode.textContent =
+        todayItems.kpiExceptions.length > 0
+          ? "Red and amber indicators surfaced from app state"
+          : "All KPIs are currently stable";
+    }
+
+    if (criticalAlertsCountNode) {
+      criticalAlertsCountNode.dataset.targetCount = String(
+        todayItems.criticalAlerts.length
+      );
+    }
+
+    if (criticalAlertsMetaNode) {
+      criticalAlertsMetaNode.textContent =
+        todayItems.criticalAlerts[0] || "No critical alerts are active right now";
+    }
+
+    if (meetingsTodayCountNode) {
+      meetingsTodayCountNode.dataset.targetCount = String(
+        todayItems.meetingsToday.length
+      );
+    }
+
+    if (meetingsTodayMetaNode) {
+      meetingsTodayMetaNode.textContent =
+        todayItems.meetingsToday.length > 0
+          ? `${todayItems.meetingsToday[0].title} is on today's rhythm`
+          : "No meetings are scheduled for today";
+    }
+
+    if (overdueCountNode) {
+      overdueCountNode.textContent = String(todayItems.overdueTasks.length);
+    }
+
+    if (dueTodayCountNode) {
+      dueTodayCountNode.textContent = String(todayItems.tasksDueToday.length);
+    }
+
+    if (kpiCardCountNode) {
+      kpiCardCountNode.textContent = String(todayItems.kpiExceptions.length);
+    }
+
+    if (peopleRiskCountNode) {
+      peopleRiskCountNode.textContent = String(todayItems.peoplePulse.length);
+    }
+
+    if (praiseGapBadgeNode) {
+      praiseGapBadgeNode.textContent = todayItems.praiseGap.hasGap
+        ? "Praise gap"
+        : "On rhythm";
+    }
+
+    if (feedbackFollowupCountNode) {
+      feedbackFollowupCountNode.textContent = String(
+        todayItems.feedbackFollowUps.length
+      );
+    }
+
+    if (rocksAtRiskCountNode) {
+      rocksAtRiskCountNode.textContent = String(todayItems.rocksAtRisk.length);
+    }
+
+    if (sopReviewsCountNode) {
+      sopReviewsCountNode.textContent = String(todayItems.sopReviewsDue.length);
+    }
+
+    if (trainingRisksCountNode) {
+      trainingRisksCountNode.textContent = String(todayItems.trainingRisks.length);
+    }
+
+    if (overdueTasksListNode) {
+      overdueTasksListNode.innerHTML = renderTodayList(todayItems.overdueTasks, {
+        emptyMessage: "No overdue tasks are currently visible.",
+        getEyebrow: (task) => `${task.priority || "normal"} priority`,
+        getTitle: (task) => task.title,
+        getMeta: (task) =>
+          `Owner: ${getPersonNameById(task.ownerId)} • Due ${formatDisplayDate(
+            task.dueDate
+          )}`,
+      });
+    }
+
+    if (dueTodayListNode) {
+      dueTodayListNode.innerHTML = renderTodayList(todayItems.tasksDueToday, {
+        emptyMessage: "No tasks are due today.",
+        getEyebrow: (task) => task.status || "open",
+        getTitle: (task) => task.title,
+        getMeta: (task) =>
+          `Owner: ${getPersonNameById(task.ownerId)} • Due ${formatDisplayDate(
+            task.dueDate
+          )}`,
+      });
+    }
+
+    if (kpiExceptionsListNode) {
+      kpiExceptionsListNode.innerHTML = renderTodayList(todayItems.kpiExceptions, {
+        emptyMessage: "No KPI exceptions are currently active.",
+        getEyebrow: (kpi) => `${kpi.status} KPI`,
+        getTitle: (kpi) => kpi.name,
+        getMeta: (kpi) =>
+          `Target ${kpi.target} • Actual ${kpi.actual} • Owner ${getPersonNameById(
+            kpi.ownerId
+          )}`,
+      });
+    }
+
+    if (peoplePulseListNode) {
+      peoplePulseListNode.innerHTML = renderTodayList(todayItems.peoplePulse, {
+        emptyMessage: "No people risks or follow-ups are visible right now.",
+        getEyebrow: (member) => member.status || "active",
+        getTitle: (member) => member.name,
+        getMeta: (member) =>
+          member.oneOnOneDue
+            ? "One-on-one due today or soon"
+            : "Flagged by risk status or leadership development signal",
+      });
+    }
+
+    if (praiseGapContentNode) {
+      praiseGapContentNode.innerHTML = todayItems.praiseGap.hasGap
+        ? renderEmptyState(
+            `${todayItems.praiseGap.summary} Capture a praise moment today to keep recognition visible.`
+          )
+        : renderEmptyState(
+            `${todayItems.praiseGap.summary} Recognition rhythm is staying warm.`
+          );
+    }
+
+    if (feedbackFollowupsListNode) {
+      feedbackFollowupsListNode.innerHTML = renderTodayList(
+        todayItems.feedbackFollowUps,
+        {
+          emptyMessage: "No feedback follow-ups are due today or overdue.",
+          getEyebrow: (item) => "Follow-up due",
+          getTitle: (item) => getPersonNameById(item.memberId),
+          getMeta: (item) =>
+            `${item.note} • Due ${formatDisplayDate(item.followUpDue)}`,
+        }
+      );
+    }
+
+    if (rocksAtRiskListNode) {
+      rocksAtRiskListNode.innerHTML = renderTodayList(todayItems.rocksAtRisk, {
+        emptyMessage: "No rocks are currently marked at risk.",
+        getEyebrow: (rock) => rock.status.replaceAll("_", " "),
+        getTitle: (rock) => rock.title,
+        getMeta: (rock) =>
+          `${rock.quarter} • Owner ${getPersonNameById(rock.ownerId)}`,
+      });
+    }
+
+    if (sopReviewsListNode) {
+      sopReviewsListNode.innerHTML = renderTodayList(todayItems.sopReviewsDue, {
+        emptyMessage: "No SOP reviews are due today.",
+        getEyebrow: (sop) => "Review due",
+        getTitle: (sop) => sop.title,
+        getMeta: (sop) =>
+          `Review ${formatDisplayDate(sop.reviewDate)} • Owner ${getPersonNameById(
+            sop.ownerId
+          )}`,
+      });
+    }
+
+    if (trainingRisksListNode) {
+      trainingRisksListNode.innerHTML = renderTodayList(todayItems.trainingRisks, {
+        emptyMessage: "No training risks are currently active.",
+        getEyebrow: (item) => item.status.replaceAll("_", " "),
+        getTitle: (item) => item.title,
+        getMeta: (item) =>
+          `Owner ${getPersonNameById(item.ownerId)} • Due ${formatDisplayDate(
+            item.dueDate
+          )}`,
+      });
+    }
+
+    if (handoverSummaryNode) {
+      handoverSummaryNode.textContent = latestHandover
+        ? `${latestHandover.summary} Last shift date ${formatDisplayDate(
+            latestHandover.shiftDate
+          )}.`
+        : "No handover has been logged yet. Use Daily Close to prepare the next shift clearly.";
+    }
+
+    initCountUp();
+    initProgressBars();
   }
 
   function renderStateSummary() {
@@ -837,29 +1615,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const counts = getStatusCounts();
+    renderTodayDashboard();
 
     if (schemaVersionNode) {
       schemaVersionNode.textContent = String(appState.schemaVersion);
-    }
-
-    if (healthScoreNode) {
-      healthScoreNode.textContent = `Health ${counts.healthScore}`;
-    }
-
-    if (peopleDueNode) {
-      peopleDueNode.textContent = String(counts.dueConversations);
-    }
-
-    if (kpiExceptionsNode) {
-      kpiExceptionsNode.textContent = String(counts.kpiExceptions);
-    }
-
-    if (openIssuesNode) {
-      openIssuesNode.textContent = String(counts.openIssues);
-    }
-
-    if (trainingRiskNode) {
-      trainingRiskNode.textContent = String(counts.trainingRisk);
     }
 
     if (countTeamMembersNode) {
@@ -895,6 +1654,18 @@ document.addEventListener("DOMContentLoaded", () => {
     get appState() {
       return cloneData(appState);
     },
+    calculateTodayItems,
+    calculateLeadershipHealthScore,
+    getOverdueTasks,
+    getTasksDueToday,
+    getKpiExceptions,
+    getFeedbackFollowUps,
+    getSopReviewsDue,
+    getTrainingRisks,
+    getRocksAtRisk,
+    getPraiseGap,
+    initCountUp,
+    initProgressBars,
     loadState,
     saveState,
     normaliseState,
