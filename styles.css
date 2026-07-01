@@ -1325,6 +1325,29 @@ p {
   min-height: 0.55rem;
 }
 
+.issue-escalation-grid {
+  margin-bottom: var(--space-4);
+}
+
+.issue-card-grid {
+  grid-template-columns: 1fr;
+}
+
+.management-checkbox {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-soft);
+  font-size: var(--font-size-sm);
+}
+
+.management-checkbox input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-accent);
+}
+
 .kpi-war-room-grid .dashboard-empty-state,
 .management-card-grid .dashboard-empty-state {
   grid-column: 1 / -1;

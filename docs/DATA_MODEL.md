@@ -154,9 +154,26 @@ Structured issue capture and escalation flow.
 Suggested fields:
 - `id`
 - `title`
-- `severity`
+- `priority`
 - `status`
 - `ownerId`
+- `workflowStage`
+- `impact`
+- `rootCause`
+- `decision`
+- `actionRequired`
+- `linkedTaskIds[]`
+- `linkedKpiIds[]`
+- `linkedSopIds[]`
+- `linkedImprovementIds[]`
+- `sopUpdateRequired`
+- `why1`
+- `why2`
+- `why3`
+- `why4`
+- `why5`
+- `rootCauseConclusion`
+- `countermeasure`
 - `source`
 
 ### `praise`
@@ -253,6 +270,10 @@ Suggested fields:
 - `ownerId`
 - `stage`
 - `impact`
+- `linkedIssueIds[]`
+- `sopUpdateRequired`
+- `notes`
+- `sourceIssueId`
 
 ### `handovers`
 

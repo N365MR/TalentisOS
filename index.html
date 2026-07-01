@@ -14,8 +14,8 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f0f0f'/%3E%3Cpath d='M18 20h28v6H35v18h-6V26H18z' fill='%23d4af37'/%3E%3C/svg%3E"
     />
     <link rel="manifest" href="./manifest.json" />
-    <link rel="stylesheet" href="./styles.css?v=phase7-kpis-rocks-v1" />
-    <script src="./app.js?v=phase7-kpis-rocks-v1" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=phase8-issues-ids-v1" />
+    <script src="./app.js?v=phase8-issues-ids-v1" defer></script>
   </head>
   <body>
     <div id="top"></div>
@@ -1525,26 +1525,205 @@
             <p class="eyebrow">Operational War Room</p>
             <h2 class="section-heading">Issues</h2>
             <p class="section-copy">
-              Placeholder view for issue intake, prioritisation, escalation and
-              action ownership.
+              Capture, prioritise, solve and convert issues into visible action,
+              improvements and SOP updates.
             </p>
           </div>
 
           <div class="card-grid">
             <article class="card reveal reveal-up">
-              <p class="card__label">Intake</p>
-              <h3 class="card__title">Capture issues early</h3>
-              <p class="card__body">
-                Give leaders one place to park the problems that need attention.
+              <p class="card__label">Problems focus</p>
+              <h3 class="card__title" data-issue-summary-open>0 open issues</h3>
+              <p class="card__body" data-issue-summary-open-copy">
+                Visible issues waiting for IDS follow-through.
               </p>
             </article>
             <article class="card reveal reveal-up">
               <p class="card__label">Escalation</p>
-              <h3 class="card__title">War room placeholder</h3>
-              <p class="card__body">
-                Keep blockers visible until an owner, date and next step exist.
+              <h3 class="card__title" data-issue-summary-escalation>0 escalations</h3>
+              <p class="card__body" data-issue-summary-escalation-copy">
+                High-priority issues and SOP update flags rise to the war room.
               </p>
             </article>
+            <article class="card reveal reveal-up">
+              <p class="card__label">Continuous improvement</p>
+              <h3 class="card__title" data-issue-summary-improvements>0 improvements</h3>
+              <p class="card__body" data-issue-summary-improvements-copy">
+                Issue-to-improvement conversions stay visible for system change.
+              </p>
+            </article>
+          </div>
+
+          <div class="management-layout management-layout--issues">
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Issue list</p>
+                    <h3 class="card__title">IDS problem queue</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button class="button button--secondary" type="button" data-issue-action="new">
+                      Add issue
+                    </button>
+                  </div>
+                </div>
+                <div class="management-card-grid issue-escalation-grid" data-issue-escalation-list></div>
+                <div class="management-card-grid issue-card-grid" data-issue-card-list></div>
+              </div>
+            </div>
+
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Issue detail</p>
+                    <h3 class="card__title" data-issue-profile-name>Select an issue</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button class="button button--ghost" type="button" data-issue-action="edit">
+                      Edit issue
+                    </button>
+                    <button class="button button--ghost" type="button" data-issue-action="delete">
+                      Delete issue
+                    </button>
+                  </div>
+                </div>
+                <div data-issue-profile></div>
+              </div>
+
+              <form class="card management-panel management-form" data-issue-form novalidate>
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Issue editor</p>
+                    <h3 class="card__title" data-issue-form-title>Add issue</h3>
+                  </div>
+                  <button class="button button--ghost" type="button" data-issue-action="cancel">
+                    Cancel
+                  </button>
+                </div>
+                <input type="hidden" name="issueId" />
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Issue title</span>
+                    <input name="title" type="text" required />
+                  </label>
+                  <label class="management-field">
+                    <span>Priority</span>
+                    <select name="priority">
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Owner</span>
+                    <select name="ownerId" data-issue-owner-select required></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Impact</span>
+                    <input name="impact" type="text" placeholder="Customer, quality, delivery" />
+                  </label>
+                  <label class="management-field">
+                    <span>Status</span>
+                    <select name="status">
+                      <option value="open">Open</option>
+                      <option value="in_progress">In progress</option>
+                      <option value="blocked">Blocked</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>IDS workflow</span>
+                    <select name="workflowStage">
+                      <option value="capture">1. Capture</option>
+                      <option value="prioritise">2. Prioritise</option>
+                      <option value="discuss">3. Discuss</option>
+                      <option value="solve">4. Solve</option>
+                      <option value="convert_task">5. Convert to task</option>
+                      <option value="convert_improvement">6. Convert to improvement</option>
+                      <option value="flag_sop_update">7. Flag SOP update required</option>
+                      <option value="close">8. Close</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="management-field">
+                  <span>Root cause</span>
+                  <textarea name="rootCause" rows="3"></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Decision</span>
+                  <textarea name="decision" rows="3"></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Action required</span>
+                  <textarea name="actionRequired" rows="3"></textarea>
+                </label>
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Linked tasks</span>
+                    <textarea name="linkedTaskIds" rows="3" placeholder="One task title or id per line"></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked KPIs</span>
+                    <textarea name="linkedKpiIds" rows="3" placeholder="One KPI title or id per line"></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked SOPs</span>
+                    <textarea name="linkedSopIds" rows="3" placeholder="One SOP title or id per line"></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked improvements</span>
+                    <textarea name="linkedImprovementIds" rows="3" placeholder="One improvement title or id per line"></textarea>
+                  </label>
+                </div>
+                <label class="management-checkbox">
+                  <input name="sopUpdateRequired" type="checkbox" />
+                  <span>SOP update required</span>
+                </label>
+
+                <div class="management-profile__section">
+                  <h4 class="management-profile__heading">5 Whys helper</h4>
+                  <div class="management-form__grid">
+                    <label class="management-field">
+                      <span>Why 1</span>
+                      <textarea name="why1" rows="2"></textarea>
+                    </label>
+                    <label class="management-field">
+                      <span>Why 2</span>
+                      <textarea name="why2" rows="2"></textarea>
+                    </label>
+                    <label class="management-field">
+                      <span>Why 3</span>
+                      <textarea name="why3" rows="2"></textarea>
+                    </label>
+                    <label class="management-field">
+                      <span>Why 4</span>
+                      <textarea name="why4" rows="2"></textarea>
+                    </label>
+                    <label class="management-field">
+                      <span>Why 5</span>
+                      <textarea name="why5" rows="2"></textarea>
+                    </label>
+                    <label class="management-field">
+                      <span>Root cause conclusion</span>
+                      <textarea name="rootCauseConclusion" rows="2"></textarea>
+                    </label>
+                  </div>
+                  <label class="management-field">
+                    <span>Countermeasure</span>
+                    <textarea name="countermeasure" rows="3"></textarea>
+                  </label>
+                </div>
+
+                <p class="form-error" data-issue-form-error hidden></p>
+                <div class="management-actions">
+                  <button class="button button--primary" type="submit">Save issue</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>
@@ -1690,21 +1869,21 @@
                 <div class="value-module__grid">
                   <article class="value-module__card">
                     <p class="value-module__label">Ideas</p>
-                    <p class="value-module__value">8</p>
-                    <p class="value-module__meta">New process improvements</p>
+                    <p class="value-module__value" data-improvement-ideas-count>0</p>
+                    <p class="value-module__meta" data-improvement-ideas-meta>
+                      New process improvements
+                    </p>
                   </article>
                   <article class="value-module__card">
                     <p class="value-module__label">In progress</p>
-                    <p class="value-module__value">3</p>
-                    <p class="value-module__meta">Owned and being tested</p>
+                    <p class="value-module__value" data-improvement-progress-count>0</p>
+                    <p class="value-module__meta" data-improvement-progress-meta>
+                      Owned and being tested
+                    </p>
                   </article>
                   <article class="value-module__card value-module__card--wide">
                     <p class="value-module__label">Workflow</p>
-                    <ul class="dashboard-list">
-                      <li>Capture friction quickly</li>
-                      <li>Turn ideas into experiments</li>
-                      <li>Review outcomes and standardise wins</li>
-                    </ul>
+                    <div data-improvement-workflow-list></div>
                   </article>
                 </div>
               </section>

@@ -213,6 +213,47 @@ document.addEventListener("DOMContentLoaded", () => {
   const rockFormTitleNode = document.querySelector("[data-rock-form-title]");
   const rockFormErrorNode = document.querySelector("[data-rock-form-error]");
   const rockOwnerSelectNode = document.querySelector("[data-rock-owner-select]");
+  const issueSummaryOpenNode = document.querySelector("[data-issue-summary-open]");
+  const issueSummaryOpenCopyNode = document.querySelector(
+    "[data-issue-summary-open-copy]"
+  );
+  const issueSummaryEscalationNode = document.querySelector(
+    "[data-issue-summary-escalation]"
+  );
+  const issueSummaryEscalationCopyNode = document.querySelector(
+    "[data-issue-summary-escalation-copy]"
+  );
+  const issueSummaryImprovementsNode = document.querySelector(
+    "[data-issue-summary-improvements]"
+  );
+  const issueSummaryImprovementsCopyNode = document.querySelector(
+    "[data-issue-summary-improvements-copy]"
+  );
+  const issueEscalationListNode = document.querySelector(
+    "[data-issue-escalation-list]"
+  );
+  const issueCardListNode = document.querySelector("[data-issue-card-list]");
+  const issueProfileNameNode = document.querySelector("[data-issue-profile-name]");
+  const issueProfileNode = document.querySelector("[data-issue-profile]");
+  const issueFormNode = document.querySelector("[data-issue-form]");
+  const issueFormTitleNode = document.querySelector("[data-issue-form-title]");
+  const issueFormErrorNode = document.querySelector("[data-issue-form-error]");
+  const issueOwnerSelectNode = document.querySelector("[data-issue-owner-select]");
+  const improvementIdeasCountNode = document.querySelector(
+    "[data-improvement-ideas-count]"
+  );
+  const improvementIdeasMetaNode = document.querySelector(
+    "[data-improvement-ideas-meta]"
+  );
+  const improvementProgressCountNode = document.querySelector(
+    "[data-improvement-progress-count]"
+  );
+  const improvementProgressMetaNode = document.querySelector(
+    "[data-improvement-progress-meta]"
+  );
+  const improvementWorkflowListNode = document.querySelector(
+    "[data-improvement-workflow-list]"
+  );
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
@@ -224,6 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedMeetingId = null;
   let selectedKpiId = null;
   let selectedRockId = null;
+  let selectedIssueId = null;
 
   if (yearNode) {
     yearNode.textContent = String(new Date().getFullYear());
@@ -306,6 +348,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const getSopTitleById = (sopId) => {
     const sop = appState.sops.find((item) => item.id === sopId || item.title === sopId);
     return sop ? sop.title : "No linked SOP";
+  };
+
+  const getImprovementTitleById = (improvementId) => {
+    const improvement = appState.improvements.find(
+      (item) => item.id === improvementId || item.title === improvementId
+    );
+    return improvement ? improvement.title : "No linked improvement";
   };
 
   const formatStatusLabel = (value) =>
@@ -580,6 +629,55 @@ document.addEventListener("DOMContentLoaded", () => {
       linkedTaskIds: Array.isArray(rock.linkedTaskIds) ? rock.linkedTaskIds : [],
       linkedIssueIds: Array.isArray(rock.linkedIssueIds) ? rock.linkedIssueIds : [],
       linkedKpiIds: Array.isArray(rock.linkedKpiIds) ? rock.linkedKpiIds : [],
+    };
+  }
+
+  function createDefaultIssue(issue = {}) {
+    return {
+      id: issue.id || generateId("issue"),
+      title: issue.title || "",
+      priority: issue.priority || issue.severity || "medium",
+      ownerId: issue.ownerId || "",
+      impact: issue.impact || issue.source || "",
+      rootCause: issue.rootCause || "",
+      decision: issue.decision || "",
+      actionRequired: issue.actionRequired || "",
+      status: issue.status || "open",
+      workflowStage: issue.workflowStage || "capture",
+      linkedTaskIds: Array.isArray(issue.linkedTaskIds) ? issue.linkedTaskIds : [],
+      linkedKpiIds: Array.isArray(issue.linkedKpiIds) ? issue.linkedKpiIds : [],
+      linkedSopIds: Array.isArray(issue.linkedSopIds) ? issue.linkedSopIds : [],
+      linkedImprovementIds: Array.isArray(issue.linkedImprovementIds)
+        ? issue.linkedImprovementIds
+        : [],
+      sopUpdateRequired: Boolean(issue.sopUpdateRequired),
+      why1: issue.why1 || "",
+      why2: issue.why2 || "",
+      why3: issue.why3 || "",
+      why4: issue.why4 || "",
+      why5: issue.why5 || "",
+      rootCauseConclusion: issue.rootCauseConclusion || "",
+      countermeasure: issue.countermeasure || "",
+      source: issue.source || issue.impact || "",
+      severity: issue.severity || issue.priority || "medium",
+      convertedTaskId: issue.convertedTaskId || "",
+      convertedImprovementId: issue.convertedImprovementId || "",
+    };
+  }
+
+  function createDefaultImprovement(improvement = {}) {
+    return {
+      id: improvement.id || generateId("improvement"),
+      title: improvement.title || "",
+      ownerId: improvement.ownerId || "",
+      stage: improvement.stage || "idea",
+      impact: improvement.impact || "",
+      linkedIssueIds: Array.isArray(improvement.linkedIssueIds)
+        ? improvement.linkedIssueIds
+        : [],
+      sopUpdateRequired: Boolean(improvement.sopUpdateRequired),
+      notes: improvement.notes || "",
+      sourceIssueId: improvement.sourceIssueId || "",
     };
   }
 
@@ -1078,30 +1176,84 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     state.issues = [
-      {
+      createDefaultIssue({
         id: "issue_callback_spike",
         title: "Repeat service callbacks rising in metro zone",
-        severity: "high",
+        priority: "high",
         status: "open",
+        workflowStage: "prioritise",
         ownerId: state.teamMembers[0].id,
+        impact: "Customer confidence and service recovery workload are rising.",
+        rootCause: "Repeat faults are not being closed with the same ownership discipline.",
+        decision: "Escalate repeat callback review into the daily huddle and L10 scorecard.",
+        actionRequired: "Assign named owners to repeat-fault corrective actions.",
+        linkedTaskIds: [state.tasks[3].id],
+        linkedKpiIds: ["kpi_service_callback_rate"],
+        linkedSopIds: ["Morning Huddle SOP"],
+        linkedImprovementIds: [],
+        sopUpdateRequired: false,
+        why1: "Callbacks are repeating on similar jobs.",
+        why2: "Corrective actions are not closed consistently.",
+        why3: "Owners are not visible at the point of follow-up.",
+        why4: "Callback review is happening too late in the day.",
+        why5: "The huddle rhythm is not locking in same-day action ownership.",
+        rootCauseConclusion: "Leadership follow-through and early owner visibility are inconsistent.",
+        countermeasure: "Review callback ownership in the morning huddle before jobs dispatch.",
         source: "KPI review",
-      },
-      {
+        severity: "high",
+      }),
+      createDefaultIssue({
         id: "issue_install_rework",
         title: "Installation rework not closed within 48 hours",
-        severity: "high",
+        priority: "high",
         status: "open",
+        workflowStage: "discuss",
         ownerId: state.teamMembers[1].id,
+        impact: "Delivery flow is slowing and customer confidence is exposed.",
+        rootCause: "Rework tasks are being carried over without clear next owner.",
+        decision: "Escalate rework carryovers in the huddle until owners and dates are visible.",
+        actionRequired: "Create a same-day close path for install defect actions.",
+        linkedTaskIds: [state.tasks[0].id],
+        linkedKpiIds: ["kpi_first_time_fix"],
+        linkedSopIds: [],
+        linkedImprovementIds: [],
+        sopUpdateRequired: true,
+        why1: "Rework defects remain open longer than expected.",
+        why2: "Ownership changes between planning and field close-out.",
+        why3: "Backlog review does not force a final owner check.",
+        why4: "Install readiness and defect closure are reviewed separately.",
+        why5: "The current workflow lacks a standard close loop for defect carryovers.",
+        rootCauseConclusion: "The process lacks one visible owner across the defect close loop.",
+        countermeasure: "Standardise the defect carryover review and owner confirmation step.",
         source: "Morning huddle",
-      },
-      {
+        severity: "high",
+      }),
+      createDefaultIssue({
         id: "issue_induction_gap",
         title: "New starter induction checklist incomplete",
-        severity: "medium",
+        priority: "medium",
         status: "in_progress",
+        workflowStage: "solve",
         ownerId: state.teamMembers[2].id,
+        impact: "Training readiness and role confidence are lagging.",
+        rootCause: "Induction reviews are not being triggered consistently at day 14 and day 30.",
+        decision: "Move induction review checkpoints into the weekly training review.",
+        actionRequired: "Tighten induction checkpoints and update the checklist workflow.",
+        linkedTaskIds: [state.tasks[2].id],
+        linkedKpiIds: ["kpi_training_completion"],
+        linkedSopIds: ["Induction Checklist SOP"],
+        linkedImprovementIds: [],
+        sopUpdateRequired: true,
+        why1: "Checklist items are incomplete for new starters.",
+        why2: "Review moments are being missed.",
+        why3: "The review cadence is not consistently owned.",
+        why4: "Training visibility sits in separate places.",
+        why5: "The induction process is not standardised into one operating rhythm.",
+        rootCauseConclusion: "The induction rhythm is fragmented and not visible enough for leaders.",
+        countermeasure: "Embed induction checkpoints into one weekly training review flow.",
         source: "Training review",
-      },
+        severity: "medium",
+      }),
     ];
 
     state.praise = [
@@ -1234,21 +1386,36 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     state.improvements = [
-      {
+      createDefaultImprovement({
         id: generateId("improvement"),
         title: "Reduce repeat callbacks by flagging install defects earlier",
         ownerId: state.teamMembers[1].id,
         stage: "experiment",
         impact: "service stability",
-      },
-      {
+        linkedIssueIds: ["issue_install_rework"],
+        sopUpdateRequired: true,
+        notes: "Using install defect visibility to reduce repeat callbacks upstream.",
+      }),
+      createDefaultImprovement({
         id: generateId("improvement"),
         title: "Standardise end-of-day leadership handover template",
         ownerId: state.teamMembers[3].id,
         stage: "implemented",
         impact: "handover quality",
-      },
+        linkedIssueIds: [],
+        sopUpdateRequired: false,
+        notes: "Template now drives more consistent close handover quality.",
+      }),
     ];
+
+    state.issues = state.issues.map((issue) =>
+      issue.id === "issue_install_rework"
+        ? createDefaultIssue({
+            ...issue,
+            linkedImprovementIds: [state.improvements[0].id],
+          })
+        : issue
+    );
 
     state.handovers = [
       {
@@ -1329,6 +1496,10 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     normalised.kpis = normalised.kpis.map((kpi) => createDefaultKpi(kpi));
     normalised.rocks = normalised.rocks.map((rock) => createDefaultRock(rock));
+    normalised.issues = normalised.issues.map((issue) => createDefaultIssue(issue));
+    normalised.improvements = normalised.improvements.map((improvement) =>
+      createDefaultImprovement(improvement)
+    );
     const seededMeetings = seedSampleData().meetings.map((meeting) =>
       createDefaultMeeting(meeting)
     );
@@ -2701,6 +2872,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function ensureIssueSelection() {
+    if (
+      !selectedIssueId ||
+      !appState.issues.some((item) => item.id === selectedIssueId)
+    ) {
+      selectedIssueId = appState.issues[0]?.id || null;
+    }
+  }
+
   function populateKpiOwnerOptions(selectedOwnerId = "") {
     if (!kpiOwnerSelectNode) {
       return;
@@ -2741,6 +2921,32 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     rockOwnerSelectNode.innerHTML = `<option value="">Select owner</option>${options
+      .map(
+        (item) => `
+          <option value="${escapeHtml(item.value)}" ${
+            item.value === selectedOwnerId ? "selected" : ""
+          }>
+            ${escapeHtml(item.label)}
+          </option>
+        `
+      )
+      .join("")}`;
+  }
+
+  function populateIssueOwnerOptions(selectedOwnerId = "") {
+    if (!issueOwnerSelectNode) {
+      return;
+    }
+
+    const options = [
+      { value: appState.managerProfile.id, label: appState.managerProfile.name || "Manager" },
+      ...appState.teamMembers.map((person) => ({
+        value: person.id,
+        label: person.name,
+      })),
+    ];
+
+    issueOwnerSelectNode.innerHTML = `<option value="">Select owner</option>${options
       .map(
         (item) => `
           <option value="${escapeHtml(item.value)}" ${
@@ -3409,6 +3615,580 @@ document.addEventListener("DOMContentLoaded", () => {
     if (rockProfileNode) {
       rockProfileNode.innerHTML = renderRockProfile(selectedRock);
     }
+  }
+
+  function openIssueForm(mode = "new") {
+    if (!issueFormNode) {
+      return;
+    }
+
+    const selectedIssue =
+      mode === "edit"
+        ? appState.issues.find((issue) => issue.id === selectedIssueId)
+        : null;
+
+    populateIssueOwnerOptions(selectedIssue?.ownerId || "");
+    issueFormNode.classList.add("is-open");
+    issueFormTitleNode.textContent = selectedIssue ? "Edit issue" : "Add issue";
+    issueFormNode.elements.issueId.value = selectedIssue?.id || "";
+    issueFormNode.elements.title.value = selectedIssue?.title || "";
+    issueFormNode.elements.priority.value = selectedIssue?.priority || "medium";
+    issueFormNode.elements.ownerId.value = selectedIssue?.ownerId || "";
+    issueFormNode.elements.impact.value = selectedIssue?.impact || "";
+    issueFormNode.elements.rootCause.value = selectedIssue?.rootCause || "";
+    issueFormNode.elements.decision.value = selectedIssue?.decision || "";
+    issueFormNode.elements.actionRequired.value = selectedIssue?.actionRequired || "";
+    issueFormNode.elements.status.value = selectedIssue?.status || "open";
+    issueFormNode.elements.workflowStage.value =
+      selectedIssue?.workflowStage || "capture";
+    issueFormNode.elements.linkedTaskIds.value = formatListText(
+      selectedIssue?.linkedTaskIds
+    );
+    issueFormNode.elements.linkedKpiIds.value = formatListText(
+      selectedIssue?.linkedKpiIds
+    );
+    issueFormNode.elements.linkedSopIds.value = formatListText(
+      selectedIssue?.linkedSopIds
+    );
+    issueFormNode.elements.linkedImprovementIds.value = formatListText(
+      selectedIssue?.linkedImprovementIds
+    );
+    issueFormNode.elements.sopUpdateRequired.checked = Boolean(
+      selectedIssue?.sopUpdateRequired
+    );
+    issueFormNode.elements.why1.value = selectedIssue?.why1 || "";
+    issueFormNode.elements.why2.value = selectedIssue?.why2 || "";
+    issueFormNode.elements.why3.value = selectedIssue?.why3 || "";
+    issueFormNode.elements.why4.value = selectedIssue?.why4 || "";
+    issueFormNode.elements.why5.value = selectedIssue?.why5 || "";
+    issueFormNode.elements.rootCauseConclusion.value =
+      selectedIssue?.rootCauseConclusion || "";
+    issueFormNode.elements.countermeasure.value =
+      selectedIssue?.countermeasure || "";
+    if (issueFormErrorNode) {
+      issueFormErrorNode.hidden = true;
+      issueFormErrorNode.textContent = "";
+    }
+  }
+
+  function closeIssueForm() {
+    issueFormNode?.classList.remove("is-open");
+    if (issueFormNode) {
+      issueFormNode.reset();
+      issueFormNode.elements.issueId.value = "";
+      issueFormNode.elements.sopUpdateRequired.checked = false;
+    }
+    if (issueFormErrorNode) {
+      issueFormErrorNode.hidden = true;
+      issueFormErrorNode.textContent = "";
+    }
+  }
+
+  function validateIssueForm(form) {
+    const errors = [];
+
+    if (!form.elements.title.value.trim()) {
+      errors.push("Issue title is required.");
+    }
+
+    if (!form.elements.ownerId.value) {
+      errors.push("Issue owner is required.");
+    }
+
+    return errors;
+  }
+
+  function saveIssueFromForm(form) {
+    const errors = validateIssueForm(form);
+
+    if (errors.length > 0) {
+      if (issueFormErrorNode) {
+        issueFormErrorNode.textContent = errors.join(" ");
+        issueFormErrorNode.hidden = false;
+      }
+      return;
+    }
+
+    const issueId = form.elements.issueId.value || generateId("issue");
+    const nextIssue = createDefaultIssue({
+      id: issueId,
+      title: form.elements.title.value.trim(),
+      priority: form.elements.priority.value,
+      ownerId: form.elements.ownerId.value,
+      impact: form.elements.impact.value.trim(),
+      rootCause: form.elements.rootCause.value.trim(),
+      decision: form.elements.decision.value.trim(),
+      actionRequired: form.elements.actionRequired.value.trim(),
+      status: form.elements.status.value,
+      workflowStage: form.elements.workflowStage.value,
+      linkedTaskIds: resolveReferenceIds(form.elements.linkedTaskIds.value, appState.tasks, [
+        "id",
+        "title",
+      ]),
+      linkedKpiIds: resolveReferenceIds(form.elements.linkedKpiIds.value, appState.kpis, [
+        "id",
+        "name",
+      ]),
+      linkedSopIds: resolveReferenceIds(form.elements.linkedSopIds.value, appState.sops, [
+        "id",
+        "title",
+      ]),
+      linkedImprovementIds: resolveReferenceIds(
+        form.elements.linkedImprovementIds.value,
+        appState.improvements,
+        ["id", "title"]
+      ),
+      sopUpdateRequired: form.elements.sopUpdateRequired.checked,
+      why1: form.elements.why1.value.trim(),
+      why2: form.elements.why2.value.trim(),
+      why3: form.elements.why3.value.trim(),
+      why4: form.elements.why4.value.trim(),
+      why5: form.elements.why5.value.trim(),
+      rootCauseConclusion: form.elements.rootCauseConclusion.value.trim(),
+      countermeasure: form.elements.countermeasure.value.trim(),
+      source: form.elements.impact.value.trim(),
+      severity: form.elements.priority.value,
+    });
+
+    const existingIssue = appState.issues.find((issue) => issue.id === issueId);
+    if (existingIssue) {
+      nextIssue.convertedTaskId = existingIssue.convertedTaskId || "";
+      nextIssue.convertedImprovementId = existingIssue.convertedImprovementId || "";
+    }
+
+    const existingIndex = appState.issues.findIndex((issue) => issue.id === issueId);
+    if (existingIndex >= 0) {
+      appState.issues.splice(existingIndex, 1, nextIssue);
+    } else {
+      appState.issues.push(nextIssue);
+    }
+
+    selectedIssueId = nextIssue.id;
+    saveState(appState);
+    closeIssueForm();
+    showToast("Issue saved", `${nextIssue.title} was saved locally.`);
+  }
+
+  function deleteSelectedIssue() {
+    const issue = appState.issues.find((item) => item.id === selectedIssueId);
+
+    if (!issue) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(`Delete the issue "${issue.title}" from TalentisOS?`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    appState.tasks = appState.tasks.map((task) => ({
+      ...task,
+      linkedIssueId: task.linkedIssueId === issue.id ? "" : task.linkedIssueId,
+    }));
+    appState.kpis = appState.kpis.map((kpi) => ({
+      ...kpi,
+      linkedIssueIds: kpi.linkedIssueIds.filter((id) => id !== issue.id && id !== issue.title),
+    }));
+    appState.rocks = appState.rocks.map((rock) => ({
+      ...rock,
+      linkedIssueIds: rock.linkedIssueIds.filter((id) => id !== issue.id && id !== issue.title),
+    }));
+    appState.improvements = appState.improvements.map((improvement) => ({
+      ...improvement,
+      linkedIssueIds: improvement.linkedIssueIds.filter(
+        (id) => id !== issue.id && id !== issue.title
+      ),
+      sourceIssueId:
+        improvement.sourceIssueId === issue.id ? "" : improvement.sourceIssueId,
+    }));
+    appState.issues = appState.issues.filter((item) => item.id !== issue.id);
+    selectedIssueId = null;
+    saveState(appState);
+    closeIssueForm();
+    showToast("Issue deleted", `${issue.title} was removed locally.`);
+  }
+
+  function convertIssueToTask(issueId) {
+    const issue = appState.issues.find((item) => item.id === issueId);
+
+    if (!issue) {
+      return;
+    }
+
+    if (issue.convertedTaskId) {
+      showToast("Already converted", "This issue already has a linked task.");
+      return;
+    }
+
+    const nextTask = createDefaultTask({
+      title: issue.actionRequired || `Close issue: ${issue.title}`,
+      ownerId: issue.ownerId,
+      dueDate: getTodayKey(),
+      priority: issue.priority === "critical" ? "high" : issue.priority,
+      status: "open",
+      category: "operations",
+      linkedIssueId: issue.id,
+      linkedKpiId: issue.linkedKpiIds[0] || "",
+      linkedSopId: issue.linkedSopIds[0] || "",
+      completionNotes: `Converted from issue ${issue.title}.`,
+    });
+
+    appState.tasks.push(nextTask);
+    issue.linkedTaskIds = Array.from(new Set([...issue.linkedTaskIds, nextTask.id]));
+    issue.convertedTaskId = nextTask.id;
+    issue.workflowStage = "convert_task";
+    selectedTaskId = nextTask.id;
+    saveState(appState);
+    showToast("Issue converted", `${issue.title} was added to Tasks.`);
+  }
+
+  function convertIssueToImprovement(issueId) {
+    const issue = appState.issues.find((item) => item.id === issueId);
+
+    if (!issue) {
+      return;
+    }
+
+    if (issue.convertedImprovementId) {
+      showToast(
+        "Already converted",
+        "This issue already has a linked improvement."
+      );
+      return;
+    }
+
+    const nextImprovement = createDefaultImprovement({
+      title: issue.countermeasure || issue.rootCauseConclusion || issue.title,
+      ownerId: issue.ownerId,
+      stage: "experiment",
+      impact: issue.impact,
+      linkedIssueIds: [issue.id],
+      sopUpdateRequired: issue.sopUpdateRequired,
+      notes: `Converted from issue ${issue.title}. ${issue.decision || ""}`.trim(),
+      sourceIssueId: issue.id,
+    });
+
+    appState.improvements.push(nextImprovement);
+    issue.linkedImprovementIds = Array.from(
+      new Set([...issue.linkedImprovementIds, nextImprovement.id])
+    );
+    issue.convertedImprovementId = nextImprovement.id;
+    issue.workflowStage = "convert_improvement";
+    saveState(appState);
+    showToast(
+      "Improvement created",
+      `${issue.title} was added to Continuous Improvement.`
+    );
+  }
+
+  function renderIssueProfile(issue) {
+    if (!issue) {
+      return renderEmptyState(
+        "Select an issue to view IDS workflow, 5 Whys analysis and linked execution."
+      );
+    }
+
+    const linkedTasks = issue.linkedTaskIds.map((id) => {
+      const task = appState.tasks.find((item) => item.id === id || item.title === id);
+      return task?.title || id;
+    });
+    const linkedKpis = issue.linkedKpiIds.map((id) => {
+      const kpi = appState.kpis.find((item) => item.id === id || item.name === id);
+      return kpi?.name || id;
+    });
+    const linkedSops = issue.linkedSopIds.map((id) => {
+      const sop = appState.sops.find((item) => item.id === id || item.title === id);
+      return sop?.title || id;
+    });
+    const linkedImprovements = issue.linkedImprovementIds.map((id) => {
+      const improvement = appState.improvements.find(
+        (item) => item.id === id || item.title === id
+      );
+      return improvement?.title || id;
+    });
+
+    return `
+      <div class="management-profile">
+        <div class="profile-chip-row">
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(issue.priority))}</span>
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(issue.status))}</span>
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(issue.workflowStage))}</span>
+        </div>
+        <div class="management-stat-grid">
+          <div class="management-stat">
+            <p class="management-stat__label">Owner</p>
+            <p class="management-stat__value">${escapeHtml(getPersonNameById(issue.ownerId))}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Impact</p>
+            <p class="management-stat__value">${escapeHtml(issue.impact || "Not set")}</p>
+          </div>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">IDS decision path</h4>
+          <p class="management-profile__copy">Root cause: ${escapeHtml(
+            issue.rootCause || "Not captured yet."
+          )}</p>
+          <p class="management-profile__copy">Decision: ${escapeHtml(
+            issue.decision || "Not captured yet."
+          )}</p>
+          <p class="management-profile__copy">Action required: ${escapeHtml(
+            issue.actionRequired || "Not captured yet."
+          )}</p>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">5 Whys</h4>
+          <ul class="management-profile__list">
+            ${[issue.why1, issue.why2, issue.why3, issue.why4, issue.why5]
+              .filter(Boolean)
+              .map((item) => `<li>${escapeHtml(item)}</li>`)
+              .join("") || "<li>No 5 Whys analysis captured yet.</li>"}
+          </ul>
+          <p class="management-profile__copy">Conclusion: ${escapeHtml(
+            issue.rootCauseConclusion || "Not captured yet."
+          )}</p>
+          <p class="management-profile__copy">Countermeasure: ${escapeHtml(
+            issue.countermeasure || "Not captured yet."
+          )}</p>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Linked execution</h4>
+          <p class="management-profile__copy">Tasks: ${escapeHtml(
+            linkedTasks.length > 0 ? linkedTasks.join(", ") : "None linked"
+          )}</p>
+          <p class="management-profile__copy">KPIs: ${escapeHtml(
+            linkedKpis.length > 0 ? linkedKpis.join(", ") : "None linked"
+          )}</p>
+          <p class="management-profile__copy">SOPs: ${escapeHtml(
+            linkedSops.length > 0 ? linkedSops.join(", ") : "None linked"
+          )}</p>
+          <p class="management-profile__copy">Improvements: ${escapeHtml(
+            linkedImprovements.length > 0 ? linkedImprovements.join(", ") : "None linked"
+          )}</p>
+        </div>
+        <div class="management-actions">
+          <button class="button button--secondary" type="button" data-convert-issue-task="${escapeHtml(
+            issue.id
+          )}">
+            ${issue.convertedTaskId ? "Task created" : "Convert to task"}
+          </button>
+          <button class="button button--ghost" type="button" data-convert-issue-improvement="${escapeHtml(
+            issue.id
+          )}">
+            ${issue.convertedImprovementId ? "Improvement created" : "Convert to improvement"}
+          </button>
+        </div>
+        <div class="alert-pill-row">
+          ${
+            issue.sopUpdateRequired
+              ? `<span class="alert-pill">SOP update required</span>`
+              : `<span class="tag-pill">No SOP update flagged</span>`
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  function renderImprovementModule() {
+    const ideasCount = appState.improvements.filter(
+      (item) => item.stage === "idea" || item.stage === "backlog" || item.stage === "queued"
+    ).length;
+    const inProgressCount = appState.improvements.filter(
+      (item) => item.stage === "experiment" || item.stage === "in_progress"
+    ).length;
+
+    if (improvementIdeasCountNode) {
+      improvementIdeasCountNode.textContent = String(ideasCount);
+    }
+
+    if (improvementIdeasMetaNode) {
+      improvementIdeasMetaNode.textContent =
+        ideasCount > 0
+          ? `${ideasCount} improvement idea${ideasCount === 1 ? "" : "s"} waiting for follow-through`
+          : "No new improvement ideas are queued";
+    }
+
+    if (improvementProgressCountNode) {
+      improvementProgressCountNode.textContent = String(inProgressCount);
+    }
+
+    if (improvementProgressMetaNode) {
+      improvementProgressMetaNode.textContent =
+        inProgressCount > 0
+          ? `${inProgressCount} improvement item${
+              inProgressCount === 1 ? "" : "s"
+            } are being tested`
+          : "No improvement experiments are active right now";
+    }
+
+    if (improvementWorkflowListNode) {
+      improvementWorkflowListNode.innerHTML =
+        appState.improvements.length > 0
+          ? `<ul class="dashboard-list">${appState.improvements
+              .slice(0, 3)
+              .map(
+                (item) => `
+                  <li>
+                    <strong>${escapeHtml(item.title)}</strong><br>
+                    ${escapeHtml(
+                      `${formatStatusLabel(item.stage)} • ${getPersonNameById(
+                        item.ownerId
+                      )} • ${item.impact || "Impact not set"}`
+                    )}
+                  </li>
+                `
+              )
+              .join("")}</ul>`
+          : renderEmptyState(
+              "No improvement items exist yet. Convert an issue into an improvement to start the system-change queue."
+            );
+    }
+  }
+
+  function renderIssues() {
+    ensureIssueSelection();
+    populateIssueOwnerOptions();
+    const selectedIssue =
+      appState.issues.find((item) => item.id === selectedIssueId) || null;
+    const openIssues = appState.issues.filter(
+      (issue) => issue.status !== "closed" && issue.status !== "resolved"
+    );
+    const escalationIssues = appState.issues.filter(
+      (issue) =>
+        issue.priority === "high" ||
+        issue.priority === "critical" ||
+        issue.sopUpdateRequired
+    );
+    const improvementLinkedCount = appState.issues.filter(
+      (issue) => issue.linkedImprovementIds.length > 0 || issue.convertedImprovementId
+    ).length;
+
+    if (issueSummaryOpenNode) {
+      issueSummaryOpenNode.textContent = `${openIssues.length} open issue${
+        openIssues.length === 1 ? "" : "s"
+      }`;
+    }
+
+    if (issueSummaryOpenCopyNode) {
+      issueSummaryOpenCopyNode.textContent =
+        openIssues.length > 0
+          ? `${openIssues.length} issue${openIssues.length === 1 ? "" : "s"} still need IDS movement.`
+          : "The issue queue is currently clear.";
+    }
+
+    if (issueSummaryEscalationNode) {
+      issueSummaryEscalationNode.textContent = `${escalationIssues.length} escalation${
+        escalationIssues.length === 1 ? "" : "s"
+      }`;
+    }
+
+    if (issueSummaryEscalationCopyNode) {
+      issueSummaryEscalationCopyNode.textContent =
+        escalationIssues.length > 0
+          ? `${escalationIssues.length} issue${
+              escalationIssues.length === 1 ? "" : "s"
+            } need war room attention.`
+          : "No high-priority or SOP-update escalations are active.";
+    }
+
+    if (issueSummaryImprovementsNode) {
+      issueSummaryImprovementsNode.textContent = `${improvementLinkedCount} improvement${
+        improvementLinkedCount === 1 ? "" : "s"
+      }`;
+    }
+
+    if (issueSummaryImprovementsCopyNode) {
+      issueSummaryImprovementsCopyNode.textContent =
+        improvementLinkedCount > 0
+          ? `${improvementLinkedCount} issue${
+              improvementLinkedCount === 1 ? "" : "s"
+            } are already connected to system improvements.`
+          : "No issue has been converted to improvement yet.";
+    }
+
+    if (issueEscalationListNode) {
+      issueEscalationListNode.innerHTML =
+        escalationIssues.length > 0
+          ? escalationIssues
+              .slice(0, 4)
+              .map(
+                (issue) => `
+                  <button
+                    type="button"
+                    class="management-card ${issue.id === selectedIssueId ? "is-selected" : ""}"
+                    data-select-issue="${escapeHtml(issue.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      issue.sopUpdateRequired
+                        ? "SOP update flagged"
+                        : `${formatStatusLabel(issue.priority)} escalation`
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(issue.title)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      `${getPersonNameById(issue.ownerId)} • ${formatStatusLabel(
+                        issue.workflowStage
+                      )}`
+                    )}</p>
+                  </button>
+                `
+              )
+              .join("")
+          : renderEmptyState("No current war room escalations are active.");
+    }
+
+    if (issueCardListNode) {
+      issueCardListNode.innerHTML =
+        appState.issues.length > 0
+          ? appState.issues
+              .slice()
+              .sort((left, right) => left.title.localeCompare(right.title))
+              .map(
+                (issue) => `
+                  <button
+                    type="button"
+                    class="management-card ${issue.id === selectedIssueId ? "is-selected" : ""}"
+                    data-select-issue="${escapeHtml(issue.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      formatStatusLabel(issue.workflowStage)
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(issue.title)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      `${getPersonNameById(issue.ownerId)} • ${formatStatusLabel(
+                        issue.status
+                      )}`
+                    )}</p>
+                    <div class="management-tags">
+                      <span class="tag-pill">${escapeHtml(
+                        formatStatusLabel(issue.priority)
+                      )}</span>
+                      ${
+                        issue.sopUpdateRequired
+                          ? `<span class="alert-pill">SOP update</span>`
+                          : ""
+                      }
+                    </div>
+                  </button>
+                `
+              )
+              .join("")
+          : renderEmptyState(
+              "No issues exist yet. Add the first issue to begin IDS problem solving."
+            );
+    }
+
+    if (issueProfileNameNode) {
+      issueProfileNameNode.textContent = selectedIssue
+        ? selectedIssue.title
+        : "Select an issue";
+    }
+
+    if (issueProfileNode) {
+      issueProfileNode.innerHTML = renderIssueProfile(selectedIssue);
+    }
+
+    renderImprovementModule();
   }
 
   function populateTaskLinkOptions() {
@@ -4510,6 +5290,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMeetings();
     renderKpis();
     renderRocks();
+    renderIssues();
 
     if (schemaVersionNode) {
       schemaVersionNode.textContent = String(appState.schemaVersion);
@@ -4565,7 +5346,11 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMeetings,
     renderKpis,
     renderRocks,
+    renderIssues,
+    renderImprovementModule,
     convertMeetingActionToTask,
+    convertIssueToTask,
+    convertIssueToImprovement,
     loadState,
     saveState,
     normaliseState,
@@ -4693,6 +5478,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (issueCardListNode) {
+    issueCardListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-issue]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedIssueId = trigger.getAttribute("data-select-issue");
+      renderStateSummary();
+    });
+  }
+
+  if (issueEscalationListNode) {
+    issueEscalationListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-issue]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedIssueId = trigger.getAttribute("data-select-issue");
+      renderStateSummary();
+    });
+  }
+
   document.querySelectorAll("[data-task-filter]").forEach((button) => {
     button.addEventListener("click", () => {
       activeTaskFilter = button.getAttribute("data-task-filter") || "all";
@@ -4810,6 +5621,22 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    const issueActionTrigger = event.target.closest("[data-issue-action]");
+
+    if (issueActionTrigger) {
+      const action = issueActionTrigger.getAttribute("data-issue-action");
+
+      if (action === "new") {
+        openIssueForm("new");
+      } else if (action === "edit" && selectedIssueId) {
+        openIssueForm("edit");
+      } else if (action === "delete" && selectedIssueId) {
+        deleteSelectedIssue();
+      } else if (action === "cancel") {
+        closeIssueForm();
+      }
+    }
+
     const convertMeetingActionTrigger = event.target.closest(
       "[data-convert-meeting-action]"
     );
@@ -4823,6 +5650,24 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       convertMeetingActionToTask(meetingId, actionId);
+    }
+
+    const convertIssueTaskTrigger = event.target.closest("[data-convert-issue-task]");
+
+    if (convertIssueTaskTrigger) {
+      const issueId = convertIssueTaskTrigger.getAttribute("data-convert-issue-task");
+      convertIssueToTask(issueId);
+    }
+
+    const convertIssueImprovementTrigger = event.target.closest(
+      "[data-convert-issue-improvement]"
+    );
+
+    if (convertIssueImprovementTrigger) {
+      const issueId = convertIssueImprovementTrigger.getAttribute(
+        "data-convert-issue-improvement"
+      );
+      convertIssueToImprovement(issueId);
     }
   });
 
@@ -4865,6 +5710,13 @@ document.addEventListener("DOMContentLoaded", () => {
     rockFormNode.addEventListener("submit", (event) => {
       event.preventDefault();
       saveRockFromForm(rockFormNode);
+    });
+  }
+
+  if (issueFormNode) {
+    issueFormNode.addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveIssueFromForm(issueFormNode);
     });
   }
 
