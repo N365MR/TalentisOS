@@ -101,9 +101,56 @@ document.addEventListener("DOMContentLoaded", () => {
   const countKpisNode = document.querySelector("[data-count-kpis]");
   const countIssuesNode = document.querySelector("[data-count-issues]");
   const countSopsNode = document.querySelector("[data-count-sops]");
+  const peopleFocusTitleNode = document.querySelector("[data-people-focus-title]");
+  const peopleFocusCopyNode = document.querySelector("[data-people-focus-copy]");
+  const peopleOneOnOnesCountNode = document.querySelector(
+    "[data-people-one-on-ones-count]"
+  );
+  const peoplePerformanceRiskCountNode = document.querySelector(
+    "[data-people-performance-risk-count]"
+  );
+  const peopleEngagementRiskCountNode = document.querySelector(
+    "[data-people-engagement-risk-count]"
+  );
+  const peopleMissingRoleCountNode = document.querySelector(
+    "[data-people-missing-role-count]"
+  );
+  const peopleCardListNode = document.querySelector("[data-people-card-list]");
+  const personProfileNameNode = document.querySelector("[data-person-profile-name]");
+  const personProfileNode = document.querySelector("[data-person-profile]");
+  const personFormNode = document.querySelector("[data-person-form]");
+  const personFormTitleNode = document.querySelector("[data-person-form-title]");
+  const personRoleSelectNode = document.querySelector("[data-role-select]");
+  const roleAlertOwnerCountNode = document.querySelector(
+    "[data-role-alert-owner-count]"
+  );
+  const roleAlertOwnerCopyNode = document.querySelector(
+    "[data-role-alert-owner-copy]"
+  );
+  const roleAlertCoverageCountNode = document.querySelector(
+    "[data-role-alert-coverage-count]"
+  );
+  const roleAlertCoverageCopyNode = document.querySelector(
+    "[data-role-alert-coverage-copy]"
+  );
+  const roleAlertClarityCountNode = document.querySelector(
+    "[data-role-alert-clarity-count]"
+  );
+  const roleAlertClarityCopyNode = document.querySelector(
+    "[data-role-alert-clarity-copy]"
+  );
+  const roleCardListNode = document.querySelector("[data-role-card-list]");
+  const roleProfileNameNode = document.querySelector("[data-role-profile-name]");
+  const roleProfileNode = document.querySelector("[data-role-profile]");
+  const roleFormNode = document.querySelector("[data-role-form]");
+  const roleFormTitleNode = document.querySelector("[data-role-form-title]");
+  const roleOwnerSelectNode = document.querySelector("[data-person-select]");
+  const roleBackupSelectNode = document.querySelector("[data-backup-select]");
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
+  let selectedPersonId = null;
+  let selectedRoleId = null;
 
   if (yearNode) {
     yearNode.textContent = String(new Date().getFullYear());
@@ -160,6 +207,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return member ? member.name : "Unassigned";
   };
 
+  const getRoleById = (roleId) =>
+    appState.roles.find((role) => role.id === roleId) || null;
+
+  const getRoleTitleById = (roleId) => {
+    const role = getRoleById(roleId);
+    return role ? role.title : "No linked role";
+  };
+
   const formatDisplayDate = (value) => {
     const date = parseDateInput(value);
 
@@ -172,6 +227,15 @@ document.addEventListener("DOMContentLoaded", () => {
       month: "short",
     });
   };
+
+  const parseTextList = (value) =>
+    String(value || "")
+      .split(/\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const formatListText = (items) =>
+    Array.isArray(items) && items.length > 0 ? items.join("\n") : "";
 
   const differenceInDays = (leftDate, rightDate) => {
     const millisecondsPerDay = 24 * 60 * 60 * 1000;
@@ -192,6 +256,54 @@ document.addEventListener("DOMContentLoaded", () => {
   function generateId(prefix = "item") {
     const randomPart = Math.random().toString(36).slice(2, 8);
     return `${prefix}_${Date.now().toString(36)}_${randomPart}`;
+  }
+
+  function createDefaultPerson(person = {}) {
+    return {
+      id: person.id || generateId("member"),
+      name: person.name || "",
+      roleId: person.roleId || "",
+      department: person.department || "",
+      managerId: person.managerId || "",
+      startDate: person.startDate || "",
+      strengths: Array.isArray(person.strengths) ? person.strengths : [],
+      developmentAreas: Array.isArray(person.developmentAreas)
+        ? person.developmentAreas
+        : [],
+      pulseStatus: person.pulseStatus || person.status || "steady",
+      performanceRisk: person.performanceRisk || "low",
+      engagementSignal: person.engagementSignal || "healthy",
+      lastOneOnOne: person.lastOneOnOne || "",
+      nextOneOnOne: person.nextOneOnOne || "",
+      oneOnOneDue:
+        typeof person.oneOnOneDue === "boolean" ? person.oneOnOneDue : false,
+      status: person.status || person.pulseStatus || "active",
+    };
+  }
+
+  function createDefaultRole(role = {}) {
+    return {
+      id: role.id || generateId("role"),
+      title: role.title || "",
+      purpose: role.purpose || "",
+      ownerId: role.ownerId || "",
+      backupOwnerId: role.backupOwnerId || "",
+      accountability: role.accountability || "",
+      accountabilities: Array.isArray(role.accountabilities)
+        ? role.accountabilities
+        : role.accountability
+          ? [role.accountability]
+          : [],
+      kpiIds: Array.isArray(role.kpiIds) ? role.kpiIds : [],
+      sopIds: Array.isArray(role.sopIds) ? role.sopIds : [],
+      decisionRights: Array.isArray(role.decisionRights) ? role.decisionRights : [],
+      escalationPoints: Array.isArray(role.escalationPoints)
+        ? role.escalationPoints
+        : [],
+      trainingRequired: Array.isArray(role.trainingRequired)
+        ? role.trainingRequired
+        : [],
+    };
   }
 
   function createEmptyState() {
@@ -244,73 +356,139 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     state.teamMembers = [
-      {
-        id: generateId("member"),
+      createDefaultPerson({
         name: "Mia Chen",
         roleId: "role_service_lead",
         department: "Service",
         managerId: state.managerProfile.id,
+        startDate: "2025-09-01",
+        strengths: ["Escalation ownership", "Customer calm under pressure"],
+        developmentAreas: ["Delegation consistency", "Coaching follow-through"],
+        pulseStatus: "steady",
+        performanceRisk: "medium",
+        engagementSignal: "healthy",
+        lastOneOnOne: "2026-06-24",
+        nextOneOnOne: "2026-07-02",
         oneOnOneDue: true,
         status: "active",
-      },
-      {
-        id: generateId("member"),
+      }),
+      createDefaultPerson({
         name: "Noah Patel",
         roleId: "role_install_coordinator",
         department: "Installations",
         managerId: state.managerProfile.id,
+        startDate: "2026-02-10",
+        strengths: ["Planning detail", "Cross-team coordination"],
+        developmentAreas: ["Owner confirmation discipline"],
+        pulseStatus: "watch",
+        performanceRisk: "medium",
+        engagementSignal: "watch",
+        lastOneOnOne: "2026-06-26",
+        nextOneOnOne: "2026-07-04",
         oneOnOneDue: false,
         status: "active",
-      },
-      {
-        id: generateId("member"),
+      }),
+      createDefaultPerson({
         name: "Sophie Martin",
         roleId: "role_training_lead",
         department: "People Development",
         managerId: state.managerProfile.id,
+        startDate: "2025-11-18",
+        strengths: ["Training design", "Leader enablement"],
+        developmentAreas: ["Earlier risk escalation"],
+        pulseStatus: "watch",
+        performanceRisk: "low",
+        engagementSignal: "healthy",
+        lastOneOnOne: "2026-06-20",
+        nextOneOnOne: "2026-07-02",
         oneOnOneDue: true,
         status: "active",
-      },
-      {
-        id: generateId("member"),
+      }),
+      createDefaultPerson({
         name: "Ethan Brooks",
         roleId: "role_dispatch_supervisor",
         department: "Operations",
         managerId: state.managerProfile.id,
+        startDate: "2025-06-03",
+        strengths: ["Dispatch judgement", "Late shift coordination"],
+        developmentAreas: ["Handover discipline", "Escalation timing"],
+        pulseStatus: "risk",
+        performanceRisk: "high",
+        engagementSignal: "low",
+        lastOneOnOne: "2026-06-18",
+        nextOneOnOne: "2026-07-02",
         oneOnOneDue: true,
         status: "risk",
-      },
+      }),
     ];
 
     state.roles = [
-      {
+      createDefaultRole({
         id: "role_service_lead",
         title: "Service Team Lead",
         ownerId: state.teamMembers[0].id,
-        accountability: "Own the morning service huddle and escalations.",
+        purpose: "Lead the service team rhythm, escalations and same-day execution.",
+        accountabilities: [
+          "Own the morning service huddle and escalations",
+          "Review callback exceptions before midday",
+          "Coordinate same-day customer risk decisions",
+        ],
         backupOwnerId: state.teamMembers[3].id,
-      },
-      {
+        kpiIds: ["kpi_first_time_fix", "kpi_service_callback_rate"],
+        sopIds: ["Morning Huddle SOP"],
+        decisionRights: ["Prioritise service escalations", "Reallocate field coverage"],
+        escalationPoints: ["Operations Manager", "Dispatch Supervisor"],
+        trainingRequired: ["Coaching Essentials", "Escalation Workflow"],
+      }),
+      createDefaultRole({
         id: "role_install_coordinator",
         title: "Installation Coordinator",
         ownerId: state.teamMembers[1].id,
-        accountability: "Keep installs on time and risk-flagged early.",
+        purpose: "Keep install delivery clear, on time and risk-flagged early.",
+        accountabilities: [
+          "Track install readiness and blockers",
+          "Confirm owners before jobs leave planning",
+        ],
         backupOwnerId: state.teamMembers[0].id,
-      },
-      {
+        kpiIds: [],
+        sopIds: [],
+        decisionRights: ["Escalate install blockers", "Re-sequence install queue"],
+        escalationPoints: ["Service Team Lead", "Operations Manager"],
+        trainingRequired: ["Planning Accuracy Review"],
+      }),
+      createDefaultRole({
         id: "role_training_lead",
         title: "Training Lead",
         ownerId: state.teamMembers[2].id,
-        accountability: "Maintain training rhythm and role readiness.",
+        purpose: "Maintain role readiness, training cadence and onboarding discipline.",
+        accountabilities: [
+          "Own training completion visibility",
+          "Maintain induction and development reviews",
+        ],
         backupOwnerId: state.teamMembers[3].id,
-      },
-      {
+        kpiIds: ["kpi_training_completion"],
+        sopIds: ["Induction Checklist SOP"],
+        decisionRights: ["Pause sign-off when readiness is low"],
+        escalationPoints: ["Operations Manager"],
+        trainingRequired: ["Training 360 Administration"],
+      }),
+      createDefaultRole({
         id: "role_dispatch_supervisor",
         title: "Dispatch Supervisor",
         ownerId: state.teamMembers[3].id,
-        accountability: "Own dispatch flow and handover quality.",
+        purpose: "Own dispatch flow, end-of-day handover quality and field coordination.",
+        accountabilities: [
+          "Maintain dispatch flow",
+          "Own close handover quality",
+          "Surface shift coverage risks early",
+        ],
         backupOwnerId: state.teamMembers[1].id,
-      },
+        kpiIds: [],
+        sopIds: ["Dispatch Close Handover SOP"],
+        decisionRights: ["Reassign late field capacity"],
+        escalationPoints: ["Operations Manager", "Service Team Lead"],
+        trainingRequired: ["Handover Discipline"],
+      }),
     ];
 
     state.tasks = [
@@ -692,6 +870,11 @@ document.addEventListener("DOMContentLoaded", () => {
     collectionKeys.forEach((key) => {
       normalised[key] = Array.isArray(source[key]) ? source[key] : defaults[key];
     });
+
+    normalised.teamMembers = normalised.teamMembers.map((member) =>
+      createDefaultPerson(member)
+    );
+    normalised.roles = normalised.roles.map((role) => createDefaultRole(role));
 
     normalised.lastSavedAt =
       typeof source.lastSavedAt === "string" ? source.lastSavedAt : null;
@@ -1333,6 +1516,686 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
+  function getResolvedRoleLinks(role) {
+    const matchedKpis = appState.kpis.filter(
+      (kpi) =>
+        role.kpiIds.includes(kpi.id) ||
+        role.kpiIds.includes(kpi.name) ||
+        kpi.ownerId === role.ownerId
+    );
+    const matchedSops = appState.sops.filter(
+      (sop) =>
+        role.sopIds.includes(sop.id) ||
+        role.sopIds.includes(sop.title) ||
+        sop.ownerId === role.ownerId
+    );
+
+    return { matchedKpis, matchedSops };
+  }
+
+  function getRoleClarityAlerts(role) {
+    const alerts = [];
+    const ownerExists =
+      role.ownerId && appState.teamMembers.some((person) => person.id === role.ownerId);
+    const backupExists =
+      role.backupOwnerId &&
+      appState.teamMembers.some((person) => person.id === role.backupOwnerId);
+    const { matchedKpis, matchedSops } = getResolvedRoleLinks(role);
+    const hasPurpose = Boolean(role.purpose && role.purpose.trim());
+    const hasAccountabilities = role.accountabilities.length > 0;
+
+    if (!ownerExists) {
+      alerts.push("Missing owner");
+    }
+
+    if (!backupExists) {
+      alerts.push("Missing backup");
+    }
+
+    if (matchedKpis.length === 0) {
+      alerts.push("Missing KPI");
+    }
+
+    if (matchedSops.length === 0) {
+      alerts.push("Missing SOP");
+    }
+
+    if (!backupExists || role.ownerId === role.backupOwnerId) {
+      alerts.push("Single point of failure");
+    }
+
+    if (!hasPurpose || !hasAccountabilities) {
+      alerts.push("Role ambiguity");
+    }
+
+    return alerts;
+  }
+
+  function getPeopleSummary() {
+    return {
+      oneOnOnesDue: appState.teamMembers.filter((person) => person.oneOnOneDue).length,
+      performanceRisk: appState.teamMembers.filter(
+        (person) => person.performanceRisk === "high"
+      ).length,
+      engagementRisk: appState.teamMembers.filter(
+        (person) => person.engagementSignal === "low"
+      ).length,
+      missingRole: appState.teamMembers.filter((person) => !getRoleById(person.roleId))
+        .length,
+    };
+  }
+
+  function getRoleAlertSummary() {
+    const alerts = appState.roles.flatMap((role) =>
+      getRoleClarityAlerts(role).map((alert) => ({ roleId: role.id, alert }))
+    );
+
+    return {
+      owner: alerts.filter(
+        (item) => item.alert === "Missing owner" || item.alert === "Missing backup"
+      ).length,
+      coverage: alerts.filter((item) => item.alert === "Single point of failure")
+        .length,
+      clarity: alerts.filter(
+        (item) =>
+          item.alert === "Missing KPI" ||
+          item.alert === "Missing SOP" ||
+          item.alert === "Role ambiguity"
+      ).length,
+    };
+  }
+
+  function ensureSelections() {
+    if (!selectedPersonId || !appState.teamMembers.some((item) => item.id === selectedPersonId)) {
+      selectedPersonId = appState.teamMembers[0]?.id || null;
+    }
+
+    if (!selectedRoleId || !appState.roles.some((item) => item.id === selectedRoleId)) {
+      selectedRoleId = appState.roles[0]?.id || null;
+    }
+  }
+
+  function populatePersonRoleOptions(selectedRoleIdValue = "") {
+    if (!personRoleSelectNode) {
+      return;
+    }
+
+    personRoleSelectNode.innerHTML = `
+      <option value="">No linked role</option>
+      ${appState.roles
+        .map(
+          (role) => `
+            <option value="${escapeHtml(role.id)}" ${
+              role.id === selectedRoleIdValue ? "selected" : ""
+            }>
+              ${escapeHtml(role.title)}
+            </option>
+          `
+        )
+        .join("")}
+    `;
+  }
+
+  function populateRolePersonOptions(ownerId = "", backupId = "") {
+    const optionsMarkup = appState.teamMembers
+      .map(
+        (person) => `
+          <option value="${escapeHtml(person.id)}">${escapeHtml(person.name)}</option>
+        `
+      )
+      .join("");
+
+    if (roleOwnerSelectNode) {
+      roleOwnerSelectNode.innerHTML = `<option value="">Unassigned</option>${optionsMarkup}`;
+      roleOwnerSelectNode.value = ownerId;
+    }
+
+    if (roleBackupSelectNode) {
+      roleBackupSelectNode.innerHTML = `<option value="">No backup</option>${optionsMarkup}`;
+      roleBackupSelectNode.value = backupId;
+    }
+  }
+
+  function openPersonForm(mode = "new") {
+    if (!personFormNode) {
+      return;
+    }
+
+    const selectedPerson =
+      mode === "edit"
+        ? appState.teamMembers.find((person) => person.id === selectedPersonId)
+        : null;
+
+    personFormNode.classList.add("is-open");
+    personFormTitleNode.textContent = selectedPerson ? "Edit person" : "Add person";
+    personFormNode.elements.personId.value = selectedPerson?.id || "";
+    personFormNode.elements.name.value = selectedPerson?.name || "";
+    personFormNode.elements.department.value = selectedPerson?.department || "";
+    personFormNode.elements.startDate.value = selectedPerson?.startDate || "";
+    personFormNode.elements.pulseStatus.value = selectedPerson?.pulseStatus || "steady";
+    personFormNode.elements.performanceRisk.value =
+      selectedPerson?.performanceRisk || "low";
+    personFormNode.elements.engagementSignal.value =
+      selectedPerson?.engagementSignal || "healthy";
+    personFormNode.elements.lastOneOnOne.value = selectedPerson?.lastOneOnOne || "";
+    personFormNode.elements.nextOneOnOne.value = selectedPerson?.nextOneOnOne || "";
+    personFormNode.elements.strengths.value = formatListText(selectedPerson?.strengths);
+    personFormNode.elements.developmentAreas.value = formatListText(
+      selectedPerson?.developmentAreas
+    );
+    populatePersonRoleOptions(selectedPerson?.roleId || "");
+  }
+
+  function closePersonForm() {
+    personFormNode?.classList.remove("is-open");
+    if (personFormNode) {
+      personFormNode.reset();
+      personFormNode.elements.personId.value = "";
+    }
+  }
+
+  function openRoleForm(mode = "new") {
+    if (!roleFormNode) {
+      return;
+    }
+
+    const selectedRole =
+      mode === "edit"
+        ? appState.roles.find((role) => role.id === selectedRoleId)
+        : null;
+
+    roleFormNode.classList.add("is-open");
+    roleFormTitleNode.textContent = selectedRole ? "Edit role" : "Add role";
+    roleFormNode.elements.roleId.value = selectedRole?.id || "";
+    roleFormNode.elements.title.value = selectedRole?.title || "";
+    roleFormNode.elements.purpose.value = selectedRole?.purpose || "";
+    roleFormNode.elements.accountabilities.value = formatListText(
+      selectedRole?.accountabilities
+    );
+    roleFormNode.elements.kpiIds.value = formatListText(selectedRole?.kpiIds);
+    roleFormNode.elements.sopIds.value = formatListText(selectedRole?.sopIds);
+    roleFormNode.elements.decisionRights.value = formatListText(
+      selectedRole?.decisionRights
+    );
+    roleFormNode.elements.escalationPoints.value = formatListText(
+      selectedRole?.escalationPoints
+    );
+    roleFormNode.elements.trainingRequired.value = formatListText(
+      selectedRole?.trainingRequired
+    );
+    populateRolePersonOptions(selectedRole?.ownerId || "", selectedRole?.backupOwnerId || "");
+  }
+
+  function closeRoleForm() {
+    roleFormNode?.classList.remove("is-open");
+    if (roleFormNode) {
+      roleFormNode.reset();
+      roleFormNode.elements.roleId.value = "";
+    }
+  }
+
+  function savePersonFromForm(form) {
+    const personId = form.elements.personId.value || generateId("member");
+    const roleId = form.elements.roleId.value;
+    const nextPerson = createDefaultPerson({
+      id: personId,
+      name: form.elements.name.value.trim(),
+      roleId,
+      department: form.elements.department.value.trim(),
+      managerId: appState.managerProfile.id,
+      startDate: form.elements.startDate.value,
+      strengths: parseTextList(form.elements.strengths.value),
+      developmentAreas: parseTextList(form.elements.developmentAreas.value),
+      pulseStatus: form.elements.pulseStatus.value,
+      performanceRisk: form.elements.performanceRisk.value,
+      engagementSignal: form.elements.engagementSignal.value,
+      lastOneOnOne: form.elements.lastOneOnOne.value,
+      nextOneOnOne: form.elements.nextOneOnOne.value,
+      oneOnOneDue:
+        Boolean(form.elements.nextOneOnOne.value) &&
+        form.elements.nextOneOnOne.value <= getTodayKey(),
+      status:
+        form.elements.pulseStatus.value === "risk"
+          ? "risk"
+          : form.elements.pulseStatus.value === "watch"
+            ? "active"
+            : "active",
+    });
+
+    const existingIndex = appState.teamMembers.findIndex(
+      (person) => person.id === personId
+    );
+
+    if (existingIndex >= 0) {
+      appState.teamMembers.splice(existingIndex, 1, nextPerson);
+    } else {
+      appState.teamMembers.push(nextPerson);
+    }
+
+    selectedPersonId = nextPerson.id;
+    saveState(appState);
+    closePersonForm();
+    showToast("Person saved", `${nextPerson.name} was saved locally.`);
+  }
+
+  function saveRoleFromForm(form) {
+    const roleId = form.elements.roleId.value || generateId("role");
+    const nextRole = createDefaultRole({
+      id: roleId,
+      title: form.elements.title.value.trim(),
+      purpose: form.elements.purpose.value.trim(),
+      ownerId: form.elements.ownerId.value,
+      backupOwnerId: form.elements.backupOwnerId.value,
+      accountabilities: parseTextList(form.elements.accountabilities.value),
+      kpiIds: parseTextList(form.elements.kpiIds.value),
+      sopIds: parseTextList(form.elements.sopIds.value),
+      decisionRights: parseTextList(form.elements.decisionRights.value),
+      escalationPoints: parseTextList(form.elements.escalationPoints.value),
+      trainingRequired: parseTextList(form.elements.trainingRequired.value),
+    });
+
+    const existingIndex = appState.roles.findIndex((role) => role.id === roleId);
+
+    if (existingIndex >= 0) {
+      appState.roles.splice(existingIndex, 1, nextRole);
+    } else {
+      appState.roles.push(nextRole);
+    }
+
+    selectedRoleId = nextRole.id;
+    saveState(appState);
+    closeRoleForm();
+    showToast("Role saved", `${nextRole.title} was saved locally.`);
+  }
+
+  function deleteSelectedPerson() {
+    const person = appState.teamMembers.find((item) => item.id === selectedPersonId);
+
+    if (!person) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      `Delete ${person.name} from TalentisOS? Linked role ownership will be cleared.`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    appState.roles = appState.roles.map((role) => ({
+      ...role,
+      ownerId: role.ownerId === person.id ? "" : role.ownerId,
+      backupOwnerId: role.backupOwnerId === person.id ? "" : role.backupOwnerId,
+    }));
+    appState.teamMembers = appState.teamMembers.filter((item) => item.id !== person.id);
+    selectedPersonId = null;
+    saveState(appState);
+    closePersonForm();
+    showToast("Person deleted", `${person.name} was removed locally.`);
+  }
+
+  function deleteSelectedRole() {
+    const role = appState.roles.find((item) => item.id === selectedRoleId);
+
+    if (!role) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      `Delete the role ${role.title}? Linked people will keep their profile but lose the role link.`
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    appState.teamMembers = appState.teamMembers.map((person) => ({
+      ...person,
+      roleId: person.roleId === role.id ? "" : person.roleId,
+    }));
+    appState.roles = appState.roles.filter((item) => item.id !== role.id);
+    selectedRoleId = null;
+    saveState(appState);
+    closeRoleForm();
+    showToast("Role deleted", `${role.title} was removed locally.`);
+  }
+
+  function renderPersonProfile(person) {
+    if (!person) {
+      return renderEmptyState("Select a person to view their linked role and accountability profile.");
+    }
+
+    const linkedRole = getRoleById(person.roleId);
+    const roleAlerts = linkedRole ? getRoleClarityAlerts(linkedRole) : ["Missing role link"];
+
+    return `
+      <div class="management-profile">
+        <div class="profile-chip-row">
+          <span class="tag-pill">${escapeHtml(person.department || "No department")}</span>
+          <span class="tag-pill">${escapeHtml(getRoleTitleById(person.roleId))}</span>
+          <span class="tag-pill">${escapeHtml(person.pulseStatus)}</span>
+        </div>
+        <div class="management-stat-grid">
+          <div class="management-stat">
+            <p class="management-stat__label">Start date</p>
+            <p class="management-stat__value">${escapeHtml(
+              person.startDate ? formatDisplayDate(person.startDate) : "Not set"
+            )}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Next one-on-one</p>
+            <p class="management-stat__value">${escapeHtml(
+              person.nextOneOnOne
+                ? formatDisplayDate(person.nextOneOnOne)
+                : "Not scheduled"
+            )}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Performance risk</p>
+            <p class="management-stat__value">${escapeHtml(person.performanceRisk)}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Engagement signal</p>
+            <p class="management-stat__value">${escapeHtml(person.engagementSignal)}</p>
+          </div>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Strengths</h4>
+          ${
+            person.strengths.length > 0
+              ? `<ul class="management-profile__list">${person.strengths
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+              : `<p class="management-profile__copy">No strengths captured yet.</p>`
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Development areas</h4>
+          ${
+            person.developmentAreas.length > 0
+              ? `<ul class="management-profile__list">${person.developmentAreas
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+              : `<p class="management-profile__copy">No development areas captured yet.</p>`
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Linked role and accountability</h4>
+          ${
+            linkedRole
+              ? `
+                <p class="management-profile__copy">${escapeHtml(
+                  linkedRole.purpose || "Role purpose still needs definition."
+                )}</p>
+                <ul class="management-profile__list">
+                  ${linkedRole.accountabilities
+                    .map((item) => `<li>${escapeHtml(item)}</li>`)
+                    .join("")}
+                </ul>
+              `
+              : `<p class="management-profile__copy">This person is not linked to a role yet.</p>`
+          }
+        </div>
+        <div class="alert-pill-row">
+          ${roleAlerts.map((alert) => `<span class="alert-pill">${escapeHtml(alert)}</span>`).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderRoleProfile(role) {
+    if (!role) {
+      return renderEmptyState("Select a role to view ownership, accountabilities and clarity alerts.");
+    }
+
+    const alerts = getRoleClarityAlerts(role);
+    const { matchedKpis, matchedSops } = getResolvedRoleLinks(role);
+
+    return `
+      <div class="management-profile">
+        <div class="profile-chip-row">
+          <span class="tag-pill">${escapeHtml(getPersonNameById(role.ownerId))}</span>
+          <span class="tag-pill">${escapeHtml(
+            role.backupOwnerId ? getPersonNameById(role.backupOwnerId) : "No backup"
+          )}</span>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Role purpose</h4>
+          <p class="management-profile__copy">${escapeHtml(
+            role.purpose || "Role purpose still needs definition."
+          )}</p>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Accountabilities</h4>
+          ${
+            role.accountabilities.length > 0
+              ? `<ul class="management-profile__list">${role.accountabilities
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+              : `<p class="management-profile__copy">No accountabilities captured yet.</p>`
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Linked execution</h4>
+          <p class="management-profile__copy">
+            KPIs: ${escapeHtml(
+              matchedKpis.length > 0
+                ? matchedKpis.map((item) => item.name).join(", ")
+                : "None linked"
+            )}
+          </p>
+          <p class="management-profile__copy">
+            SOPs: ${escapeHtml(
+              matchedSops.length > 0
+                ? matchedSops.map((item) => item.title).join(", ")
+                : "None linked"
+            )}
+          </p>
+          <p class="management-profile__copy">
+            Decision rights: ${escapeHtml(
+              role.decisionRights.length > 0
+                ? role.decisionRights.join(", ")
+                : "Not defined"
+            )}
+          </p>
+          <p class="management-profile__copy">
+            Escalation points: ${escapeHtml(
+              role.escalationPoints.length > 0
+                ? role.escalationPoints.join(", ")
+                : "Not defined"
+            )}
+          </p>
+          <p class="management-profile__copy">
+            Training required: ${escapeHtml(
+              role.trainingRequired.length > 0
+                ? role.trainingRequired.join(", ")
+                : "Not defined"
+            )}
+          </p>
+        </div>
+        <div class="alert-pill-row">
+          ${alerts.length > 0
+            ? alerts.map((alert) => `<span class="alert-pill">${escapeHtml(alert)}</span>`).join("")
+            : `<span class="tag-pill">Role clarity strong</span>`}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPeopleAndRoles() {
+    ensureSelections();
+    const peopleSummary = getPeopleSummary();
+    const roleAlertSummary = getRoleAlertSummary();
+    const selectedPerson =
+      appState.teamMembers.find((item) => item.id === selectedPersonId) || null;
+    const selectedRole = appState.roles.find((item) => item.id === selectedRoleId) || null;
+    populatePersonRoleOptions(selectedPerson?.roleId || "");
+    populateRolePersonOptions(selectedRole?.ownerId || "", selectedRole?.backupOwnerId || "");
+
+    if (peopleFocusTitleNode) {
+      peopleFocusTitleNode.textContent =
+        selectedPerson?.name || "People focus ready";
+    }
+
+    if (peopleFocusCopyNode) {
+      peopleFocusCopyNode.textContent = selectedPerson
+        ? `${selectedPerson.name} is linked to ${getRoleTitleById(
+            selectedPerson.roleId
+          )} and carries ${selectedPerson.pulseStatus} pulse status.`
+        : "Select a person to see their linked role and leadership context.";
+    }
+
+    if (peopleOneOnOnesCountNode) {
+      peopleOneOnOnesCountNode.textContent = String(peopleSummary.oneOnOnesDue);
+    }
+
+    if (peoplePerformanceRiskCountNode) {
+      peoplePerformanceRiskCountNode.textContent = String(
+        peopleSummary.performanceRisk
+      );
+    }
+
+    if (peopleEngagementRiskCountNode) {
+      peopleEngagementRiskCountNode.textContent = String(
+        peopleSummary.engagementRisk
+      );
+    }
+
+    if (peopleMissingRoleCountNode) {
+      peopleMissingRoleCountNode.textContent = String(peopleSummary.missingRole);
+    }
+
+    if (peopleCardListNode) {
+      peopleCardListNode.innerHTML =
+        appState.teamMembers.length > 0
+          ? appState.teamMembers
+              .map(
+                (person) => `
+                  <button
+                    type="button"
+                    class="management-card ${person.id === selectedPersonId ? "is-selected" : ""}"
+                    data-select-person="${escapeHtml(person.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      person.department || "No department"
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(person.name)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      getRoleTitleById(person.roleId)
+                    )}</p>
+                    <div class="management-tags">
+                      <span class="tag-pill">${escapeHtml(person.pulseStatus)}</span>
+                      <span class="tag-pill">${escapeHtml(
+                        person.nextOneOnOne
+                          ? `1:1 ${formatDisplayDate(person.nextOneOnOne)}`
+                          : "1:1 not set"
+                      )}</span>
+                    </div>
+                  </button>
+                `
+              )
+              .join("")
+          : renderEmptyState("No people profiles exist yet. Add the first person to start building leadership visibility.");
+    }
+
+    if (personProfileNameNode) {
+      personProfileNameNode.textContent = selectedPerson
+        ? selectedPerson.name
+        : "Select a person";
+    }
+
+    if (personProfileNode) {
+      personProfileNode.innerHTML = renderPersonProfile(selectedPerson);
+    }
+
+    if (roleAlertOwnerCountNode) {
+      roleAlertOwnerCountNode.textContent = String(roleAlertSummary.owner);
+    }
+
+    if (roleAlertOwnerCopyNode) {
+      roleAlertOwnerCopyNode.textContent =
+        roleAlertSummary.owner > 0
+          ? `${roleAlertSummary.owner} ownership alert${
+              roleAlertSummary.owner === 1 ? "" : "s"
+            } are active.`
+          : "Every role currently has owner and backup coverage defined.";
+    }
+
+    if (roleAlertCoverageCountNode) {
+      roleAlertCoverageCountNode.textContent = String(roleAlertSummary.coverage);
+    }
+
+    if (roleAlertCoverageCopyNode) {
+      roleAlertCoverageCopyNode.textContent =
+        roleAlertSummary.coverage > 0
+          ? `${roleAlertSummary.coverage} single-point-of-failure risk${
+              roleAlertSummary.coverage === 1 ? "" : "s"
+            } need attention.`
+          : "No single points of failure are currently visible.";
+    }
+
+    if (roleAlertClarityCountNode) {
+      roleAlertClarityCountNode.textContent = String(roleAlertSummary.clarity);
+    }
+
+    if (roleAlertClarityCopyNode) {
+      roleAlertClarityCopyNode.textContent =
+        roleAlertSummary.clarity > 0
+          ? `${roleAlertSummary.clarity} role clarity alert${
+              roleAlertSummary.clarity === 1 ? "" : "s"
+            } are active.`
+          : "KPIs, SOPs and purpose are currently linked well across roles.";
+    }
+
+    if (roleCardListNode) {
+      roleCardListNode.innerHTML =
+        appState.roles.length > 0
+          ? appState.roles
+              .map((role) => {
+                const alerts = getRoleClarityAlerts(role);
+                return `
+                  <button
+                    type="button"
+                    class="management-card ${role.id === selectedRoleId ? "is-selected" : ""}"
+                    data-select-role="${escapeHtml(role.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      getPersonNameById(role.ownerId)
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(role.title)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      role.purpose || "Role purpose still needs definition."
+                    )}</p>
+                    <div class="management-tags">
+                      ${
+                        alerts.length > 0
+                          ? alerts
+                              .slice(0, 2)
+                              .map(
+                                (alert) =>
+                                  `<span class="alert-pill">${escapeHtml(alert)}</span>`
+                              )
+                              .join("")
+                          : `<span class="tag-pill">Clear ownership</span>`
+                      }
+                    </div>
+                  </button>
+                `;
+              })
+              .join("")
+          : renderEmptyState("No roles exist yet. Add the first role to map ownership and accountabilities.");
+    }
+
+    if (roleProfileNameNode) {
+      roleProfileNameNode.textContent = selectedRole ? selectedRole.title : "Select a role";
+    }
+
+    if (roleProfileNode) {
+      roleProfileNode.innerHTML = renderRoleProfile(selectedRole);
+    }
+  }
+
   function getStatusCounts() {
     const todayItems = calculateTodayItems();
     const openTasks = appState.tasks.filter((task) => !isTaskClosed(task)).length;
@@ -1616,6 +2479,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const counts = getStatusCounts();
     renderTodayDashboard();
+    renderPeopleAndRoles();
 
     if (schemaVersionNode) {
       schemaVersionNode.textContent = String(appState.schemaVersion);
@@ -1666,6 +2530,7 @@ document.addEventListener("DOMContentLoaded", () => {
     getPraiseGap,
     initCountUp,
     initProgressBars,
+    renderPeopleAndRoles,
     loadState,
     saveState,
     normaliseState,
@@ -1700,6 +2565,80 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (clearDataTrigger) {
     clearDataTrigger.addEventListener("click", clearAllData);
+  }
+
+  if (peopleCardListNode) {
+    peopleCardListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-person]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedPersonId = trigger.getAttribute("data-select-person");
+      renderStateSummary();
+    });
+  }
+
+  if (roleCardListNode) {
+    roleCardListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-role]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedRoleId = trigger.getAttribute("data-select-role");
+      renderStateSummary();
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    const personActionTrigger = event.target.closest("[data-person-action]");
+
+    if (personActionTrigger) {
+      const action = personActionTrigger.getAttribute("data-person-action");
+
+      if (action === "new") {
+        openPersonForm("new");
+      } else if (action === "edit" && selectedPersonId) {
+        openPersonForm("edit");
+      } else if (action === "delete" && selectedPersonId) {
+        deleteSelectedPerson();
+      } else if (action === "cancel") {
+        closePersonForm();
+      }
+    }
+
+    const roleActionTrigger = event.target.closest("[data-role-action]");
+
+    if (roleActionTrigger) {
+      const action = roleActionTrigger.getAttribute("data-role-action");
+
+      if (action === "new") {
+        openRoleForm("new");
+      } else if (action === "edit" && selectedRoleId) {
+        openRoleForm("edit");
+      } else if (action === "delete" && selectedRoleId) {
+        deleteSelectedRole();
+      } else if (action === "cancel") {
+        closeRoleForm();
+      }
+    }
+  });
+
+  if (personFormNode) {
+    personFormNode.addEventListener("submit", (event) => {
+      event.preventDefault();
+      savePersonFromForm(personFormNode);
+    });
+  }
+
+  if (roleFormNode) {
+    roleFormNode.addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveRoleFromForm(roleFormNode);
+    });
   }
 
   const setActiveLink = (sectionId) => {

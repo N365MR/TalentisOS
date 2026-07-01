@@ -14,8 +14,8 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f0f0f'/%3E%3Cpath d='M18 20h28v6H35v18h-6V26H18z' fill='%23d4af37'/%3E%3C/svg%3E"
     />
     <link rel="manifest" href="./manifest.json" />
-    <link rel="stylesheet" href="./styles.css?v=phase3-today-dashboard" />
-    <script src="./app.js?v=phase3-today-dashboard" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=phase4-people-roles" />
+    <script src="./app.js?v=phase4-people-roles" defer></script>
   </head>
   <body>
     <div id="top"></div>
@@ -401,32 +401,181 @@
             <p class="eyebrow">Manager Focus Cards</p>
             <h2 class="section-heading">People</h2>
             <p class="section-copy">
-              Placeholder view for leader check-ins, one-on-ones, follow-ups,
-              and people rhythm.
+              Build clearer leader visibility across people, pulse, development
+              and one-on-one rhythm.
             </p>
           </div>
 
           <div class="pain-grid">
             <article class="pain-card reveal reveal-up">
               <span class="pain-card__accent" aria-hidden="true"></span>
-              <h3 class="pain-card__title">One-on-ones due</h3>
+              <p class="today-list__eyebrow">People focus</p>
+              <h3 class="pain-card__title" data-people-focus-title>People pulse</h3>
+              <p class="today-list__meta" data-people-focus-copy>
+                People priorities will surface from local state.
+              </p>
             </article>
             <article class="pain-card reveal reveal-up">
               <span class="pain-card__accent" aria-hidden="true"></span>
-              <h3 class="pain-card__title">Praise moments</h3>
+              <p class="today-list__eyebrow">One-on-ones due</p>
+              <h3 class="pain-card__title" data-people-one-on-ones-count>0</h3>
+              <p class="today-list__meta">Team members due for leader check-in</p>
             </article>
             <article class="pain-card reveal reveal-up">
               <span class="pain-card__accent" aria-hidden="true"></span>
-              <h3 class="pain-card__title">Feedback loops</h3>
+              <p class="today-list__eyebrow">Performance risk</p>
+              <h3 class="pain-card__title" data-people-performance-risk-count>0</h3>
+              <p class="today-list__meta">People flagged with elevated risk</p>
             </article>
             <article class="pain-card reveal reveal-up">
               <span class="pain-card__accent" aria-hidden="true"></span>
-              <h3 class="pain-card__title">Role support</h3>
+              <p class="today-list__eyebrow">Engagement signal</p>
+              <h3 class="pain-card__title" data-people-engagement-risk-count>0</h3>
+              <p class="today-list__meta">People needing connection or support</p>
             </article>
             <article class="pain-card reveal reveal-up">
               <span class="pain-card__accent" aria-hidden="true"></span>
-              <h3 class="pain-card__title">Coverage risks</h3>
+              <p class="today-list__eyebrow">Role linkage</p>
+              <h3 class="pain-card__title" data-people-missing-role-count>0</h3>
+              <p class="today-list__meta">People without a clearly linked role</p>
             </article>
+          </div>
+
+          <div class="management-layout management-layout--people">
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">People cards</p>
+                    <h3 class="card__title">Team profiles</h3>
+                  </div>
+                  <button
+                    class="button button--secondary"
+                    type="button"
+                    data-person-action="new"
+                  >
+                    Add person
+                  </button>
+                </div>
+                <div class="management-card-grid" data-people-card-list></div>
+              </div>
+            </div>
+
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Person profile</p>
+                    <h3 class="card__title" data-person-profile-name>Select a person</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-person-action="edit"
+                    >
+                      Edit person
+                    </button>
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-person-action="delete"
+                    >
+                      Delete person
+                    </button>
+                  </div>
+                </div>
+                <div data-person-profile></div>
+              </div>
+
+              <form class="card management-panel management-form" data-person-form>
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Person editor</p>
+                    <h3 class="card__title" data-person-form-title>Add person</h3>
+                  </div>
+                  <button
+                    class="button button--ghost"
+                    type="button"
+                    data-person-action="cancel"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <input type="hidden" name="personId" />
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Name</span>
+                    <input name="name" type="text" required />
+                  </label>
+                  <label class="management-field">
+                    <span>Role</span>
+                    <select name="roleId" data-role-select></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Department</span>
+                    <input name="department" type="text" />
+                  </label>
+                  <label class="management-field">
+                    <span>Start date</span>
+                    <input name="startDate" type="date" />
+                  </label>
+                  <label class="management-field">
+                    <span>Pulse status</span>
+                    <select name="pulseStatus">
+                      <option value="steady">Steady</option>
+                      <option value="watch">Watch</option>
+                      <option value="risk">Risk</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Performance risk</span>
+                    <select name="performanceRisk">
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Engagement signal</span>
+                    <select name="engagementSignal">
+                      <option value="healthy">Healthy</option>
+                      <option value="watch">Watch</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Last one-on-one</span>
+                    <input name="lastOneOnOne" type="date" />
+                  </label>
+                  <label class="management-field">
+                    <span>Next one-on-one</span>
+                    <input name="nextOneOnOne" type="date" />
+                  </label>
+                </div>
+                <label class="management-field">
+                  <span>Strengths</span>
+                  <textarea
+                    name="strengths"
+                    rows="3"
+                    placeholder="One line per strength"
+                  ></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Development areas</span>
+                  <textarea
+                    name="developmentAreas"
+                    rows="3"
+                    placeholder="One line per development area"
+                  ></textarea>
+                </label>
+                <div class="management-actions">
+                  <button class="button button--primary" type="submit">
+                    Save person
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>
@@ -437,45 +586,183 @@
             <p class="eyebrow">Role Clarity</p>
             <h2 class="section-heading">Roles</h2>
             <p class="section-copy">
-              Placeholder view for seat ownership, accountabilities, role clarity
-              and backup coverage.
+              Define clear ownership, coverage, accountabilities and escalation
+              paths for each role.
             </p>
           </div>
 
-          <div class="solution-stack">
+          <div class="solution-stack role-alert-grid">
             <article class="solution-pillar reveal reveal-side-left">
-              <div class="solution-pillar__badge">01</div>
+              <div class="solution-pillar__badge" data-role-alert-owner-count>0</div>
               <div class="solution-pillar__content">
-                <p class="solution-pillar__eyebrow">Ownership</p>
-                <h3 class="solution-pillar__title">Define every seat clearly</h3>
-                <p class="solution-pillar__copy">
-                  Show who owns the role, what the role covers and what still
-                  needs clarity.
+                <p class="solution-pillar__eyebrow">Ownership alerts</p>
+                <h3 class="solution-pillar__title">Missing owner or backup</h3>
+                <p class="solution-pillar__copy" data-role-alert-owner-copy>
+                  Role clarity alerts will appear from local state.
                 </p>
               </div>
             </article>
 
             <article class="solution-pillar reveal reveal-side-right">
-              <div class="solution-pillar__badge">02</div>
+              <div class="solution-pillar__badge" data-role-alert-coverage-count>0</div>
               <div class="solution-pillar__content">
-                <p class="solution-pillar__eyebrow">Backup</p>
-                <h3 class="solution-pillar__title">Track coverage and risk</h3>
-                <p class="solution-pillar__copy">
-                  Surface single points of failure before they disrupt the day.
+                <p class="solution-pillar__eyebrow">Coverage</p>
+                <h3 class="solution-pillar__title">Single points of failure</h3>
+                <p class="solution-pillar__copy" data-role-alert-coverage-copy>
+                  Coverage gaps will surface automatically.
                 </p>
               </div>
             </article>
 
             <article class="solution-pillar reveal reveal-side-left">
-              <div class="solution-pillar__badge">03</div>
+              <div class="solution-pillar__badge" data-role-alert-clarity-count>0</div>
               <div class="solution-pillar__content">
                 <p class="solution-pillar__eyebrow">Alignment</p>
-                <h3 class="solution-pillar__title">Connect seats to execution</h3>
-                <p class="solution-pillar__copy">
-                  Link roles directly to tasks, meetings, KPIs and coaching.
+                <h3 class="solution-pillar__title">Missing KPI, SOP or clarity</h3>
+                <p class="solution-pillar__copy" data-role-alert-clarity-copy>
+                  Accountabilities and decision rights will be checked here.
                 </p>
               </div>
             </article>
+          </div>
+
+          <div class="management-layout management-layout--roles">
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Role cards</p>
+                    <h3 class="card__title">Role and accountability map</h3>
+                  </div>
+                  <button
+                    class="button button--secondary"
+                    type="button"
+                    data-role-action="new"
+                  >
+                    Add role
+                  </button>
+                </div>
+                <div class="management-card-grid" data-role-card-list></div>
+              </div>
+            </div>
+
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Role profile</p>
+                    <h3 class="card__title" data-role-profile-name>Select a role</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-role-action="edit"
+                    >
+                      Edit role
+                    </button>
+                    <button
+                      class="button button--ghost"
+                      type="button"
+                      data-role-action="delete"
+                    >
+                      Delete role
+                    </button>
+                  </div>
+                </div>
+                <div data-role-profile></div>
+              </div>
+
+              <form class="card management-panel management-form" data-role-form>
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Role editor</p>
+                    <h3 class="card__title" data-role-form-title>Add role</h3>
+                  </div>
+                  <button
+                    class="button button--ghost"
+                    type="button"
+                    data-role-action="cancel"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <input type="hidden" name="roleId" />
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Role title</span>
+                    <input name="title" type="text" required />
+                  </label>
+                  <label class="management-field">
+                    <span>Owner</span>
+                    <select name="ownerId" data-person-select></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Backup</span>
+                    <select name="backupOwnerId" data-backup-select></select>
+                  </label>
+                </div>
+                <label class="management-field">
+                  <span>Role purpose</span>
+                  <textarea name="purpose" rows="3"></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Accountabilities</span>
+                  <textarea
+                    name="accountabilities"
+                    rows="4"
+                    placeholder="One line per accountability"
+                  ></textarea>
+                </label>
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>KPIs owned</span>
+                    <textarea
+                      name="kpiIds"
+                      rows="3"
+                      placeholder="One KPI name or ID per line"
+                    ></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>SOPs owned</span>
+                    <textarea
+                      name="sopIds"
+                      rows="3"
+                      placeholder="One SOP title or ID per line"
+                    ></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Decision rights</span>
+                    <textarea
+                      name="decisionRights"
+                      rows="3"
+                      placeholder="One line per right"
+                    ></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Escalation points</span>
+                    <textarea
+                      name="escalationPoints"
+                      rows="3"
+                      placeholder="One line per escalation path"
+                    ></textarea>
+                  </label>
+                </div>
+                <label class="management-field">
+                  <span>Training required</span>
+                  <textarea
+                    name="trainingRequired"
+                    rows="3"
+                    placeholder="One line per training requirement"
+                  ></textarea>
+                </label>
+                <div class="management-actions">
+                  <button class="button button--primary" type="submit">
+                    Save role
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>
