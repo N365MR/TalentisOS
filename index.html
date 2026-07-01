@@ -14,8 +14,8 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f0f0f'/%3E%3Cpath d='M18 20h28v6H35v18h-6V26H18z' fill='%23d4af37'/%3E%3C/svg%3E"
     />
     <link rel="manifest" href="./manifest.json" />
-    <link rel="stylesheet" href="./styles.css?v=phase6-meetings-v3" />
-    <script src="./app.js?v=phase6-meetings-v3" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=phase7-kpis-rocks-v1" />
+    <script src="./app.js?v=phase7-kpis-rocks-v1" defer></script>
   </head>
   <body>
     <div id="top"></div>
@@ -1199,33 +1199,35 @@
             <div class="value-panel reveal reveal-side-left">
               <section
                 class="value-module"
-                aria-label="KPI placeholder module preview"
+                aria-label="KPI command module"
               >
                 <header class="value-module__header">
                   <div>
                     <p class="value-module__eyebrow">Signal Board</p>
                     <h3 class="value-module__title">KPI Console</h3>
                   </div>
-                  <span class="metric-chip metric-chip--accent">Live Status</span>
+                  <button
+                    class="button button--secondary"
+                    type="button"
+                    data-kpi-action="new"
+                  >
+                    Add KPI
+                  </button>
                 </header>
                 <div class="value-module__grid">
                   <article class="value-module__card">
                     <p class="value-module__label">Green</p>
-                    <p class="value-module__value">5</p>
+                    <p class="value-module__value" data-kpi-summary-green>0</p>
                     <p class="value-module__meta">Stable indicators</p>
                   </article>
                   <article class="value-module__card">
                     <p class="value-module__label">Amber</p>
-                    <p class="value-module__value">2</p>
+                    <p class="value-module__value" data-kpi-summary-amber>0</p>
                     <p class="value-module__meta">Need closer attention</p>
                   </article>
                   <article class="value-module__card value-module__card--wide">
-                    <p class="value-module__label">Red flags</p>
-                    <ul class="dashboard-list">
-                      <li>Review exceptions early</li>
-                      <li>Assign corrective action fast</li>
-                      <li>Track trend before escalation</li>
-                    </ul>
+                    <p class="value-module__label">War Room KPI tiles</p>
+                    <div class="management-card-grid kpi-war-room-grid" data-kpi-war-room-list></div>
                   </article>
                 </div>
               </section>
@@ -1237,9 +1239,143 @@
               <div class="value-list">
                 <p class="value-list__item">Red, amber and green status</p>
                 <p class="value-list__item">Targets, actuals and owners</p>
-                <p class="value-list__item">Daily visibility without noise</p>
+                <p class="value-list__item">Governance risks when ownership is missing</p>
                 <p class="value-list__item">Corrective action tied to follow-up</p>
               </div>
+            </div>
+          </div>
+
+          <div class="management-layout management-layout--kpis">
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">KPI cards</p>
+                    <h3 class="card__title">Operational scorecards</h3>
+                  </div>
+                </div>
+                <div class="management-card-grid" data-kpi-card-list></div>
+              </div>
+            </div>
+
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">KPI detail</p>
+                    <h3 class="card__title" data-kpi-profile-name>Select a KPI</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button class="button button--ghost" type="button" data-kpi-action="edit">
+                      Edit KPI
+                    </button>
+                    <button class="button button--ghost" type="button" data-kpi-action="delete">
+                      Delete KPI
+                    </button>
+                  </div>
+                </div>
+                <div data-kpi-profile></div>
+              </div>
+
+              <form class="card management-panel management-form" data-kpi-form novalidate>
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">KPI editor</p>
+                    <h3 class="card__title" data-kpi-form-title>Add KPI</h3>
+                  </div>
+                  <button class="button button--ghost" type="button" data-kpi-action="cancel">
+                    Cancel
+                  </button>
+                </div>
+                <input type="hidden" name="kpiId" />
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>KPI name</span>
+                    <input name="name" type="text" required />
+                  </label>
+                  <label class="management-field">
+                    <span>Owner</span>
+                    <select name="ownerId" data-kpi-owner-select required></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Category</span>
+                    <select name="category">
+                      <option value="people">People</option>
+                      <option value="customer">Customer</option>
+                      <option value="operations">Operations</option>
+                      <option value="financial">Financial</option>
+                      <option value="quality">Quality</option>
+                      <option value="delivery">Delivery</option>
+                      <option value="training">Training</option>
+                      <option value="safety">Safety</option>
+                      <option value="continuous_improvement">Continuous improvement</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Unit</span>
+                    <input name="unit" type="text" placeholder="%, $, hours" />
+                  </label>
+                  <label class="management-field">
+                    <span>Target</span>
+                    <input name="target" type="number" step="0.01" />
+                  </label>
+                  <label class="management-field">
+                    <span>Actual</span>
+                    <input name="actual" type="number" step="0.01" />
+                  </label>
+                  <label class="management-field">
+                    <span>Status</span>
+                    <select name="status">
+                      <option value="green">Green</option>
+                      <option value="amber">Amber</option>
+                      <option value="red">Red</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Trend</span>
+                    <select name="trend">
+                      <option value="up">Up</option>
+                      <option value="flat">Flat</option>
+                      <option value="down">Down</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Review frequency</span>
+                    <select name="reviewFrequency">
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="quarterly">Quarterly</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="management-field">
+                  <span>Corrective action</span>
+                  <textarea name="correctiveAction" rows="3"></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Notes</span>
+                  <textarea name="notes" rows="3"></textarea>
+                </label>
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Linked tasks</span>
+                    <textarea name="linkedTaskIds" rows="3" placeholder="One task title or id per line"></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked issues</span>
+                    <textarea name="linkedIssueIds" rows="3" placeholder="One issue title or id per line"></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked SOPs</span>
+                    <textarea name="linkedSopIds" rows="3" placeholder="One SOP title or id per line"></textarea>
+                  </label>
+                </div>
+                <p class="form-error" data-kpi-form-error hidden></p>
+                <div class="management-actions">
+                  <button class="button button--primary" type="submit">Save KPI</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -1251,27 +1387,134 @@
             <p class="eyebrow">EOS Execution</p>
             <h2 class="section-heading">Rocks</h2>
             <p class="section-copy">
-              Placeholder view for quarterly priorities, EOS alignment and
-              strategic follow-through.
+              Track quarterly priorities, progress, blockers and linked execution
+              with clear risk indicators.
             </p>
           </div>
 
           <div class="card-grid">
             <article class="card reveal reveal-up">
               <p class="card__label">Quarterly priorities</p>
-              <h3 class="card__title">Rock tracker placeholder</h3>
-              <p class="card__body">
-                Keep major priorities visible alongside the daily execution
-                rhythm.
-              </p>
+              <h3 class="card__title" data-rock-summary-total>0 active rocks</h3>
+              <p class="card__body">Visible EOS execution priorities.</p>
             </article>
             <article class="card reveal reveal-up">
-              <p class="card__label">Review rhythm</p>
-              <h3 class="card__title">Accountability placeholder</h3>
-              <p class="card__body">
-                Tie progress reviews back to meetings, owners and blockers.
-              </p>
+              <p class="card__label">Risk review</p>
+              <h3 class="card__title" data-rock-summary-risk>0 at risk</h3>
+              <p class="card__body">Blocked and off-track rocks surface automatically.</p>
             </article>
+          </div>
+
+          <div class="management-layout management-layout--rocks">
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Rock cards</p>
+                    <h3 class="card__title">EOS execution tracker</h3>
+                  </div>
+                  <button class="button button--secondary" type="button" data-rock-action="new">
+                    Add rock
+                  </button>
+                </div>
+                <div class="management-card-grid" data-rock-card-list></div>
+              </div>
+            </div>
+
+            <div class="management-column reveal reveal-up">
+              <div class="card management-panel">
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Rock detail</p>
+                    <h3 class="card__title" data-rock-profile-name>Select a rock</h3>
+                  </div>
+                  <div class="management-actions">
+                    <button class="button button--ghost" type="button" data-rock-action="edit">
+                      Edit rock
+                    </button>
+                    <button class="button button--ghost" type="button" data-rock-action="delete">
+                      Delete rock
+                    </button>
+                  </div>
+                </div>
+                <div data-rock-profile></div>
+              </div>
+
+              <form class="card management-panel management-form" data-rock-form novalidate>
+                <div class="dashboard-card__topline">
+                  <div>
+                    <p class="card__label">Rock editor</p>
+                    <h3 class="card__title" data-rock-form-title>Add rock</h3>
+                  </div>
+                  <button class="button button--ghost" type="button" data-rock-action="cancel">
+                    Cancel
+                  </button>
+                </div>
+                <input type="hidden" name="rockId" />
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Rock title</span>
+                    <input name="title" type="text" required />
+                  </label>
+                  <label class="management-field">
+                    <span>Owner</span>
+                    <select name="ownerId" data-rock-owner-select required></select>
+                  </label>
+                  <label class="management-field">
+                    <span>Quarter</span>
+                    <input name="quarter" type="text" placeholder="Q3 2026" />
+                  </label>
+                  <label class="management-field">
+                    <span>Due date</span>
+                    <input name="dueDate" type="date" />
+                  </label>
+                  <label class="management-field">
+                    <span>Status</span>
+                    <select name="status">
+                      <option value="on_track">On track</option>
+                      <option value="at_risk">At risk</option>
+                      <option value="off_track">Off track</option>
+                      <option value="blocked">Blocked</option>
+                      <option value="complete">Complete</option>
+                    </select>
+                  </label>
+                  <label class="management-field">
+                    <span>Progress percentage</span>
+                    <input name="progress" type="number" min="0" max="100" step="1" />
+                  </label>
+                </div>
+                <label class="management-field">
+                  <span>Milestones</span>
+                  <textarea name="milestones" rows="4" placeholder="One milestone per line"></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Blockers</span>
+                  <textarea name="blockers" rows="3"></textarea>
+                </label>
+                <label class="management-field">
+                  <span>Notes</span>
+                  <textarea name="notes" rows="3"></textarea>
+                </label>
+                <div class="management-form__grid">
+                  <label class="management-field">
+                    <span>Linked tasks</span>
+                    <textarea name="linkedTaskIds" rows="3" placeholder="One task title or id per line"></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked issues</span>
+                    <textarea name="linkedIssueIds" rows="3" placeholder="One issue title or id per line"></textarea>
+                  </label>
+                  <label class="management-field">
+                    <span>Linked KPIs</span>
+                    <textarea name="linkedKpiIds" rows="3" placeholder="One KPI title or id per line"></textarea>
+                  </label>
+                </div>
+                <p class="form-error" data-rock-form-error hidden></p>
+                <div class="management-actions">
+                  <button class="button button--primary" type="submit">Save rock</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>

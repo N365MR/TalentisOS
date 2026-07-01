@@ -194,6 +194,25 @@ document.addEventListener("DOMContentLoaded", () => {
     "[data-meeting-type-select]"
   );
   const meetingAgendaNode = document.querySelector("[data-meeting-agenda]");
+  const kpiSummaryGreenNode = document.querySelector("[data-kpi-summary-green]");
+  const kpiSummaryAmberNode = document.querySelector("[data-kpi-summary-amber]");
+  const kpiWarRoomListNode = document.querySelector("[data-kpi-war-room-list]");
+  const kpiCardListNode = document.querySelector("[data-kpi-card-list]");
+  const kpiProfileNameNode = document.querySelector("[data-kpi-profile-name]");
+  const kpiProfileNode = document.querySelector("[data-kpi-profile]");
+  const kpiFormNode = document.querySelector("[data-kpi-form]");
+  const kpiFormTitleNode = document.querySelector("[data-kpi-form-title]");
+  const kpiFormErrorNode = document.querySelector("[data-kpi-form-error]");
+  const kpiOwnerSelectNode = document.querySelector("[data-kpi-owner-select]");
+  const rockSummaryTotalNode = document.querySelector("[data-rock-summary-total]");
+  const rockSummaryRiskNode = document.querySelector("[data-rock-summary-risk]");
+  const rockCardListNode = document.querySelector("[data-rock-card-list]");
+  const rockProfileNameNode = document.querySelector("[data-rock-profile-name]");
+  const rockProfileNode = document.querySelector("[data-rock-profile]");
+  const rockFormNode = document.querySelector("[data-rock-form]");
+  const rockFormTitleNode = document.querySelector("[data-rock-form-title]");
+  const rockFormErrorNode = document.querySelector("[data-rock-form-error]");
+  const rockOwnerSelectNode = document.querySelector("[data-rock-owner-select]");
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
@@ -203,6 +222,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeTaskFilter = "all";
   let activeTaskOwnerFilter = "";
   let selectedMeetingId = null;
+  let selectedKpiId = null;
+  let selectedRockId = null;
 
   if (yearNode) {
     yearNode.textContent = String(new Date().getFullYear());
@@ -512,6 +533,53 @@ document.addEventListener("DOMContentLoaded", () => {
         : [],
       rating: meeting.rating ?? "",
       followUpNotes: meeting.followUpNotes || "",
+    };
+  }
+
+  function createDefaultKpi(kpi = {}) {
+    return {
+      id: kpi.id || generateId("kpi"),
+      name: kpi.name || "",
+      ownerId: kpi.ownerId || "",
+      category: kpi.category || "operations",
+      target:
+        kpi.target === "" || kpi.target === null || typeof kpi.target === "undefined"
+          ? ""
+          : Number(kpi.target),
+      actual:
+        kpi.actual === "" || kpi.actual === null || typeof kpi.actual === "undefined"
+          ? ""
+          : Number(kpi.actual),
+      unit: kpi.unit || "",
+      status: kpi.status || "green",
+      trend: kpi.trend || "flat",
+      reviewFrequency: kpi.reviewFrequency || "weekly",
+      correctiveAction: kpi.correctiveAction || "",
+      notes: kpi.notes || "",
+      linkedTaskIds: Array.isArray(kpi.linkedTaskIds) ? kpi.linkedTaskIds : [],
+      linkedIssueIds: Array.isArray(kpi.linkedIssueIds) ? kpi.linkedIssueIds : [],
+      linkedSopIds: Array.isArray(kpi.linkedSopIds) ? kpi.linkedSopIds : [],
+    };
+  }
+
+  function createDefaultRock(rock = {}) {
+    return {
+      id: rock.id || generateId("rock"),
+      title: rock.title || "",
+      ownerId: rock.ownerId || "",
+      quarter: rock.quarter || "",
+      dueDate: rock.dueDate || "",
+      status: rock.status || "on_track",
+      progress:
+        rock.progress === "" || rock.progress === null || typeof rock.progress === "undefined"
+          ? 0
+          : Math.max(0, Math.min(100, Number(rock.progress) || 0)),
+      milestones: Array.isArray(rock.milestones) ? rock.milestones : [],
+      blockers: rock.blockers || "",
+      notes: rock.notes || "",
+      linkedTaskIds: Array.isArray(rock.linkedTaskIds) ? rock.linkedTaskIds : [],
+      linkedIssueIds: Array.isArray(rock.linkedIssueIds) ? rock.linkedIssueIds : [],
+      linkedKpiIds: Array.isArray(rock.linkedKpiIds) ? rock.linkedKpiIds : [],
     };
   }
 
@@ -898,59 +966,115 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     state.kpis = [
-      {
+      createDefaultKpi({
         id: "kpi_first_time_fix",
         name: "First Time Fix",
+        ownerId: state.teamMembers[0].id,
+        category: "operations",
         target: 92,
         actual: 88,
+        unit: "%",
         status: "amber",
-        ownerId: state.teamMembers[0].id,
         trend: "down",
-      },
-      {
+        reviewFrequency: "weekly",
+        correctiveAction: "Review repeat rework causes in the morning huddle and close carryovers by midday.",
+        notes: "Metro zone install defects are impacting same-day closure.",
+        linkedTaskIds: [state.tasks[0].id],
+        linkedIssueIds: ["issue_install_rework"],
+        linkedSopIds: ["Morning Huddle SOP"],
+      }),
+      createDefaultKpi({
         id: "kpi_training_completion",
         name: "Training Completion",
+        ownerId: state.teamMembers[2].id,
+        category: "training",
         target: 100,
         actual: 84,
+        unit: "%",
         status: "red",
-        ownerId: state.teamMembers[2].id,
         trend: "flat",
-      },
-      {
+        reviewFrequency: "weekly",
+        correctiveAction: "Escalate incomplete induction plans and review overdue training in the weekly leadership L10.",
+        notes: "Two newer team members are behind the expected training rhythm.",
+        linkedTaskIds: [state.tasks[2].id],
+        linkedIssueIds: ["issue_induction_gap"],
+        linkedSopIds: ["Induction Checklist SOP"],
+      }),
+      createDefaultKpi({
         id: "kpi_service_callback_rate",
         name: "Service Callback Rate",
+        ownerId: state.teamMembers[0].id,
+        category: "customer",
         target: 3,
         actual: 5,
+        unit: "%",
         status: "red",
-        ownerId: state.teamMembers[0].id,
         trend: "up",
-      },
-      {
+        reviewFrequency: "daily",
+        correctiveAction: "Assign callback correction ownership and review the previous day's repeat faults before 10:00.",
+        notes: "Customer repeat demand is increasing in the metro service zone.",
+        linkedTaskIds: [state.tasks[3].id],
+        linkedIssueIds: ["issue_callback_spike"],
+        linkedSopIds: ["Morning Huddle SOP"],
+      }),
+      createDefaultKpi({
         id: generateId("kpi"),
         name: "Handover Completion",
+        ownerId: state.teamMembers[3].id,
+        category: "delivery",
         target: 100,
         actual: 98,
+        unit: "%",
         status: "green",
-        ownerId: state.teamMembers[3].id,
         trend: "up",
-      },
+        reviewFrequency: "daily",
+        correctiveAction: "",
+        notes: "Late shift handover quality is stable this week.",
+        linkedTaskIds: [],
+        linkedIssueIds: [],
+        linkedSopIds: ["Dispatch Close Handover SOP"],
+      }),
     ];
 
     state.rocks = [
-      {
+      createDefaultRock({
         id: generateId("rock"),
         title: "Lift morning huddle discipline across all teams",
         ownerId: state.managerProfile.id,
         quarter: "Q3 2026",
+        dueDate: "2026-09-30",
         status: "on_track",
-      },
-      {
+        progress: 62,
+        milestones: [
+          "Publish the daily huddle structure",
+          "Train team leads on escalation review",
+          "Audit huddle completion for ten working days",
+        ],
+        blockers: "",
+        notes: "Good adoption is visible, but consistency still needs reinforcement across late shifts.",
+        linkedTaskIds: [state.tasks[1].id],
+        linkedIssueIds: ["issue_callback_spike"],
+        linkedKpiIds: ["kpi_first_time_fix"],
+      }),
+      createDefaultRock({
         id: generateId("rock"),
         title: "Reduce repeat callbacks by 20 percent",
         ownerId: state.teamMembers[0].id,
         quarter: "Q3 2026",
+        dueDate: "2026-09-30",
         status: "at_risk",
-      },
+        progress: 34,
+        milestones: [
+          "Diagnose top callback causes",
+          "Assign corrective actions by owner",
+          "Review callback trend in each L10",
+        ],
+        blockers: "Owner follow-through is inconsistent on repeat-fault close-out.",
+        notes: "This rock is feeding directly into the service callback KPI risk.",
+        linkedTaskIds: [state.tasks[3].id],
+        linkedIssueIds: ["issue_callback_spike"],
+        linkedKpiIds: ["kpi_service_callback_rate"],
+      }),
     ];
 
     state.issues = [
@@ -1203,6 +1327,8 @@ document.addEventListener("DOMContentLoaded", () => {
     normalised.meetings = normalised.meetings.map((meeting) =>
       createDefaultMeeting(meeting)
     );
+    normalised.kpis = normalised.kpis.map((kpi) => createDefaultKpi(kpi));
+    normalised.rocks = normalised.rocks.map((rock) => createDefaultRock(rock));
     const seededMeetings = seedSampleData().meetings.map((meeting) =>
       createDefaultMeeting(meeting)
     );
@@ -1874,6 +2000,16 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     return { matchedKpis, matchedSops };
+  }
+
+  function resolveReferenceIds(rawValue, collection, labelKeys = ["id", "name", "title"]) {
+    return parseTextList(rawValue).map((entry) => {
+      const directMatch = collection.find((item) =>
+        labelKeys.some((key) => String(item[key] || "") === entry)
+      );
+
+      return directMatch?.id || entry;
+    });
   }
 
   function getRoleClarityAlerts(role) {
@@ -2550,6 +2686,728 @@ document.addEventListener("DOMContentLoaded", () => {
       !filteredTasks.some((item) => item.id === selectedTaskId)
     ) {
       selectedTaskId = filteredTasks[0].id;
+    }
+  }
+
+  function ensureKpiSelection() {
+    if (!selectedKpiId || !appState.kpis.some((item) => item.id === selectedKpiId)) {
+      selectedKpiId = appState.kpis[0]?.id || null;
+    }
+  }
+
+  function ensureRockSelection() {
+    if (!selectedRockId || !appState.rocks.some((item) => item.id === selectedRockId)) {
+      selectedRockId = appState.rocks[0]?.id || null;
+    }
+  }
+
+  function populateKpiOwnerOptions(selectedOwnerId = "") {
+    if (!kpiOwnerSelectNode) {
+      return;
+    }
+
+    const options = [
+      { value: appState.managerProfile.id, label: appState.managerProfile.name || "Manager" },
+      ...appState.teamMembers.map((person) => ({
+        value: person.id,
+        label: person.name,
+      })),
+    ];
+
+    kpiOwnerSelectNode.innerHTML = `<option value="">Select owner</option>${options
+      .map(
+        (item) => `
+          <option value="${escapeHtml(item.value)}" ${
+            item.value === selectedOwnerId ? "selected" : ""
+          }>
+            ${escapeHtml(item.label)}
+          </option>
+        `
+      )
+      .join("")}`;
+  }
+
+  function populateRockOwnerOptions(selectedOwnerId = "") {
+    if (!rockOwnerSelectNode) {
+      return;
+    }
+
+    const options = [
+      { value: appState.managerProfile.id, label: appState.managerProfile.name || "Manager" },
+      ...appState.teamMembers.map((person) => ({
+        value: person.id,
+        label: person.name,
+      })),
+    ];
+
+    rockOwnerSelectNode.innerHTML = `<option value="">Select owner</option>${options
+      .map(
+        (item) => `
+          <option value="${escapeHtml(item.value)}" ${
+            item.value === selectedOwnerId ? "selected" : ""
+          }>
+            ${escapeHtml(item.label)}
+          </option>
+        `
+      )
+      .join("")}`;
+  }
+
+  function openKpiForm(mode = "new") {
+    if (!kpiFormNode) {
+      return;
+    }
+
+    const selectedKpi =
+      mode === "edit" ? appState.kpis.find((kpi) => kpi.id === selectedKpiId) : null;
+
+    populateKpiOwnerOptions(selectedKpi?.ownerId || "");
+    kpiFormNode.classList.add("is-open");
+    kpiFormTitleNode.textContent = selectedKpi ? "Edit KPI" : "Add KPI";
+    kpiFormNode.elements.kpiId.value = selectedKpi?.id || "";
+    kpiFormNode.elements.name.value = selectedKpi?.name || "";
+    kpiFormNode.elements.ownerId.value = selectedKpi?.ownerId || "";
+    kpiFormNode.elements.category.value = selectedKpi?.category || "operations";
+    kpiFormNode.elements.unit.value = selectedKpi?.unit || "";
+    kpiFormNode.elements.target.value = selectedKpi?.target ?? "";
+    kpiFormNode.elements.actual.value = selectedKpi?.actual ?? "";
+    kpiFormNode.elements.status.value = selectedKpi?.status || "green";
+    kpiFormNode.elements.trend.value = selectedKpi?.trend || "flat";
+    kpiFormNode.elements.reviewFrequency.value =
+      selectedKpi?.reviewFrequency || "weekly";
+    kpiFormNode.elements.correctiveAction.value =
+      selectedKpi?.correctiveAction || "";
+    kpiFormNode.elements.notes.value = selectedKpi?.notes || "";
+    kpiFormNode.elements.linkedTaskIds.value = formatListText(
+      selectedKpi?.linkedTaskIds
+    );
+    kpiFormNode.elements.linkedIssueIds.value = formatListText(
+      selectedKpi?.linkedIssueIds
+    );
+    kpiFormNode.elements.linkedSopIds.value = formatListText(
+      selectedKpi?.linkedSopIds
+    );
+    if (kpiFormErrorNode) {
+      kpiFormErrorNode.hidden = true;
+      kpiFormErrorNode.textContent = "";
+    }
+  }
+
+  function closeKpiForm() {
+    kpiFormNode?.classList.remove("is-open");
+    if (kpiFormNode) {
+      kpiFormNode.reset();
+      kpiFormNode.elements.kpiId.value = "";
+    }
+    if (kpiFormErrorNode) {
+      kpiFormErrorNode.hidden = true;
+      kpiFormErrorNode.textContent = "";
+    }
+  }
+
+  function validateKpiForm(form) {
+    const errors = [];
+
+    if (!form.elements.name.value.trim()) {
+      errors.push("KPI name is required.");
+    }
+
+    if (!form.elements.ownerId.value) {
+      errors.push("KPI owner is required.");
+    }
+
+    if (
+      form.elements.status.value === "red" &&
+      !form.elements.correctiveAction.value.trim()
+    ) {
+      errors.push("Red KPI requires corrective action.");
+    }
+
+    return errors;
+  }
+
+  function saveKpiFromForm(form) {
+    const errors = validateKpiForm(form);
+
+    if (errors.length > 0) {
+      if (kpiFormErrorNode) {
+        kpiFormErrorNode.textContent = errors.join(" ");
+        kpiFormErrorNode.hidden = false;
+      }
+      return;
+    }
+
+    const kpiId = form.elements.kpiId.value || generateId("kpi");
+    const nextKpi = createDefaultKpi({
+      id: kpiId,
+      name: form.elements.name.value.trim(),
+      ownerId: form.elements.ownerId.value,
+      category: form.elements.category.value,
+      unit: form.elements.unit.value.trim(),
+      target: form.elements.target.value,
+      actual: form.elements.actual.value,
+      status: form.elements.status.value,
+      trend: form.elements.trend.value,
+      reviewFrequency: form.elements.reviewFrequency.value,
+      correctiveAction: form.elements.correctiveAction.value.trim(),
+      notes: form.elements.notes.value.trim(),
+      linkedTaskIds: resolveReferenceIds(form.elements.linkedTaskIds.value, appState.tasks, [
+        "id",
+        "title",
+      ]),
+      linkedIssueIds: resolveReferenceIds(
+        form.elements.linkedIssueIds.value,
+        appState.issues,
+        ["id", "title"]
+      ),
+      linkedSopIds: resolveReferenceIds(form.elements.linkedSopIds.value, appState.sops, [
+        "id",
+        "title",
+      ]),
+    });
+
+    const existingIndex = appState.kpis.findIndex((kpi) => kpi.id === kpiId);
+
+    if (existingIndex >= 0) {
+      appState.kpis.splice(existingIndex, 1, nextKpi);
+    } else {
+      appState.kpis.push(nextKpi);
+    }
+
+    selectedKpiId = nextKpi.id;
+    saveState(appState);
+    closeKpiForm();
+    showToast("KPI saved", `${nextKpi.name} was saved locally.`);
+  }
+
+  function deleteSelectedKpi() {
+    const kpi = appState.kpis.find((item) => item.id === selectedKpiId);
+
+    if (!kpi) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(`Delete the KPI "${kpi.name}" from TalentisOS?`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    appState.roles = appState.roles.map((role) => ({
+      ...role,
+      kpiIds: role.kpiIds.filter((id) => id !== kpi.id && id !== kpi.name),
+    }));
+    appState.rocks = appState.rocks.map((rock) => ({
+      ...rock,
+      linkedKpiIds: rock.linkedKpiIds.filter((id) => id !== kpi.id && id !== kpi.name),
+    }));
+    appState.tasks = appState.tasks.map((task) => ({
+      ...task,
+      linkedKpiId: task.linkedKpiId === kpi.id ? "" : task.linkedKpiId,
+    }));
+    appState.kpis = appState.kpis.filter((item) => item.id !== kpi.id);
+    selectedKpiId = null;
+    saveState(appState);
+    closeKpiForm();
+    showToast("KPI deleted", `${kpi.name} was removed locally.`);
+  }
+
+  function renderKpiProfile(kpi) {
+    if (!kpi) {
+      return renderEmptyState("Select a KPI to view ownership, status, corrective action and linked work.");
+    }
+
+    const linkedTaskNames =
+      kpi.linkedTaskIds.length > 0
+        ? kpi.linkedTaskIds.map((id) => {
+            const task = appState.tasks.find((item) => item.id === id || item.title === id);
+            return task?.title || id;
+          })
+        : [];
+    const linkedIssueNames =
+      kpi.linkedIssueIds.length > 0
+        ? kpi.linkedIssueIds.map((id) => {
+            const issue = appState.issues.find((item) => item.id === id || item.title === id);
+            return issue?.title || id;
+          })
+        : [];
+    const linkedSopNames =
+      kpi.linkedSopIds.length > 0
+        ? kpi.linkedSopIds.map((id) => {
+            const sop = appState.sops.find((item) => item.id === id || item.title === id);
+            return sop?.title || id;
+          })
+        : [];
+    const isGovernanceRisk = !kpi.ownerId;
+
+    return `
+      <div class="management-profile">
+        <div class="profile-chip-row">
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(kpi.status))}</span>
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(kpi.category))}</span>
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(kpi.trend))}</span>
+        </div>
+        <div class="management-stat-grid">
+          <div class="management-stat">
+            <p class="management-stat__label">Owner</p>
+            <p class="management-stat__value">${escapeHtml(getPersonNameById(kpi.ownerId))}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Review frequency</p>
+            <p class="management-stat__value">${escapeHtml(
+              formatStatusLabel(kpi.reviewFrequency)
+            )}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Target</p>
+            <p class="management-stat__value">${escapeHtml(
+              `${kpi.target}${kpi.unit ? ` ${kpi.unit}` : ""}`
+            )}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Actual</p>
+            <p class="management-stat__value">${escapeHtml(
+              `${kpi.actual}${kpi.unit ? ` ${kpi.unit}` : ""}`
+            )}</p>
+          </div>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Corrective action</h4>
+          <p class="management-profile__copy">${escapeHtml(
+            kpi.correctiveAction || "No corrective action is required currently."
+          )}</p>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Notes</h4>
+          <p class="management-profile__copy">${escapeHtml(
+            kpi.notes || "No KPI notes captured yet."
+          )}</p>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Linked execution</h4>
+          <p class="management-profile__copy">Tasks: ${escapeHtml(
+            linkedTaskNames.length > 0 ? linkedTaskNames.join(", ") : "None linked"
+          )}</p>
+          <p class="management-profile__copy">Issues: ${escapeHtml(
+            linkedIssueNames.length > 0 ? linkedIssueNames.join(", ") : "None linked"
+          )}</p>
+          <p class="management-profile__copy">SOPs: ${escapeHtml(
+            linkedSopNames.length > 0 ? linkedSopNames.join(", ") : "None linked"
+          )}</p>
+        </div>
+        <div class="alert-pill-row">
+          ${
+            isGovernanceRisk
+              ? `<span class="alert-pill">Governance risk</span>`
+              : `<span class="tag-pill">Owner visible</span>`
+          }
+          ${
+            kpi.status === "red"
+              ? `<span class="alert-pill">Corrective action active</span>`
+              : ""
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  function renderKpis() {
+    ensureKpiSelection();
+    populateKpiOwnerOptions();
+    const selectedKpi = appState.kpis.find((item) => item.id === selectedKpiId) || null;
+    const greenCount = appState.kpis.filter((kpi) => kpi.status === "green").length;
+    const amberCount = appState.kpis.filter((kpi) => kpi.status === "amber").length;
+    const warRoomKpis = appState.kpis.filter(
+      (kpi) => kpi.status === "red" || kpi.status === "amber" || !kpi.ownerId
+    );
+
+    if (kpiSummaryGreenNode) {
+      kpiSummaryGreenNode.textContent = String(greenCount);
+    }
+
+    if (kpiSummaryAmberNode) {
+      kpiSummaryAmberNode.textContent = String(amberCount);
+    }
+
+    if (kpiWarRoomListNode) {
+      kpiWarRoomListNode.innerHTML =
+        warRoomKpis.length > 0
+          ? warRoomKpis
+              .map(
+                (kpi) => `
+                  <button
+                    type="button"
+                    class="management-card ${kpi.id === selectedKpiId ? "is-selected" : ""}"
+                    data-select-kpi="${escapeHtml(kpi.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      !kpi.ownerId ? "Governance risk" : `${formatStatusLabel(kpi.status)} KPI`
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(kpi.name)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      `${kpi.actual}${kpi.unit ? ` ${kpi.unit}` : ""} actual • ${getPersonNameById(
+                        kpi.ownerId
+                      )}`
+                    )}</p>
+                  </button>
+                `
+              )
+              .join("")
+          : renderEmptyState("No red, amber or ownership-risk KPIs are active.");
+    }
+
+    if (kpiCardListNode) {
+      kpiCardListNode.innerHTML =
+        appState.kpis.length > 0
+          ? appState.kpis
+              .slice()
+              .sort((left, right) => left.name.localeCompare(right.name))
+              .map(
+                (kpi) => `
+                  <button
+                    type="button"
+                    class="management-card ${kpi.id === selectedKpiId ? "is-selected" : ""}"
+                    data-select-kpi="${escapeHtml(kpi.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      formatStatusLabel(kpi.category)
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(kpi.name)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      `${formatStatusLabel(kpi.status)} • ${getPersonNameById(
+                        kpi.ownerId
+                      )}`
+                    )}</p>
+                    <div class="management-tags">
+                      <span class="tag-pill">${escapeHtml(
+                        `Target ${kpi.target}${kpi.unit ? ` ${kpi.unit}` : ""}`
+                      )}</span>
+                      <span class="tag-pill">${escapeHtml(
+                        `Actual ${kpi.actual}${kpi.unit ? ` ${kpi.unit}` : ""}`
+                      )}</span>
+                    </div>
+                  </button>
+                `
+              )
+              .join("")
+          : renderEmptyState("No KPIs exist yet. Add the first KPI to start your scorecard.");
+    }
+
+    if (kpiProfileNameNode) {
+      kpiProfileNameNode.textContent = selectedKpi ? selectedKpi.name : "Select a KPI";
+    }
+
+    if (kpiProfileNode) {
+      kpiProfileNode.innerHTML = renderKpiProfile(selectedKpi);
+    }
+  }
+
+  function openRockForm(mode = "new") {
+    if (!rockFormNode) {
+      return;
+    }
+
+    const selectedRock =
+      mode === "edit" ? appState.rocks.find((rock) => rock.id === selectedRockId) : null;
+
+    populateRockOwnerOptions(selectedRock?.ownerId || "");
+    rockFormNode.classList.add("is-open");
+    rockFormTitleNode.textContent = selectedRock ? "Edit rock" : "Add rock";
+    rockFormNode.elements.rockId.value = selectedRock?.id || "";
+    rockFormNode.elements.title.value = selectedRock?.title || "";
+    rockFormNode.elements.ownerId.value = selectedRock?.ownerId || "";
+    rockFormNode.elements.quarter.value = selectedRock?.quarter || "";
+    rockFormNode.elements.dueDate.value = selectedRock?.dueDate || "";
+    rockFormNode.elements.status.value = selectedRock?.status || "on_track";
+    rockFormNode.elements.progress.value = selectedRock?.progress ?? 0;
+    rockFormNode.elements.milestones.value = formatListText(selectedRock?.milestones);
+    rockFormNode.elements.blockers.value = selectedRock?.blockers || "";
+    rockFormNode.elements.notes.value = selectedRock?.notes || "";
+    rockFormNode.elements.linkedTaskIds.value = formatListText(
+      selectedRock?.linkedTaskIds
+    );
+    rockFormNode.elements.linkedIssueIds.value = formatListText(
+      selectedRock?.linkedIssueIds
+    );
+    rockFormNode.elements.linkedKpiIds.value = formatListText(
+      selectedRock?.linkedKpiIds
+    );
+    if (rockFormErrorNode) {
+      rockFormErrorNode.hidden = true;
+      rockFormErrorNode.textContent = "";
+    }
+  }
+
+  function closeRockForm() {
+    rockFormNode?.classList.remove("is-open");
+    if (rockFormNode) {
+      rockFormNode.reset();
+      rockFormNode.elements.rockId.value = "";
+    }
+    if (rockFormErrorNode) {
+      rockFormErrorNode.hidden = true;
+      rockFormErrorNode.textContent = "";
+    }
+  }
+
+  function validateRockForm(form) {
+    const errors = [];
+
+    if (!form.elements.title.value.trim()) {
+      errors.push("Rock title is required.");
+    }
+
+    if (!form.elements.ownerId.value) {
+      errors.push("Rock owner is required.");
+    }
+
+    return errors;
+  }
+
+  function saveRockFromForm(form) {
+    const errors = validateRockForm(form);
+
+    if (errors.length > 0) {
+      if (rockFormErrorNode) {
+        rockFormErrorNode.textContent = errors.join(" ");
+        rockFormErrorNode.hidden = false;
+      }
+      return;
+    }
+
+    const rockId = form.elements.rockId.value || generateId("rock");
+    const nextRock = createDefaultRock({
+      id: rockId,
+      title: form.elements.title.value.trim(),
+      ownerId: form.elements.ownerId.value,
+      quarter: form.elements.quarter.value.trim(),
+      dueDate: form.elements.dueDate.value,
+      status: form.elements.status.value,
+      progress: form.elements.progress.value,
+      milestones: parseTextList(form.elements.milestones.value),
+      blockers: form.elements.blockers.value.trim(),
+      notes: form.elements.notes.value.trim(),
+      linkedTaskIds: resolveReferenceIds(form.elements.linkedTaskIds.value, appState.tasks, [
+        "id",
+        "title",
+      ]),
+      linkedIssueIds: resolveReferenceIds(
+        form.elements.linkedIssueIds.value,
+        appState.issues,
+        ["id", "title"]
+      ),
+      linkedKpiIds: resolveReferenceIds(form.elements.linkedKpiIds.value, appState.kpis, [
+        "id",
+        "name",
+      ]),
+    });
+
+    const existingIndex = appState.rocks.findIndex((rock) => rock.id === rockId);
+
+    if (existingIndex >= 0) {
+      appState.rocks.splice(existingIndex, 1, nextRock);
+    } else {
+      appState.rocks.push(nextRock);
+    }
+
+    selectedRockId = nextRock.id;
+    saveState(appState);
+    closeRockForm();
+    showToast("Rock saved", `${nextRock.title} was saved locally.`);
+  }
+
+  function deleteSelectedRock() {
+    const rock = appState.rocks.find((item) => item.id === selectedRockId);
+
+    if (!rock) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(`Delete the rock "${rock.title}" from TalentisOS?`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    appState.rocks = appState.rocks.filter((item) => item.id !== rock.id);
+    selectedRockId = null;
+    saveState(appState);
+    closeRockForm();
+    showToast("Rock deleted", `${rock.title} was removed locally.`);
+  }
+
+  function renderRockProfile(rock) {
+    if (!rock) {
+      return renderEmptyState("Select a rock to view progress, blockers and linked execution.");
+    }
+
+    const linkedTaskNames =
+      rock.linkedTaskIds.length > 0
+        ? rock.linkedTaskIds.map((id) => {
+            const task = appState.tasks.find((item) => item.id === id || item.title === id);
+            return task?.title || id;
+          })
+        : [];
+    const linkedIssueNames =
+      rock.linkedIssueIds.length > 0
+        ? rock.linkedIssueIds.map((id) => {
+            const issue = appState.issues.find((item) => item.id === id || item.title === id);
+            return issue?.title || id;
+          })
+        : [];
+    const linkedKpiNames =
+      rock.linkedKpiIds.length > 0
+        ? rock.linkedKpiIds.map((id) => {
+            const kpi = appState.kpis.find((item) => item.id === id || item.name === id);
+            return kpi?.name || id;
+          })
+        : [];
+
+    return `
+      <div class="management-profile">
+        <div class="profile-chip-row">
+          <span class="tag-pill">${escapeHtml(formatStatusLabel(rock.status))}</span>
+          <span class="tag-pill">${escapeHtml(rock.quarter || "Quarter not set")}</span>
+          <span class="tag-pill">${escapeHtml(`${rock.progress}% complete`)}</span>
+        </div>
+        <div class="management-stat-grid">
+          <div class="management-stat">
+            <p class="management-stat__label">Owner</p>
+            <p class="management-stat__value">${escapeHtml(getPersonNameById(rock.ownerId))}</p>
+          </div>
+          <div class="management-stat">
+            <p class="management-stat__label">Due date</p>
+            <p class="management-stat__value">${escapeHtml(
+              rock.dueDate ? formatDisplayDate(rock.dueDate) : "Not set"
+            )}</p>
+          </div>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Progress</h4>
+          <div class="rock-progress">
+            <div
+              class="dashboard-progress__track"
+              role="progressbar"
+              aria-label="${escapeHtml(rock.title)} progress"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="${escapeHtml(String(rock.progress))}"
+            >
+              <span
+                class="dashboard-progress__fill"
+                data-progress-fill
+                data-progress-value="${escapeHtml(String(rock.progress))}"
+                style="width: ${escapeHtml(String(prefersReducedMotion ? rock.progress : 0))}%"
+              ></span>
+            </div>
+          </div>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Milestones</h4>
+          ${
+            rock.milestones.length > 0
+              ? `<ul class="management-profile__list">${rock.milestones
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+              : `<p class="management-profile__copy">No milestones captured yet.</p>`
+          }
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Blockers and notes</h4>
+          <p class="management-profile__copy">${escapeHtml(
+            rock.blockers || "No blockers are currently captured."
+          )}</p>
+          <p class="management-profile__copy">${escapeHtml(
+            rock.notes || "No rock notes captured yet."
+          )}</p>
+        </div>
+        <div class="management-profile__section">
+          <h4 class="management-profile__heading">Linked execution</h4>
+          <p class="management-profile__copy">Tasks: ${escapeHtml(
+            linkedTaskNames.length > 0 ? linkedTaskNames.join(", ") : "None linked"
+          )}</p>
+          <p class="management-profile__copy">Issues: ${escapeHtml(
+            linkedIssueNames.length > 0 ? linkedIssueNames.join(", ") : "None linked"
+          )}</p>
+          <p class="management-profile__copy">KPIs: ${escapeHtml(
+            linkedKpiNames.length > 0 ? linkedKpiNames.join(", ") : "None linked"
+          )}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderRocks() {
+    ensureRockSelection();
+    populateRockOwnerOptions();
+    const selectedRock = appState.rocks.find((item) => item.id === selectedRockId) || null;
+    const atRiskCount = getRocksAtRisk().length;
+
+    if (rockSummaryTotalNode) {
+      rockSummaryTotalNode.textContent = `${appState.rocks.length} active rock${
+        appState.rocks.length === 1 ? "" : "s"
+      }`;
+    }
+
+    if (rockSummaryRiskNode) {
+      rockSummaryRiskNode.textContent = `${atRiskCount} at risk`;
+    }
+
+    if (rockCardListNode) {
+      rockCardListNode.innerHTML =
+        appState.rocks.length > 0
+          ? appState.rocks
+              .slice()
+              .sort((left, right) => left.title.localeCompare(right.title))
+              .map(
+                (rock) => `
+                  <button
+                    type="button"
+                    class="management-card ${rock.id === selectedRockId ? "is-selected" : ""}"
+                    data-select-rock="${escapeHtml(rock.id)}"
+                  >
+                    <p class="today-list__eyebrow">${escapeHtml(
+                      formatStatusLabel(rock.status)
+                    )}</p>
+                    <h4 class="management-card__title">${escapeHtml(rock.title)}</h4>
+                    <p class="management-card__meta">${escapeHtml(
+                      `${getPersonNameById(rock.ownerId)} • ${rock.quarter || "Quarter not set"}`
+                    )}</p>
+                    <div class="rock-progress">
+                      <div
+                        class="dashboard-progress__track"
+                        role="progressbar"
+                        aria-label="${escapeHtml(rock.title)} progress"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        aria-valuenow="${escapeHtml(String(rock.progress))}"
+                      >
+                        <span
+                          class="dashboard-progress__fill"
+                          data-progress-fill
+                          data-progress-value="${escapeHtml(String(rock.progress))}"
+                          style="width: ${escapeHtml(
+                            String(prefersReducedMotion ? rock.progress : 0)
+                          )}%"
+                        ></span>
+                      </div>
+                    </div>
+                    <div class="management-tags">
+                      <span class="tag-pill">${escapeHtml(`${rock.progress}% complete`)}</span>
+                    </div>
+                  </button>
+                `
+              )
+              .join("")
+          : renderEmptyState("No rocks exist yet. Add the first rock to track EOS execution.");
+    }
+
+    if (rockProfileNameNode) {
+      rockProfileNameNode.textContent = selectedRock ? selectedRock.title : "Select a rock";
+    }
+
+    if (rockProfileNode) {
+      rockProfileNode.innerHTML = renderRockProfile(selectedRock);
     }
   }
 
@@ -3650,6 +4508,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderPeopleAndRoles();
     renderTasks();
     renderMeetings();
+    renderKpis();
+    renderRocks();
 
     if (schemaVersionNode) {
       schemaVersionNode.textContent = String(appState.schemaVersion);
@@ -3703,6 +4563,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderPeopleAndRoles,
     renderTasks,
     renderMeetings,
+    renderKpis,
+    renderRocks,
     convertMeetingActionToTask,
     loadState,
     saveState,
@@ -3792,6 +4654,45 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (kpiCardListNode) {
+    kpiCardListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-kpi]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedKpiId = trigger.getAttribute("data-select-kpi");
+      renderStateSummary();
+    });
+  }
+
+  if (kpiWarRoomListNode) {
+    kpiWarRoomListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-kpi]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedKpiId = trigger.getAttribute("data-select-kpi");
+      renderStateSummary();
+    });
+  }
+
+  if (rockCardListNode) {
+    rockCardListNode.addEventListener("click", (event) => {
+      const trigger = event.target.closest("[data-select-rock]");
+
+      if (!trigger) {
+        return;
+      }
+
+      selectedRockId = trigger.getAttribute("data-select-rock");
+      renderStateSummary();
+    });
+  }
+
   document.querySelectorAll("[data-task-filter]").forEach((button) => {
     button.addEventListener("click", () => {
       activeTaskFilter = button.getAttribute("data-task-filter") || "all";
@@ -3877,6 +4778,38 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    const kpiActionTrigger = event.target.closest("[data-kpi-action]");
+
+    if (kpiActionTrigger) {
+      const action = kpiActionTrigger.getAttribute("data-kpi-action");
+
+      if (action === "new") {
+        openKpiForm("new");
+      } else if (action === "edit" && selectedKpiId) {
+        openKpiForm("edit");
+      } else if (action === "delete" && selectedKpiId) {
+        deleteSelectedKpi();
+      } else if (action === "cancel") {
+        closeKpiForm();
+      }
+    }
+
+    const rockActionTrigger = event.target.closest("[data-rock-action]");
+
+    if (rockActionTrigger) {
+      const action = rockActionTrigger.getAttribute("data-rock-action");
+
+      if (action === "new") {
+        openRockForm("new");
+      } else if (action === "edit" && selectedRockId) {
+        openRockForm("edit");
+      } else if (action === "delete" && selectedRockId) {
+        deleteSelectedRock();
+      } else if (action === "cancel") {
+        closeRockForm();
+      }
+    }
+
     const convertMeetingActionTrigger = event.target.closest(
       "[data-convert-meeting-action]"
     );
@@ -3918,6 +4851,20 @@ document.addEventListener("DOMContentLoaded", () => {
     meetingFormNode.addEventListener("submit", (event) => {
       event.preventDefault();
       saveMeetingFromForm(meetingFormNode);
+    });
+  }
+
+  if (kpiFormNode) {
+    kpiFormNode.addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveKpiFromForm(kpiFormNode);
+    });
+  }
+
+  if (rockFormNode) {
+    rockFormNode.addEventListener("submit", (event) => {
+      event.preventDefault();
+      saveRockFromForm(rockFormNode);
     });
   }
 

@@ -114,11 +114,19 @@ Operational scorecard data.
 Suggested fields:
 - `id`
 - `name`
+- `ownerId`
+- `category`
 - `target`
 - `actual`
+- `unit`
 - `status`
-- `ownerId`
 - `trend`
+- `reviewFrequency`
+- `correctiveAction`
+- `notes`
+- `linkedTaskIds[]`
+- `linkedIssueIds[]`
+- `linkedSopIds[]`
 
 ### `rocks`
 
@@ -129,7 +137,15 @@ Suggested fields:
 - `title`
 - `ownerId`
 - `quarter`
+- `dueDate`
 - `status`
+- `progress`
+- `milestones[]`
+- `blockers`
+- `notes`
+- `linkedTaskIds[]`
+- `linkedIssueIds[]`
+- `linkedKpiIds[]`
 
 ### `issues`
 
