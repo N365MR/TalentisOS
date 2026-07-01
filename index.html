@@ -14,8 +14,8 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f0f0f'/%3E%3Cpath d='M18 20h28v6H35v18h-6V26H18z' fill='%23d4af37'/%3E%3C/svg%3E"
     />
     <link rel="manifest" href="./manifest.json" />
-    <link rel="stylesheet" href="./styles.css?v=phase1-shell" />
-    <script src="./app.js?v=phase1-shell" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=phase2-state" />
+    <script src="./app.js?v=phase2-state" defer></script>
   </head>
   <body>
     <div id="top"></div>
@@ -145,7 +145,9 @@
                     <p class="dashboard-mockup__eyebrow">Today</p>
                     <h2 class="dashboard-mockup__title">Hero Command</h2>
                   </div>
-                  <span class="metric-chip metric-chip--accent">Calm Mode</span>
+                  <span class="metric-chip metric-chip--accent" data-health-score>
+                    Calm Mode
+                  </span>
                 </header>
 
                 <div class="dashboard-mockup__rail">
@@ -163,25 +165,25 @@
 
                   <article class="dashboard-card">
                     <p class="dashboard-card__label">People pulse</p>
-                    <p class="dashboard-card__value">4</p>
+                    <p class="dashboard-card__value" data-people-due>4</p>
                     <p class="dashboard-card__meta">Conversations due today</p>
                   </article>
 
                   <article class="dashboard-card">
                     <p class="dashboard-card__label">KPI exceptions</p>
-                    <p class="dashboard-card__value">3</p>
+                    <p class="dashboard-card__value" data-kpi-exceptions>3</p>
                     <p class="dashboard-card__meta">Tracked before surprises land</p>
                   </article>
 
                   <article class="dashboard-card">
                     <p class="dashboard-card__label">War room</p>
-                    <p class="dashboard-card__value">2</p>
+                    <p class="dashboard-card__value" data-open-issues>2</p>
                     <p class="dashboard-card__meta">Issues waiting for ownership</p>
                   </article>
 
                   <article class="dashboard-card">
                     <p class="dashboard-card__label">Training risk</p>
-                    <p class="dashboard-card__value">1</p>
+                    <p class="dashboard-card__value" data-training-risk>1</p>
                     <p class="dashboard-card__meta">Capability gap visible today</p>
                   </article>
                 </div>
@@ -692,20 +694,73 @@
           </div>
 
           <div class="card-grid">
-            <article class="card reveal reveal-up">
-              <p class="card__label">Theme</p>
-              <h3 class="card__title">Current premium system</h3>
+            <article class="card reveal reveal-up settings-card">
+              <p class="card__label">Local-first controls</p>
+              <h3 class="card__title">Data persistence workspace</h3>
               <p class="card__body">
-                Dark luxury styling remains in place for the responsive app
-                shell.
+                Export, import, seed and clear TalentisOS data locally without
+                changing the current shell.
               </p>
+              <div class="settings-toolbar" aria-label="Local-first data actions">
+                <button class="button button--secondary" type="button" data-export-state>
+                  Export Data
+                </button>
+                <button class="button button--secondary" type="button" data-import-trigger>
+                  Import Data
+                </button>
+                <button class="button button--ghost" type="button" data-reset-sample>
+                  Reset Sample Data
+                </button>
+                <button class="button button--ghost" type="button" data-clear-data>
+                  Clear All Data
+                </button>
+              </div>
+              <input
+                id="state-import"
+                type="file"
+                accept="application/json,.json"
+                hidden
+                data-import-input
+              />
+              <div class="settings-meta" aria-live="polite">
+                <span class="tag-pill">Schema v<span data-schema-version>1</span></span>
+                <span class="tag-pill">Storage: localStorage</span>
+                <span class="metric-chip">Last saved: <span data-last-saved>Not yet saved</span></span>
+              </div>
             </article>
-            <article class="card reveal reveal-up">
+            <article class="card reveal reveal-up settings-card">
               <p class="card__label">Local-first status</p>
-              <h3 class="card__title">PWA shell ready</h3>
+              <h3 class="card__title">TalentisOS state summary</h3>
               <p class="card__body">
-                Manifest and service worker are present for later app phases.
+                Sample operational data is available locally across the core
+                leadership views for Phase 2.
               </p>
+              <dl class="status-metrics">
+                <div class="status-metrics__item">
+                  <dt>Team members</dt>
+                  <dd data-count-team-members>0</dd>
+                </div>
+                <div class="status-metrics__item">
+                  <dt>Open tasks</dt>
+                  <dd data-count-open-tasks>0</dd>
+                </div>
+                <div class="status-metrics__item">
+                  <dt>Meetings</dt>
+                  <dd data-count-meetings>0</dd>
+                </div>
+                <div class="status-metrics__item">
+                  <dt>KPIs</dt>
+                  <dd data-count-kpis>0</dd>
+                </div>
+                <div class="status-metrics__item">
+                  <dt>Issues</dt>
+                  <dd data-count-issues>0</dd>
+                </div>
+                <div class="status-metrics__item">
+                  <dt>SOPs</dt>
+                  <dd data-count-sops>0</dd>
+                </div>
+              </dl>
             </article>
           </div>
         </div>
@@ -719,5 +774,6 @@
         </p>
       </div>
     </footer>
+    <div class="toast-stack" aria-live="polite" aria-atomic="true" data-toast-stack></div>
   </body>
 </html>

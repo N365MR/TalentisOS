@@ -1,4 +1,4 @@
-const CACHE_NAME = "talentisos-shell-v1";
+const CACHE_NAME = "talentisos-shell-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -29,6 +29,28 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+  const isNavigationRequest = event.request.mode === "navigate";
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+
+  if (isNavigationRequest && isSameOrigin) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put("./index.html", responseClone);
+            });
+          }
+
+          return networkResponse;
+        })
+        .catch(() => caches.match("./index.html"))
+    );
     return;
   }
 
