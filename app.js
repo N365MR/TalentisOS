@@ -1,6 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
   document.body.dataset.jsReady = "true";
 
+  const canRegisterServiceWorker =
+    "serviceWorker" in navigator &&
+    (window.location.protocol === "https:" ||
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
+  if (canRegisterServiceWorker) {
+    window.addEventListener("load", async () => {
+      try {
+        await navigator.serviceWorker.register("./service-worker.js");
+      } catch (_error) {
+        // Fail quietly so direct local file opens never surface console noise.
+      }
+    });
+  }
+
   const body = document.body;
   const header = document.querySelector(".site-header");
   const menuToggle = document.querySelector(".menu-toggle");
