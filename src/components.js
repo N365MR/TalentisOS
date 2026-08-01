@@ -123,7 +123,7 @@ const promptLibrary = [
   'Finish the day by preparing tomorrow.',
 ];
 
-function escapeHtml(value = '') {
+export function escapeHtml(value = '') {
   return String(value).replace(
     /[&<>'"]/g,
     (character) =>
@@ -544,14 +544,22 @@ function navItems(currentKey, className) {
 function settingsDialog() {
   return `<dialog id="settings-dialog" class="modal" aria-labelledby="settings-title">
     <div class="modal__header"><div><p class="eyebrow">Preferences</p><h2 id="settings-title">Settings</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close settings">×</button></div>
-    <div class="modal__body"><p class="secondary-text">Tune the interface to the way you work. Product data and leadership records are not part of this phase.</p>
+    <div class="modal__body"><p class="secondary-text">Tune the interface to the way you work. Your records stay on this device unless you export them.</p>
       ${createSegmentedControl('Appearance', [
         ['light', 'Light'],
         ['system', 'System'],
         ['dark', 'Dark'],
       ])}
+      <button type="button" class="secondary-action settings-data-button" data-open-data>Data</button>
     </div>
   </dialog>`;
+}
+
+export function createDataDialog(snapshots = []) {
+  const snapshotList = snapshots.length
+    ? snapshots.map((snapshot) => `<li><span><strong>${escapeHtml(new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(snapshot.createdAt)))}</strong><small>${escapeHtml(snapshot.snapshotType)} snapshot · ${snapshot.recordCount || 0} records</small></span><button type="button" class="text-button" data-restore-snapshot="${escapeHtml(snapshot.id)}">Restore</button></li>`).join('')
+    : '<li class="section-empty"><span aria-hidden="true">—</span><p>No local snapshots yet.</p></li>';
+  return `<dialog id="data-dialog" class="modal data-dialog" aria-labelledby="data-title"><div class="modal__header"><div><p class="eyebrow">Settings · Data</p><h2 id="data-title">Protect your workspace.</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close data settings">×</button></div><div class="modal__body data-manager"><p class="secondary-text">Backups, restores, and imports happen locally. Nothing is uploaded.</p><section class="data-section"><h3>JSON backup</h3><p>Export everything needed to rebuild this workspace on another device.</p><button type="button" class="primary-action" data-export-backup>Export backup</button><label class="file-picker">Restore backup<input type="file" accept="application/json,.json" data-restore-file></label><div class="restore-preview" data-restore-preview hidden></div></section><section class="data-section"><h3>CSV tools</h3><div class="form-two-col"><label>Dataset<select data-csv-type><option value="priorities">Priorities</option><option value="risks">Risks</option><option value="decisions">Decisions</option><option value="followUps">Follow-ups</option><option value="improvements">Improvements</option><option value="dailySummaries">Daily summaries</option><option value="weeklySummaries">Weekly summaries</option></select></label><div class="data-actions"><button type="button" class="secondary-action" data-export-csv>Export CSV</button><button type="button" class="text-button" data-download-csv-template>Download template</button></div></div><label class="file-picker">Import CSV<input type="file" accept="text/csv,.csv" data-csv-file></label><div class="csv-preview" data-csv-preview hidden></div></section><section class="data-section"><h3>Local snapshots</h3><p>Automatic daily and weekly snapshots rotate on this device.</p><ul class="history-list snapshot-list">${snapshotList}</ul></section><section class="data-section data-danger"><h3>Delete all data</h3><p>This removes workspace records and cannot be undone. Export a backup first.</p><button type="button" class="secondary-action" data-delete-all-data>Delete all data</button></section><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Done</button></div></div></dialog>`;
 }
 
 export function createSegmentedControl(label, options) {

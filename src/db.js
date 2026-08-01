@@ -1,5 +1,5 @@
 const DB_NAME = 'talentisos';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 const stores = {
   settings: 'settings',
@@ -12,6 +12,7 @@ const stores = {
   weeklyReviews: 'weeklyReviews',
   improvements: 'improvements',
   playbookState: 'playbookState',
+  backupSnapshots: 'backupSnapshots',
   appMeta: 'appMeta',
 };
 
@@ -66,6 +67,11 @@ export function openDatabase() {
       }
       if (!database.objectStoreNames.contains(stores.playbookState)) {
         database.createObjectStore(stores.playbookState, { keyPath: 'id' });
+      }
+      if (!database.objectStoreNames.contains(stores.backupSnapshots)) {
+        const snapshots = database.createObjectStore(stores.backupSnapshots, { keyPath: 'id' });
+        snapshots.createIndex('snapshotType', 'snapshotType');
+        snapshots.createIndex('createdAt', 'createdAt');
       }
       if (!database.objectStoreNames.contains(stores.appMeta)) {
         database.createObjectStore(stores.appMeta, { keyPath: 'key' });
@@ -284,6 +290,29 @@ export async function savePlaybookState(database, state) {
     savedTopicIds: state.savedTopicIds || [],
     recentTopicIds: state.recentTopicIds || [],
     updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getBackupSnapshots(database) {
+  return (await getAll(database, stores.backupSnapshots)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function saveBackupSnapshot(database, snapshot) {
+  return putRecord(database, stores.backupSnapshots, snapshot);
+}
+
+export async function deleteBackupSnapshot(database, id) {
+  return deleteRecord(database, stores.backupSnapshots, id);
+}
+
+export async function clearWorkspaceData(database, includeSnapshots = false) {
+  const names = Object.values(stores).filter((storeName) => includeSnapshots || storeName !== stores.backupSnapshots);
+  const transaction = database.transaction(names, 'readwrite');
+  names.forEach((storeName) => transaction.objectStore(storeName).clear());
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error || new Error('Workspace deletion was aborted.'));
   });
 }
 

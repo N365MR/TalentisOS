@@ -420,14 +420,19 @@
   function settingsDialog() {
     return `<dialog id="settings-dialog" class="modal" aria-labelledby="settings-title">
     <div class="modal__header"><div><p class="eyebrow">Preferences</p><h2 id="settings-title">Settings</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close settings">\xD7</button></div>
-    <div class="modal__body"><p class="secondary-text">Tune the interface to the way you work. Product data and leadership records are not part of this phase.</p>
+    <div class="modal__body"><p class="secondary-text">Tune the interface to the way you work. Your records stay on this device unless you export them.</p>
       ${createSegmentedControl("Appearance", [
       ["light", "Light"],
       ["system", "System"],
       ["dark", "Dark"]
     ])}
+      <button type="button" class="secondary-action settings-data-button" data-open-data>Data</button>
     </div>
   </dialog>`;
+  }
+  function createDataDialog(snapshots = []) {
+    const snapshotList = snapshots.length ? snapshots.map((snapshot) => `<li><span><strong>${escapeHtml(new Intl.DateTimeFormat(void 0, { dateStyle: "medium", timeStyle: "short" }).format(new Date(snapshot.createdAt)))}</strong><small>${escapeHtml(snapshot.snapshotType)} snapshot \xB7 ${snapshot.recordCount || 0} records</small></span><button type="button" class="text-button" data-restore-snapshot="${escapeHtml(snapshot.id)}">Restore</button></li>`).join("") : '<li class="section-empty"><span aria-hidden="true">\u2014</span><p>No local snapshots yet.</p></li>';
+    return `<dialog id="data-dialog" class="modal data-dialog" aria-labelledby="data-title"><div class="modal__header"><div><p class="eyebrow">Settings \xB7 Data</p><h2 id="data-title">Protect your workspace.</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close data settings">\xD7</button></div><div class="modal__body data-manager"><p class="secondary-text">Backups, restores, and imports happen locally. Nothing is uploaded.</p><section class="data-section"><h3>JSON backup</h3><p>Export everything needed to rebuild this workspace on another device.</p><button type="button" class="primary-action" data-export-backup>Export backup</button><label class="file-picker">Restore backup<input type="file" accept="application/json,.json" data-restore-file></label><div class="restore-preview" data-restore-preview hidden></div></section><section class="data-section"><h3>CSV tools</h3><div class="form-two-col"><label>Dataset<select data-csv-type><option value="priorities">Priorities</option><option value="risks">Risks</option><option value="decisions">Decisions</option><option value="followUps">Follow-ups</option><option value="improvements">Improvements</option><option value="dailySummaries">Daily summaries</option><option value="weeklySummaries">Weekly summaries</option></select></label><div class="data-actions"><button type="button" class="secondary-action" data-export-csv>Export CSV</button><button type="button" class="text-button" data-download-csv-template>Download template</button></div></div><label class="file-picker">Import CSV<input type="file" accept="text/csv,.csv" data-csv-file></label><div class="csv-preview" data-csv-preview hidden></div></section><section class="data-section"><h3>Local snapshots</h3><p>Automatic daily and weekly snapshots rotate on this device.</p><ul class="history-list snapshot-list">${snapshotList}</ul></section><section class="data-section data-danger"><h3>Delete all data</h3><p>This removes workspace records and cannot be undone. Export a backup first.</p><button type="button" class="secondary-action" data-delete-all-data>Delete all data</button></section><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Done</button></div></div></dialog>`;
   }
   function createSegmentedControl(label, options) {
     return `<fieldset class="preference-group"><legend>${label}</legend><div class="segmented-control" role="group" aria-label="${label}">${options.map(([value, text]) => `<button type="button" data-theme-choice="${value}" aria-pressed="${value === "system"}">${text}</button>`).join("")}</div></fieldset>`;
@@ -465,7 +470,7 @@
 
   // src/db.js
   var DB_NAME = "talentisos";
-  var DB_VERSION = 5;
+  var DB_VERSION = 6;
   var stores = {
     settings: "settings",
     dailyPlans: "dailyPlans",
@@ -477,6 +482,7 @@
     weeklyReviews: "weeklyReviews",
     improvements: "improvements",
     playbookState: "playbookState",
+    backupSnapshots: "backupSnapshots",
     appMeta: "appMeta"
   };
   function requestResult(request) {
@@ -529,6 +535,11 @@
         }
         if (!database2.objectStoreNames.contains(stores.playbookState)) {
           database2.createObjectStore(stores.playbookState, { keyPath: "id" });
+        }
+        if (!database2.objectStoreNames.contains(stores.backupSnapshots)) {
+          const snapshots = database2.createObjectStore(stores.backupSnapshots, { keyPath: "id" });
+          snapshots.createIndex("snapshotType", "snapshotType");
+          snapshots.createIndex("createdAt", "createdAt");
         }
         if (!database2.objectStoreNames.contains(stores.appMeta)) {
           database2.createObjectStore(stores.appMeta, { keyPath: "key" });
@@ -719,6 +730,177 @@
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     });
   }
+  async function getBackupSnapshots(database2) {
+    return (await getAll(database2, stores.backupSnapshots)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  async function saveBackupSnapshot(database2, snapshot) {
+    return putRecord(database2, stores.backupSnapshots, snapshot);
+  }
+  async function deleteBackupSnapshot(database2, id) {
+    return deleteRecord(database2, stores.backupSnapshots, id);
+  }
+  async function clearWorkspaceData(database2, includeSnapshots = false) {
+    const names = Object.values(stores).filter((storeName) => includeSnapshots || storeName !== stores.backupSnapshots);
+    const transaction = database2.transaction(names, "readwrite");
+    names.forEach((storeName) => transaction.objectStore(storeName).clear());
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error("Workspace deletion was aborted."));
+    });
+  }
+
+  // src/backup.js
+  var EXPORT_FORMAT_VERSION = 1;
+  var APPLICATION_VERSION = "0.1.0";
+  var BACKUP_COLLECTIONS = [
+    "settings",
+    "dailyPlans",
+    "priorities",
+    "huddles",
+    "workItems",
+    "risks",
+    "decisions",
+    "followUps",
+    "dailyReviews",
+    "tomorrowPlans",
+    "weeklyReviews",
+    "improvements",
+    "savedPlaybookTopics",
+    "onboardingState"
+  ];
+  var datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  function sanitizeImportedValue(value) {
+    if (typeof value === "string") {
+      return Array.from(value.replace(/[<>]/g, "")).filter((character) => {
+        const code = character.charCodeAt(0);
+        return !(code <= 8 || code === 11 || code === 12 || code >= 14 && code <= 31);
+      }).join("").slice(0, 2e4);
+    }
+    if (Array.isArray(value)) return value.map(sanitizeImportedValue);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, sanitizeImportedValue(child)]));
+    }
+    return value;
+  }
+  function createBackup(data, exportedAt = (/* @__PURE__ */ new Date()).toISOString()) {
+    return {
+      format: "TalentisOS workspace backup",
+      exportVersion: EXPORT_FORMAT_VERSION,
+      applicationVersion: APPLICATION_VERSION,
+      exportedAt,
+      data: Object.fromEntries(
+        BACKUP_COLLECTIONS.map((collection) => [collection, sanitizeImportedValue(data[collection] || [])])
+      )
+    };
+  }
+  function migrateBackup(input) {
+    if (!input || typeof input !== "object") throw new Error("The selected file is not a JSON object.");
+    if (input.format === "TalentisOS workspace backup" && input.exportVersion === EXPORT_FORMAT_VERSION) return sanitizeImportedValue(input);
+    if (input.format === "TalentisOS workspace backup" && input.exportVersion === 0 && input.data) {
+      return createBackup(input.data, input.exportedAt || (/* @__PURE__ */ new Date()).toISOString());
+    }
+    throw new Error("Unsupported TalentisOS backup format or export version.");
+  }
+  function validateBackup(input) {
+    const backup = migrateBackup(input);
+    if (!backup.exportedAt || Number.isNaN(Date.parse(backup.exportedAt))) throw new Error("Backup export date is invalid.");
+    for (const collection of BACKUP_COLLECTIONS) {
+      if (!Array.isArray(backup.data[collection])) throw new Error(`Backup collection \u201C${collection}\u201D must be an array.`);
+    }
+    return backup;
+  }
+  function backupCounts(backup) {
+    return Object.fromEntries(BACKUP_COLLECTIONS.map((collection) => [collection, backup.data[collection]?.length || 0]));
+  }
+  function restoreCollections(backup) {
+    const data = backup.data;
+    const workItems = data.workItems?.length ? data.workItems : [...data.risks || [], ...data.decisions || [], ...data.followUps || []];
+    return {
+      settings: data.settings,
+      dailyPlans: data.dailyPlans,
+      priorities: data.priorities,
+      workItems,
+      dailyReviews: data.dailyReviews,
+      tomorrowPlans: data.tomorrowPlans,
+      weeklyReviews: data.weeklyReviews,
+      improvements: data.improvements,
+      playbookState: [{ id: "primary", savedTopicIds: data.savedPlaybookTopics || [], recentTopicIds: [] }],
+      appMeta: data.onboardingState || []
+    };
+  }
+  function csvEscape(value) {
+    const text = value == null ? "" : String(value);
+    return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  }
+  function createCsv(rows, columns) {
+    return [columns, ...rows.map((row) => columns.map((column) => row[column]))].map((line) => line.map(csvEscape).join(",")).join("\r\n") + "\r\n";
+  }
+  function parseCsv(text) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let quoted = false;
+    for (let index = 0; index < text.length; index += 1) {
+      const character = text[index];
+      const next = text[index + 1];
+      if (quoted && character === '"' && next === '"') {
+        field += '"';
+        index += 1;
+      } else if (character === '"') {
+        quoted = !quoted;
+      } else if (!quoted && character === ",") {
+        row.push(field);
+        field = "";
+      } else if (!quoted && (character === "\n" || character === "\r")) {
+        if (character === "\r" && next === "\n") index += 1;
+        row.push(field);
+        if (row.some((value) => value !== "")) rows.push(row);
+        row = [];
+        field = "";
+      } else {
+        field += character;
+      }
+    }
+    if (field || row.length) {
+      row.push(field);
+      rows.push(row);
+    }
+    if (!rows.length) return { headers: [], rows: [] };
+    const headers = rows.shift().map((header) => header.trim());
+    return { headers, rows: rows.map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || ""]))) };
+  }
+  var csvSchemas = {
+    priorities: { required: ["outcome", "planDate"], columns: ["id", "planDate", "outcome", "why", "duePoint", "status", "order"] },
+    risks: { required: ["title", "planDate"], columns: ["id", "planDate", "title", "whatAtRisk", "impact", "immediateAction", "dueDate", "status", "riskLevel"] },
+    decisions: { required: ["title", "planDate"], columns: ["id", "planDate", "title", "decisionRequired", "decisionMade", "resultingAction", "dueDate", "status"] },
+    followUps: { required: ["title", "dueDate"], columns: ["id", "title", "responsible", "dueDate", "nextAction", "status", "followedUpWith"] },
+    improvements: { required: ["notWorking", "change"], columns: ["id", "notWorking", "change", "why", "nextStep", "category", "status", "createdAt"] }
+  };
+  function csvSchema(type) {
+    const schema = csvSchemas[type];
+    if (!schema) throw new Error(`CSV type \u201C${type}\u201D is not supported.`);
+    return schema;
+  }
+  function validateCsv(type, parsed) {
+    const schema = csvSchema(type);
+    const missing = schema.required.filter((column) => !parsed.headers.includes(column));
+    if (missing.length) throw new Error(`Missing required column(s): ${missing.join(", ")}.`);
+    const errors = [];
+    const records = parsed.rows.map((row, index) => {
+      const rowNumber = index + 2;
+      for (const column of schema.required) if (!row[column]?.trim()) errors.push(`Row ${rowNumber}: ${column} is required.`);
+      for (const column of ["planDate", "dueDate", "createdAt"]) {
+        if (row[column] && (column === "createdAt" ? Number.isNaN(Date.parse(row[column])) : !datePattern.test(row[column]) || Number.isNaN(Date.parse(`${row[column]}T12:00:00`)))) errors.push(`Row ${rowNumber}: ${column} is not a valid date.`);
+      }
+      return sanitizeImportedValue(row);
+    });
+    return { records, errors };
+  }
+  function csvTemplate(type) {
+    const schema = csvSchema(type);
+    return createCsv([], schema.columns);
+  }
 
   // src/main.js
   var app = document.querySelector("#app");
@@ -742,6 +924,9 @@
   var currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
   var currentPlaybookQuery = "";
   var currentPlaybookGroup = "All topics";
+  var currentSnapshots = [];
+  var pendingRestore = null;
+  var pendingCsvImport = null;
   var autosaveTimer;
   var lastUndo;
   function showToast(message) {
@@ -781,6 +966,172 @@
     } catch {
       return "system";
     }
+  }
+  async function collectBackupData() {
+    const read = async (storeName) => getAll(database, storeName);
+    const dailyPlans = await read(stores.dailyPlans);
+    const workItems = await read(stores.workItems);
+    const playbookState = await read(stores.playbookState);
+    const appMeta = await read(stores.appMeta);
+    return {
+      settings: await read(stores.settings),
+      dailyPlans,
+      priorities: await read(stores.priorities),
+      huddles: dailyPlans.filter((plan) => plan.huddleStatus || plan.huddleDiscussions?.length).map((plan) => ({ date: plan.date, status: plan.huddleStatus || "", discussions: plan.huddleDiscussions || [] })),
+      workItems,
+      risks: workItems.filter((item) => item.type === "risk"),
+      decisions: workItems.filter((item) => item.type === "decision"),
+      followUps: workItems.filter((item) => item.type === "follow-up"),
+      dailyReviews: await read(stores.dailyReviews),
+      tomorrowPlans: await read(stores.tomorrowPlans),
+      weeklyReviews: await read(stores.weeklyReviews),
+      improvements: await read(stores.improvements),
+      savedPlaybookTopics: playbookState[0]?.savedTopicIds || [],
+      onboardingState: appMeta.filter((item) => item.key === "onboarding")
+    };
+  }
+  function dateStamp(date = /* @__PURE__ */ new Date()) {
+    return date.toISOString().slice(0, 10);
+  }
+  function downloadFile(content, filename, type) {
+    const file = new File([content], filename, { type });
+    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      navigator.share({ files: [file], title: filename }).catch(() => {
+      });
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  }
+  async function exportBackup() {
+    const backup = createBackup(await collectBackupData());
+    downloadFile(JSON.stringify(backup, null, 2), `TalentisOS_Backup_${dateStamp()}.json`, "application/json");
+    showToast("Backup exported locally.");
+  }
+  async function saveAutomaticSnapshot(snapshotType) {
+    const backup = createBackup(await collectBackupData());
+    const snapshot = {
+      id: `${snapshotType}-${dateStamp()}`,
+      snapshotType,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      recordCount: Object.values(backup.data).reduce((total, records) => total + (Array.isArray(records) ? records.length : 0), 0),
+      backup
+    };
+    await saveBackupSnapshot(database, snapshot);
+    const snapshots = await getBackupSnapshots(database);
+    const keep = snapshotType === "daily" ? 7 : 4;
+    for (const old of snapshots.filter((item) => item.snapshotType === snapshotType).slice(keep)) {
+      await deleteBackupSnapshot(database, old.id);
+    }
+  }
+  async function ensureAutomaticSnapshots() {
+    const snapshots = await getBackupSnapshots(database);
+    const today = dateStamp();
+    if (!snapshots.some((snapshot) => snapshot.id === `daily-${today}`)) await saveAutomaticSnapshot("daily");
+    const week = startOfWeek(/* @__PURE__ */ new Date());
+    if (!snapshots.some((snapshot) => snapshot.id === `weekly-${week}`)) await saveAutomaticSnapshot("weekly");
+  }
+  async function applyRestore(backup, mode = "replace") {
+    if (mode === "replace") {
+      await saveBackupSnapshot(database, { id: `pre-restore-${Date.now()}`, snapshotType: "pre-restore", createdAt: (/* @__PURE__ */ new Date()).toISOString(), recordCount: 0, backup: createBackup(await collectBackupData()) });
+      await clearWorkspaceData(database, true);
+    }
+    const collections = restoreCollections(backup);
+    for (const [storeName, records] of Object.entries(collections)) {
+      for (const record of records || []) await putRecord(database, stores[storeName], record);
+    }
+    pendingRestore = null;
+    showToast(mode === "replace" ? "Backup restored. Your workspace was replaced." : "Backup merged into your workspace.");
+    await render();
+  }
+  function csvRows(type, data) {
+    if (type === "dailySummaries") return data.dailyReviews.map((item) => ({ date: item.date, summary: item.summary || item.improvement || "", closed: item.closed ? "Yes" : "No" }));
+    if (type === "weeklySummaries") return data.weeklyReviews.map((item) => ({ weekStart: item.weekStart, achieved: item.answers?.achieved || "", incomplete: item.answers?.incomplete || "", nextPriorities: (item.nextPriorities || []).join(" | "), operatingImprovement: item.operatingImprovement || "", leadershipFocus: item.leadershipFocus || "" }));
+    return data[type] || [];
+  }
+  function csvColumns(type, data) {
+    if (["dailySummaries", "weeklySummaries"].includes(type)) return Object.keys(csvRows(type, data)[0] || (type === "dailySummaries" ? { date: "", summary: "", closed: "" } : { weekStart: "", achieved: "", incomplete: "", nextPriorities: "", operatingImprovement: "", leadershipFocus: "" }));
+    return csvSchema(type).columns;
+  }
+  async function exportCsv(type) {
+    const data = await collectBackupData();
+    const rows = csvRows(type, data);
+    downloadFile(createCsv(rows, csvColumns(type, data)), `TalentisOS_${type[0].toUpperCase() + type.slice(1)}_${dateStamp()}.csv`, "text/csv;charset=utf-8");
+    showToast("CSV exported locally.");
+  }
+  function importedCsvRecords(type, records) {
+    if (type === "priorities") return records.map((record, index) => ({ ...record, id: record.id || crypto.randomUUID(), order: Number(record.order) || index, status: record.status || "not-started" }));
+    if (type === "improvements") return records.map((record) => ({ ...record, id: record.id || crypto.randomUUID(), createdAt: record.createdAt || (/* @__PURE__ */ new Date()).toISOString(), status: record.status || "captured" }));
+    const workType = type === "risks" ? "risk" : type === "decisions" ? "decision" : "follow-up";
+    return records.map((record) => ({ ...record, id: record.id || crypto.randomUUID(), type: workType, group: record.group || "next", status: record.status || "not-started", title: record.title || record.outcome || "" }));
+  }
+  function dataDialog() {
+    return document.querySelector("#data-dialog");
+  }
+  function showRestorePreview(backup, source = "file") {
+    pendingRestore = backup;
+    const preview = dataDialog()?.querySelector("[data-restore-preview]");
+    if (!preview) return;
+    const counts = backupCounts(backup);
+    const rows = Object.entries(counts).filter(([, count]) => count).map(([label, count]) => `<span>${label}: <strong>${count}</strong></span>`).join("");
+    preview.hidden = false;
+    preview.innerHTML = `<p><strong>${source === "snapshot" ? "Local snapshot ready" : "Backup ready"}</strong> \xB7 exported ${new Intl.DateTimeFormat(void 0, { dateStyle: "medium" }).format(new Date(backup.exportedAt))}</p><div class="data-counts">${rows || "<span>No records found.</span>"}</div><label>Restore mode<select data-restore-mode><option value="replace">Replace current data (automatic backup first)</option><option value="merge">Merge into current data</option></select></label><div class="modal__actions"><button type="button" class="secondary-action" data-restore-cancel>Cancel</button><button type="button" class="primary-action" data-restore-apply>Restore backup</button></div>`;
+  }
+  async function handleRestoreFile(file) {
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      showRestorePreview(validateBackup(parsed));
+    } catch (error) {
+      const preview = dataDialog()?.querySelector("[data-restore-preview]");
+      if (preview) {
+        preview.hidden = false;
+        preview.innerHTML = `<p class="data-error">${escapeHtml(error.message || "This backup could not be read.")}</p>`;
+      }
+      pendingRestore = null;
+    }
+  }
+  async function handleCsvFile(file) {
+    if (!file) return;
+    const type = dataDialog()?.querySelector("[data-csv-type]")?.value;
+    const preview = dataDialog()?.querySelector("[data-csv-preview]");
+    try {
+      if (!["priorities", "risks", "decisions", "followUps", "improvements"].includes(type)) throw new Error("CSV import is available for priorities, risks, decisions, follow-ups, and improvements.");
+      const result = validateCsv(type, parseCsv(await file.text()));
+      pendingCsvImport = { type, records: importedCsvRecords(type, result.records), errors: result.errors };
+      preview.hidden = false;
+      preview.innerHTML = `<p><strong>${pendingCsvImport.records.length} rows ready.</strong> ${result.errors.length ? `${result.errors.length} row error(s) need attention.` : "No validation errors found."}</p>${result.errors.length ? `<ul class="data-error-list">${result.errors.map((error) => `<li>${escapeHtml(error)}</li>`).join("")}</ul>` : ""}<label>Duplicate IDs<select data-csv-duplicate-mode><option value="skip">Skip existing records</option><option value="replace">Replace existing records</option></select></label><div class="modal__actions"><button type="button" class="secondary-action" data-csv-cancel>Cancel</button><button type="button" class="primary-action" data-csv-apply ${result.errors.length ? "disabled" : ""}>Import rows</button></div>`;
+    } catch (error) {
+      pendingCsvImport = null;
+      preview.hidden = false;
+      preview.innerHTML = `<p class="data-error">${escapeHtml(error.message || "This CSV could not be read.")}</p>`;
+    }
+  }
+  async function applyCsvImport() {
+    if (!pendingCsvImport) return;
+    const { type, records, errors } = pendingCsvImport;
+    if (errors.length) return;
+    const storeName = type === "improvements" ? stores.improvements : type === "priorities" ? stores.priorities : stores.workItems;
+    const existing = new Set((await getAll(database, storeName)).map((record) => record.id));
+    const mode = dataDialog()?.querySelector("[data-csv-duplicate-mode]")?.value || "skip";
+    let imported = 0;
+    let skipped = 0;
+    for (const record of records) {
+      if (existing.has(record.id) && mode === "skip") {
+        skipped += 1;
+        continue;
+      }
+      await putRecord(database, storeName, record);
+      imported += 1;
+    }
+    pendingCsvImport = null;
+    dataDialog()?.querySelector("[data-csv-preview]")?.setAttribute("hidden", "");
+    showToast(`${imported} CSV row(s) imported${skipped ? `; ${skipped} duplicate(s) skipped` : ""}.`);
+    await render();
   }
   async function render() {
     if (!onboardingState.completed || !onboardingState.completionSeen) {
@@ -1362,6 +1713,16 @@
     autosaveTimer = window.setTimeout(() => persistWorkForm(workForm), 600);
   });
   document.addEventListener("change", (event) => {
+    const restoreFile = event.target.closest("[data-restore-file]");
+    if (restoreFile) {
+      handleRestoreFile(restoreFile.files?.[0]);
+      return;
+    }
+    const csvFile = event.target.closest("[data-csv-file]");
+    if (csvFile) {
+      handleCsvFile(csvFile.files?.[0]);
+      return;
+    }
     const workType = event.target.closest('[data-work-form] select[name="type"]');
     if (!workType) return;
     const form = workType.closest("[data-work-form]");
@@ -1378,6 +1739,72 @@
     const settingsButton = event.target.closest("[data-open-settings]");
     if (settingsButton) {
       openDialog(document.querySelector("#settings-dialog"));
+      return;
+    }
+    if (event.target.closest("[data-open-data]")) {
+      currentSnapshots = await getBackupSnapshots(database);
+      document.body.insertAdjacentHTML("beforeend", createDataDialog(currentSnapshots));
+      openDialog(document.querySelector("#data-dialog"));
+      return;
+    }
+    if (event.target.closest("[data-export-backup]")) {
+      await exportBackup();
+      return;
+    }
+    if (event.target.closest("[data-export-csv]")) {
+      await exportCsv(dataDialog()?.querySelector("[data-csv-type]")?.value || "priorities");
+      return;
+    }
+    if (event.target.closest("[data-download-csv-template]")) {
+      const type = dataDialog()?.querySelector("[data-csv-type]")?.value || "priorities";
+      if (["priorities", "risks", "decisions", "followUps", "improvements"].includes(type)) {
+        downloadFile(csvTemplate(type), `TalentisOS_${type}_template.csv`, "text/csv;charset=utf-8");
+        showToast("CSV template downloaded.");
+      } else {
+        showToast("Templates are available for importable CSV datasets.");
+      }
+      return;
+    }
+    if (event.target.closest("[data-restore-apply]") && pendingRestore) {
+      const mode = dataDialog()?.querySelector("[data-restore-mode]")?.value || "replace";
+      await applyRestore(pendingRestore, mode);
+      document.querySelector("#data-dialog")?.remove();
+      return;
+    }
+    if (event.target.closest("[data-restore-cancel]")) {
+      pendingRestore = null;
+      dataDialog()?.querySelector("[data-restore-preview]")?.setAttribute("hidden", "");
+      return;
+    }
+    if (event.target.closest("[data-csv-apply]")) {
+      await applyCsvImport();
+      return;
+    }
+    if (event.target.closest("[data-csv-cancel]")) {
+      pendingCsvImport = null;
+      dataDialog()?.querySelector("[data-csv-preview]")?.setAttribute("hidden", "");
+      return;
+    }
+    const restoreSnapshot = event.target.closest("[data-restore-snapshot]");
+    if (restoreSnapshot) {
+      const snapshot = currentSnapshots.find((item) => item.id === restoreSnapshot.dataset.restoreSnapshot);
+      if (snapshot) showRestorePreview(snapshot.backup, "snapshot");
+      return;
+    }
+    if (event.target.closest("[data-delete-all-data]")) {
+      const confirmed = window.confirm("This will permanently delete all workspace records. Export a backup now?");
+      if (!confirmed) return;
+      await exportBackup();
+      const phrase = window.prompt("Type DELETE ALL DATA to confirm permanent deletion.");
+      if (phrase !== "DELETE ALL DATA") {
+        showToast("Deletion cancelled.");
+        return;
+      }
+      await clearWorkspaceData(database);
+      document.querySelector("#data-dialog")?.remove();
+      onboardingState = await getOnboardingState(database);
+      showToast("All workspace data was deleted.");
+      await render();
       return;
     }
     const playbookTopicButton = event.target.closest("[data-open-playbook-topic]");
@@ -1666,6 +2093,10 @@
     try {
       database = await openDatabase();
       onboardingState = await getOnboardingState(database);
+      try {
+        await ensureAutomaticSnapshots();
+      } catch {
+      }
       document.documentElement.dataset.appReady = "true";
       await render();
     } catch {

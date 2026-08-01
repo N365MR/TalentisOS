@@ -1655,6 +1655,107 @@ dialog:focus-visible {
 .contextual-guidance .text-button {
   margin-left: auto;
 }
+.settings-data-button {
+  margin-top: var(--space-5);
+}
+.data-dialog {
+  width: min(100% - var(--space-8), 46rem);
+  max-height: min(90svh, 52rem);
+  margin: auto;
+  overflow: auto;
+  border-radius: var(--radius-lg);
+}
+.data-manager {
+  display: grid;
+  gap: var(--space-5);
+}
+.data-section {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-divider);
+}
+.data-section h3,
+.data-section p {
+  margin: 0;
+}
+.data-section p {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.file-picker {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+.file-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.restore-preview,
+.csv-preview {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+.restore-preview[hidden],
+.csv-preview[hidden] {
+  display: none;
+}
+.restore-preview p,
+.csv-preview p {
+  margin: 0;
+  color: var(--color-text);
+}
+.data-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.data-counts span {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+.data-error,
+.data-error-list {
+  color: var(--color-critical) !important;
+}
+.data-error-list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+}
+.data-danger {
+  border-top-color: color-mix(in srgb, var(--color-critical) 45%, var(--color-divider));
+}
 .work-intro {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
