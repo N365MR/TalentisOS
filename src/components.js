@@ -49,6 +49,127 @@ const navigation = [
   ['improve', 'Improve', '↗'],
 ];
 
+const onboardingSteps = [
+  {
+    title: 'What type of team or function do you lead?',
+    explanation: 'This helps shape the language of your daily playbook.',
+  },
+  {
+    title: 'What are the three primary outcomes you are responsible for?',
+    explanation: 'Name the outcomes, not every task. You can refine them later.',
+  },
+  {
+    title: 'What time does your workday normally begin?',
+    explanation: 'We use this only to frame your daily rhythm.',
+  },
+  {
+    title: 'Do you run a morning huddle?',
+    explanation: 'This keeps your morning setup aligned to how you already lead.',
+  },
+  {
+    title: 'What time should the end-of-day review be suggested?',
+    explanation: 'Choose a calm moment to close the loop and prepare tomorrow.',
+  },
+];
+
+const functionOptions = [
+  'Operations',
+  'Customer success',
+  'Product or technology',
+  'Sales or partnerships',
+  'Marketing or creative',
+  'Other function',
+];
+const outcomeOptions = [
+  'A reliable operation',
+  'Customer or community value',
+  'Revenue or growth',
+  'A strong team rhythm',
+  'A clear strategic result',
+  'Quality and consistency',
+];
+const promptLibrary = [
+  'Define the outcome, not only the activity.',
+  'Communicate risk early.',
+  'Do not leave a commitment without a next action.',
+  'Remove the blocker before adding more work.',
+  'Finish the day by preparing tomorrow.',
+];
+
+function escapeHtml(value = '') {
+  return String(value).replace(
+    /[&<>'"]/g,
+    (character) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character],
+  );
+}
+
+function onboardingAnswer(state, key) {
+  return escapeHtml(state.answers?.[key] || '');
+}
+
+export function createOnboarding(state) {
+  if (state.completed && !state.completionSeen) {
+    return `<main class="onboarding-screen onboarding-complete" aria-labelledby="onboarding-complete-title"><div class="completion-mark" aria-hidden="true">✓</div><p class="eyebrow">Your playbook</p><h1 id="onboarding-complete-title">TalentisOS is ready.</h1><p>Your daily leadership playbook is now set up.</p><button class="primary-action" type="button" data-start-today>Start Today <span aria-hidden="true">→</span></button></main>`;
+  }
+  const step = Math.max(0, Math.min(state.step || 0, onboardingSteps.length - 1));
+  const current = onboardingSteps[step];
+  return `<main class="onboarding-screen" aria-labelledby="onboarding-title"><div class="onboarding-top"><span class="onboarding-brand">TalentisOS</span><button class="text-button" type="button" data-onboarding-save>Save &amp; resume later</button></div><div class="onboarding-progress" aria-label="Onboarding progress"><span>Step ${step + 1} of ${onboardingSteps.length}</span><div class="progress-track"><span style="width:${((step + 1) / onboardingSteps.length) * 100}%"></span></div></div><section class="onboarding-card"><p class="eyebrow">Set up your daily rhythm</p><h1 id="onboarding-title">${current.title}</h1><p class="onboarding-explanation">${current.explanation}</p><form data-onboarding-form data-step="${step}">${onboardingFields(step, state)}<div class="onboarding-actions">${step > 0 ? '<button class="secondary-action" type="button" data-onboarding-back>Back</button>' : '<span></span>'}<button class="primary-action" type="submit">${step === onboardingSteps.length - 1 ? 'Finish setup' : 'Continue'} <span aria-hidden="true">→</span></button></div></form></section></main>`;
+}
+
+function onboardingFields(step, state) {
+  if (step === 0)
+    return `<div class="option-grid">${functionOptions.map((option) => `<label class="select-option"><input type="radio" name="functionType" value="${escapeHtml(option)}" ${state.answers?.functionType === option ? 'checked' : ''} required><span>${option}</span></label>`).join('')}</div>`;
+  if (step === 1)
+    return `<div class="outcome-fields">${[0, 1, 2].map((index) => `<label>Outcome ${index + 1}<input name="outcome${index}" value="${onboardingAnswer(state, `outcome${index}`)}" placeholder="For example, a clear strategic result" required></label>`).join('')}</div><div class="suggestion-row" aria-label="Outcome suggestions">${outcomeOptions
+      .slice(0, 4)
+      .map(
+        (option) =>
+          `<button type="button" class="suggestion-chip" data-fill-outcome="${escapeHtml(option)}">${option}</button>`,
+      )
+      .join('')}</div>`;
+  if (step === 2)
+    return `<label class="large-field">Workday start time<input type="time" name="startTime" value="${onboardingAnswer(state, 'startTime')}" required></label>`;
+  if (step === 3)
+    return `<div class="option-grid option-grid--two"><label class="select-option"><input type="radio" name="morningHuddle" value="yes" ${state.answers?.morningHuddle === 'yes' ? 'checked' : ''} required><span>Yes, most days</span></label><label class="select-option"><input type="radio" name="morningHuddle" value="no" ${state.answers?.morningHuddle === 'no' ? 'checked' : ''} required><span>Not usually</span></label></div>`;
+  return `<label class="large-field">Suggested review time<input type="time" name="reviewTime" value="${onboardingAnswer(state, 'reviewTime')}" required></label>`;
+}
+
+function statusLabel(status) {
+  return (
+    { 'not-started': 'Not started', 'in-progress': 'In progress', done: 'Complete' }[status] ||
+    'Not started'
+  );
+}
+
+export function generateDailyFocus(priorities, plan) {
+  if (plan.risks?.length) return `Protect the day by addressing ${plan.risks[0]}.`;
+  if (plan.decisions?.length) return `Make space to decide on ${plan.decisions[0]}.`;
+  if (priorities.length)
+    return `Move ${priorities[0].outcome.toLowerCase()} forward with intention.`;
+  return 'Choose the one outcome that would make today meaningful.';
+}
+
+export function createTodayView(plan, priorities) {
+  const focus = generateDailyFocus(priorities, plan);
+  const prompt = promptLibrary[new Date(`${plan.date}T12:00:00`).getDate() % promptLibrary.length];
+  const empty = (message) =>
+    `<div class="section-empty"><span aria-hidden="true">—</span><p>${message}</p></div>`;
+  const priorityCards = priorities.length
+    ? priorities
+        .map(
+          (priority, index) =>
+            `<article class="priority-card ${priority.status === 'done' ? 'priority-card--done' : ''}"><div class="priority-card__order" aria-label="Priority ${index + 1}">0${index + 1}</div><div class="priority-card__body"><div class="priority-card__top"><div><p class="card-kicker">Outcome</p><h3>${escapeHtml(priority.outcome)}</h3></div><span class="status-chip status-chip--${priority.status === 'done' ? 'success' : priority.status === 'in-progress' ? 'info' : 'neutral'}">${statusLabel(priority.status)}</span></div><p class="priority-card__why">${escapeHtml(priority.why || 'No why added yet.')}</p><dl class="priority-meta"><div><dt>Due point</dt><dd>${escapeHtml(priority.duePoint || 'Not set')}</dd></div></dl><div class="priority-actions"><button class="text-button" type="button" data-edit-priority="${priority.id}">Edit</button><button class="text-button" type="button" data-move-priority="${priority.id}" data-direction="up" ${index === 0 ? 'disabled' : ''}>Move up</button><button class="text-button" type="button" data-move-priority="${priority.id}" data-direction="down" ${index === priorities.length - 1 ? 'disabled' : ''}>Move down</button><button class="text-button" type="button" data-complete-priority="${priority.id}">${priority.status === 'done' ? 'Reopen' : 'Complete'}</button></div></div></article>`,
+        )
+        .join('')
+    : empty('No priorities yet. Start with the outcome that matters most.');
+  return `<section class="today-command" aria-labelledby="today-focus-title"><div class="today-greeting"><p class="eyebrow">${new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())}</p><h2 id="today-focus-title">Good morning.</h2><p class="secondary-text">Here is the shape of your leadership day.</p></div><section class="daily-focus"><div><p class="card-kicker">Daily focus</p><h3>${escapeHtml(focus)}</h3></div><span class="focus-card__icon" aria-hidden="true">✦</span></section><section class="today-section" aria-labelledby="priorities-title"><div class="section-heading"><div><p class="eyebrow">What matters now?</p><h2 id="priorities-title">Top three priorities</h2></div><button class="secondary-action" type="button" data-add-priority ${priorities.length >= 3 ? 'disabled' : ''}>${priorities.length >= 3 ? 'Three set' : 'Add priority'}</button></div><div class="priority-list">${priorityCards}</div></section><div class="today-grid"><section class="today-section compact-section" aria-labelledby="carryover-title"><div class="section-heading"><h2 id="carryover-title">Carryover</h2><span class="section-count">${plan.carryover?.length || 0}</span></div>${plan.carryover?.length ? plan.carryover.map((item) => `<p>${escapeHtml(item)}</p>`).join('') : empty('Nothing carried over.')}</section><section class="today-section compact-section" aria-labelledby="risk-title"><div class="section-heading"><h2 id="risk-title">At risk</h2><span class="section-count section-count--warning">${plan.risks?.length || 0}</span></div>${plan.risks?.length ? plan.risks.map((item) => `<p>${escapeHtml(item)}</p>`).join('') : empty('No risks recorded.')}</section><section class="today-section compact-section" aria-labelledby="decision-title"><div class="section-heading"><h2 id="decision-title">Decisions</h2><span class="section-count">${plan.decisions?.length || 0}</span></div>${plan.decisions?.length ? plan.decisions.map((item) => `<p>${escapeHtml(item)}</p>`).join('') : empty('No decisions waiting.')}</section><section class="today-section compact-section" aria-labelledby="follow-up-title"><div class="section-heading"><h2 id="follow-up-title">Follow-ups due</h2><span class="section-count">${plan.followUps?.length || 0}</span></div>${plan.followUps?.length ? plan.followUps.map((item) => `<p>${escapeHtml(item)}</p>`).join('') : empty('No follow-ups due.')}</section></div><section class="today-section meetings-section" aria-labelledby="meetings-title"><div class="section-heading"><h2 id="meetings-title">Meetings</h2><span class="section-count">${plan.meetings?.length || 0}</span></div>${plan.meetings?.length ? plan.meetings.map((item) => `<p>${escapeHtml(item)}</p>`).join('') : empty('No meetings added.')}</section><section class="leadership-prompt" aria-labelledby="prompt-title"><p class="eyebrow">Leadership prompt</p><h2 id="prompt-title">${prompt}</h2></section><section class="end-day-status" aria-labelledby="end-day-title"><div><p class="eyebrow">End-of-day status</p><h2 id="end-day-title">${plan.endOfDayStatus === 'complete' ? 'Review complete.' : 'Not reviewed yet.'}</h2></div><span class="status-chip status-chip--${plan.endOfDayStatus === 'complete' ? 'success' : 'neutral'}">${plan.endOfDayStatus === 'complete' ? 'Complete' : 'Open'}</span></section></section>${createPrioritySheet()}`;
+}
+
+export function createPrioritySheet() {
+  return `<dialog id="priority-sheet" class="modal bottom-sheet-dialog" aria-labelledby="priority-sheet-title"><div class="modal__header"><div><p class="eyebrow">One clear commitment</p><h2 id="priority-sheet-title">Add a priority</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close priority editor">×</button></div><form class="modal__body priority-form" data-priority-form><input type="hidden" name="id"><label>Outcome<input name="outcome" maxlength="120" required placeholder="What result matters most?"></label><label>Why it matters<textarea name="why" maxlength="220" rows="3" placeholder="What will this make possible?"></textarea></label><label>Due point<input name="duePoint" maxlength="80" placeholder="For example, before Friday's review"></label><label>Status<select name="status"><option value="not-started">Not started</option><option value="in-progress">In progress</option><option value="done">Complete</option></select></label><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Save priority</button></div></form></dialog>`;
+}
+
 export function getRoute() {
   const key = window.location.hash.slice(1).split('/')[0] || 'today';
   return routes[key] ? { ...routes[key], key } : { ...routes.today, key: 'today' };

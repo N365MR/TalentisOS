@@ -14,6 +14,12 @@
 - Light, dark, and system appearance modes work; reduced motion and forced-colors fallbacks are present.
 - Desktop sidebar, tablet navigation, mobile bottom navigation, sticky primary action, and safe-area insets are verified.
 - Keyboard focus and skip navigation are visible and usable.
+- New users receive onboarding; each of the five answers is leader/work focused and no employee data is requested.
+- Onboarding progress saves, back navigation works, completion shows the confirmation screen, and Start Today opens Today.
+- Returning users open directly to Today after reload.
+- Today renders correctly with empty data and answers the focus, carryover, risk, decision, follow-up, meeting, prompt, and end-of-day questions.
+- Priorities can be added, edited, reordered, completed, and capped at three.
+- IndexedDB version 1 persists settings, daily plans, and priorities after reload and creates no sample workspace data.
 
 ## Lighthouse documentation
 
