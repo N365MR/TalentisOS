@@ -1,0 +1,10 @@
+{
+  "name": "TalentisOS",
+  "short_name": "TalentisOS",
+  "description": "A local-first daily leadership operating system.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#102a43",
+  "icons": []
+}
