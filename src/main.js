@@ -9,6 +9,9 @@ import {
   createWeeklyReviewView,
   createImproveView,
   createImprovementSheet,
+  createPlaybookView,
+  createPlaybookDialog,
+  playbookTopics,
   createWorkDetailSheet,
   createWorkView,
   getRoute,
@@ -30,6 +33,8 @@ import {
   getImprovements,
   saveImprovement,
   deleteImprovement,
+  getPlaybookState,
+  savePlaybookState,
   openDatabase,
   putRecord,
   saveOnboardingState,
@@ -61,6 +66,9 @@ let currentHistory = [];
 let currentReviewSuggestions = [];
 let currentWeeklyReview;
 let currentImprovements = [];
+let currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
+let currentPlaybookQuery = '';
+let currentPlaybookGroup = 'All topics';
 let autosaveTimer;
 let lastUndo;
 
@@ -192,6 +200,16 @@ async function render() {
     app.innerHTML = createAppShell({ ...route, action: 'Capture improvement' });
     document.querySelector('#view-root').innerHTML = createImproveView(currentImprovements);
     document.title = 'Improve — TalentisOS';
+  } else if (route.key === 'playbook') {
+    currentPlaybookState = await getPlaybookState(database);
+    app.innerHTML = createAppShell(route);
+    document.querySelector('#view-root').innerHTML = createPlaybookView(
+      playbookTopics,
+      currentPlaybookState,
+      currentPlaybookQuery,
+      currentPlaybookGroup,
+    );
+    document.title = 'Playbook — TalentisOS';
   } else {
     app.innerHTML = createAppShell(route);
     renderView(route);
@@ -333,6 +351,32 @@ function openDialog(dialog) {
   if (!dialog) return;
   dialog.showModal();
   dialog.querySelector('button, [href], input, select, textarea')?.focus();
+}
+
+async function openPlaybookTopic(id) {
+  const topic = playbookTopics.find((item) => item.id === id);
+  if (!topic) return;
+  currentPlaybookState = await getPlaybookState(database);
+  currentPlaybookState.recentTopicIds = [
+    topic.id,
+    ...(currentPlaybookState.recentTopicIds || []).filter((topicId) => topicId !== topic.id),
+  ].slice(0, 6);
+  await savePlaybookState(database, currentPlaybookState);
+  const existing = document.querySelector('#playbook-detail');
+  existing?.remove();
+  app.insertAdjacentHTML('beforeend', createPlaybookDialog(topic, currentPlaybookState.savedTopicIds?.includes(topic.id)));
+  openDialog(document.querySelector('#playbook-detail'));
+}
+
+function renderPlaybookResults() {
+  const viewRoot = document.querySelector('#view-root');
+  if (!viewRoot) return;
+  viewRoot.innerHTML = createPlaybookView(
+    playbookTopics,
+    currentPlaybookState,
+    currentPlaybookQuery,
+    currentPlaybookGroup,
+  );
 }
 
 function formValues(form) {
@@ -650,6 +694,15 @@ document.addEventListener('submit', async (event) => {
 });
 
 document.addEventListener('input', (event) => {
+  const playbookSearch = event.target.closest('[data-playbook-search]');
+  if (playbookSearch) {
+    currentPlaybookQuery = playbookSearch.value;
+    renderPlaybookResults();
+    const nextSearch = document.querySelector('[data-playbook-search]');
+    nextSearch?.focus();
+    nextSearch?.setSelectionRange(currentPlaybookQuery.length, currentPlaybookQuery.length);
+    return;
+  }
   const reviewImprovement = event.target.closest('[data-review-improvement]');
   if (reviewImprovement) {
     window.clearTimeout(autosaveTimer);
@@ -715,6 +768,37 @@ document.addEventListener('click', async (event) => {
   const settingsButton = event.target.closest('[data-open-settings]');
   if (settingsButton) {
     openDialog(document.querySelector('#settings-dialog'));
+    return;
+  }
+
+  const playbookTopicButton = event.target.closest('[data-open-playbook-topic]');
+  if (playbookTopicButton) {
+    await openPlaybookTopic(playbookTopicButton.dataset.openPlaybookTopic);
+    return;
+  }
+
+  const playbookGroup = event.target.closest('[data-playbook-group]');
+  if (playbookGroup) {
+    currentPlaybookGroup = playbookGroup.dataset.playbookGroup;
+    renderPlaybookResults();
+    return;
+  }
+
+  const playbookSave = event.target.closest('[data-playbook-save]');
+  if (playbookSave) {
+    const topicId = playbookSave.dataset.playbookSave;
+    const saved = new Set(currentPlaybookState.savedTopicIds || []);
+    if (saved.has(topicId)) {
+      saved.delete(topicId);
+      playbookSave.textContent = 'Save topic';
+      showToast('Topic removed from saved.');
+    } else {
+      saved.add(topicId);
+      playbookSave.textContent = 'Remove from saved';
+      showToast('Topic saved locally.');
+    }
+    currentPlaybookState.savedTopicIds = [...saved];
+    await savePlaybookState(database, currentPlaybookState);
     return;
   }
 

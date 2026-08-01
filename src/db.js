@@ -1,5 +1,5 @@
 const DB_NAME = 'talentisos';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 const stores = {
   settings: 'settings',
@@ -11,6 +11,7 @@ const stores = {
   dayClosures: 'dayClosures',
   weeklyReviews: 'weeklyReviews',
   improvements: 'improvements',
+  playbookState: 'playbookState',
   appMeta: 'appMeta',
 };
 
@@ -62,6 +63,9 @@ export function openDatabase() {
         improvements.createIndex('status', 'status');
         improvements.createIndex('category', 'category');
         improvements.createIndex('createdAt', 'createdAt');
+      }
+      if (!database.objectStoreNames.contains(stores.playbookState)) {
+        database.createObjectStore(stores.playbookState, { keyPath: 'id' });
       }
       if (!database.objectStoreNames.contains(stores.appMeta)) {
         database.createObjectStore(stores.appMeta, { keyPath: 'key' });
@@ -267,6 +271,20 @@ export async function saveImprovement(database, improvement) {
 
 export async function deleteImprovement(database, id) {
   return deleteRecord(database, stores.improvements, id);
+}
+
+export async function getPlaybookState(database) {
+  const existing = await getRecord(database, stores.playbookState, 'primary');
+  return existing || { id: 'primary', savedTopicIds: [], recentTopicIds: [] };
+}
+
+export async function savePlaybookState(database, state) {
+  return putRecord(database, stores.playbookState, {
+    id: 'primary',
+    savedTopicIds: state.savedTopicIds || [],
+    recentTopicIds: state.recentTopicIds || [],
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 export { stores };

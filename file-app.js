@@ -40,6 +40,14 @@
       description: "Turn small observations into practical changes to the way you lead.",
       prompt: "Improvement capture will be introduced in a later phase.",
       action: "Capture improvement"
+    },
+    playbook: {
+      label: "Playbook",
+      eyebrow: "Guidance when it matters",
+      title: "Lead with a clear next move.",
+      description: "Short, practical guidance for the moments that shape the day.",
+      prompt: "Search for a topic or open guidance from the workflow you are in.",
+      action: "Open Playbook"
     }
   };
   var navigation = [
@@ -47,8 +55,26 @@
     ["huddle", "Huddle", "\uFF0B"],
     ["work", "Work", "\u25A1"],
     ["review", "Review", "\u2713"],
-    ["improve", "Improve", "\u2197"]
+    ["improve", "Improve", "\u2197"],
+    ["playbook", "Playbook", "?"]
   ];
+  var playbookTopics = [
+    ["new-leader", "Starting as a new leader", "Start well", "Set expectations, learn the work, and make the first commitments visible.", "When you are new to a team or role.", "Listen first. Name what you are learning. Agree the few outcomes that matter now.", "I am here to understand the work, support the team, and make our priorities clear.", "Avoid changing everything before you understand the system.", "People know what matters, what to expect from you, and how to raise concerns."],
+    ["prepare-day", "Preparing the day", "Plan the day", "Create a small, useful shape for the day before interruptions arrive.", "At the start of each workday.", "Choose up to three outcomes. Surface risks, decisions, and follow-ups. Protect time for the most important one.", "By the end of today, what result must be different?", "Avoid turning the plan into a complete task list.", "The team can see the focus, the risks, and the next actions."],
+    ["morning-huddle", "Running a morning huddle", "Align quickly", "Use a short huddle to align action, ownership, and risk.", "At the start of a shared workday or shift.", "Confirm the priority, ask what is blocked, assign the next action, and record the due point.", "What needs to move today, who owns the next action, and what could get in the way?", "Avoid solving every issue in the huddle.", "People leave knowing the action, responsible area, and due point."],
+    ["set-priorities", "Setting priorities", "Choose what matters", "Make the outcome visible so activity does not become the goal.", "When work is competing for attention.", "Define the result, why it matters, and the due point. Keep the list to the few outcomes you can actively lead.", "The outcome I need by [due point] is ____. It matters because ____.", "Avoid describing only the activity.", "The priority can be understood and checked without extra explanation."],
+    ["delegate-clearly", "Delegating clearly", "Create ownership", "Transfer a clear outcome with enough context and authority to act.", "When another person or area will carry the work.", "State the outcome, decision boundaries, support available, and check-in point. Confirm understanding.", "Please own [outcome] by [due point]. You can decide ____. Let us check in at ____.", "Avoid handing over a task without an outcome or authority.", "The owner can explain what good looks like and what happens next."],
+    ["following-up", "Following up", "Close the loop", "Follow up on commitments without creating unnecessary chasing.", "When an action is due, waiting, or at risk of slipping.", "Reference the commitment, ask for the current position, and agree the next step and date.", "Checking in on [commitment]. What is the current position and next date?", "Avoid vague reminders with no specific ask.", "The commitment has a clear status and next action."],
+    ["managing-risk", "Managing risk", "Make risk actionable", "Turn a concern into an impact and an immediate action.", "When something could affect an outcome, customer, team, or deadline.", "State what is at risk, the impact if it happens, the risk level, and the immediate action.", "The risk is ____. The impact would be ____. The immediate action is ____.", "Avoid recording a risk without an owner or action.", "The risk is visible early and someone knows what to do next."],
+    ["escalate-early", "Escalating early", "Raise the right signal", "Escalate while there are still useful options.", "When impact, authority, timing, or capability exceeds the current team.", "State the situation, impact, action already taken, options, and the decision or support needed.", "Here is the situation, the impact, what we have tried, and the support needed now.", "Avoid escalating only the problem or waiting for certainty.", "The right person can make a timely decision with enough context."],
+    ["make-decisions", "Making decisions", "Decide with clarity", "Make the decision, the reason, and the resulting action visible.", "When work is waiting on a choice or trade-off.", "Clarify the decision required, options, criteria, owner, due point, and next action. If deferring, record why and the next review date.", "The decision is ____. We chose it because ____. The next action is ____ by ____.", "Avoid leaving a decision in discussion without a date.", "People know what was decided, why, and what happens next."],
+    ["remove-blockers", "Removing blockers", "Restore movement", "Focus on the constraint that is stopping useful work.", "When progress has stopped or a team is repeatedly waiting.", "Name the blocker, who can remove it, the smallest action to unlock movement, and when to check again.", "What is the smallest thing we can remove to let this move?", "Avoid adding more work around the blocker.", "The work is moving again or the constraint is escalated with a clear ask."],
+    ["lead-meetings", "Leading meetings", "Make the time useful", "Give every meeting a purpose, decision path, and close.", "Before and during a meeting.", "State the outcome needed, keep discussion on that outcome, capture decisions and actions, and close with owners and dates.", "By the end of this meeting we need to ____.", "Avoid meetings with no outcome or undocumented actions.", "The meeting ends with fewer open questions and visible commitments."],
+    ["competing-priorities", "Handling competing priorities", "Make the trade-off", "Choose deliberately when everything appears urgent.", "When two or more important outcomes compete for the same time or people.", "Compare impact, timing, risk, and reversibility. Choose what moves first and name what will wait.", "If we do this first, [other outcome] will move to ____. Is that the right trade-off?", "Avoid silently accepting every priority.", "The trade-off is explicit and stakeholders know what changes."],
+    ["close-day", "Closing the day", "Leave tomorrow clearer", "Close commitments, capture learning, and prepare the next useful step.", "At the end of the workday.", "Review what was completed, what remains open, what changed, and the small set of items for tomorrow.", "What changed today, what carries forward, and what does tomorrow need first?", "Avoid carrying work forward without a next action.", "Tomorrow starts with fewer surprises and a clear first move."],
+    ["weekly-review", "Running a weekly review", "Learn from the rhythm", "Use the week to identify patterns and choose the next three priorities.", "At the end of the week or start of the next one.", "Review achievements, carryover, repeated risks, delayed decisions, wasted time, and one change to test.", "What did the week teach us, and what will we do differently next week?", "Avoid turning the review into a large report.", "Next week has three priorities, one operating improvement, and one leadership focus."],
+    ["capture-improvement", "Capturing improvements", "Make one change testable", "Turn a practical observation into a small next step.", "When a workflow, handover, meeting, or customer outcome is not working well.", "Describe what is not working, what should change, why it helps, and the next step. Choose one category and status.", "The small change we will test is ____. We expect it to help by ____.", "Avoid capturing an improvement without a next step.", "The change is small enough to test and has a clear owner or next action."]
+  ].map(([id, title, group, summary, when, what, say, avoid, success]) => ({ id, title, group, summary, when, what, say, avoid, success }));
   var onboardingSteps = [
     {
       title: "What type of team or function do you lead?",
@@ -156,7 +182,7 @@
     return `<section class="today-command" aria-labelledby="today-focus-title"><div class="today-greeting"><p class="eyebrow">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</p><h2 id="today-focus-title">Good morning.</h2><p class="secondary-text">Here is the shape of your leadership day.</p></div><section class="daily-focus"><div><p class="card-kicker">Daily focus</p><h3>${escapeHtml(focus)}</h3></div><span class="focus-card__icon" aria-hidden="true">\u2726</span></section><section class="today-section" aria-labelledby="priorities-title"><div class="section-heading"><div><p class="eyebrow">What matters now?</p><h2 id="priorities-title">Top three priorities</h2></div><button class="secondary-action" type="button" data-add-priority ${priorities.length >= 3 ? "disabled" : ""}>${priorities.length >= 3 ? "Three set" : "Add priority"}</button></div><div class="priority-list">${priorityCards}</div></section><div class="today-grid"><section class="today-section compact-section" aria-labelledby="carryover-title"><div class="section-heading"><h2 id="carryover-title">Carryover</h2><span class="section-count">${plan.carryover?.length || 0}</span></div>${plan.carryover?.length ? plan.carryover.map((item) => `<p>${escapeHtml(item)}</p>`).join("") : empty("Nothing carried over.")}</section><section class="today-section compact-section" aria-labelledby="risk-title"><div class="section-heading"><h2 id="risk-title">At risk</h2><span class="section-count section-count--warning">${criticalRisks.length}</span></div>${signalList(criticalRisks, "No critical risks surfaced.")}</section><section class="today-section compact-section" aria-labelledby="decision-title"><div class="section-heading"><h2 id="decision-title">Decisions</h2><span class="section-count">${dueDecisions.length}</span></div>${signalList(dueDecisions, "No decisions due.")}</section><section class="today-section compact-section" aria-labelledby="follow-up-title"><div class="section-heading"><h2 id="follow-up-title">Follow-ups due</h2><span class="section-count">${overdueFollowUps.length}</span></div>${signalList(overdueFollowUps, "No overdue follow-ups.")}</section></div><section class="today-section meetings-section" aria-labelledby="meetings-title"><div class="section-heading"><h2 id="meetings-title">Meetings</h2><span class="section-count">${plan.meetings?.length || 0}</span></div>${plan.meetings?.length ? plan.meetings.map((item) => `<p>${escapeHtml(item)}</p>`).join("") : empty("No meetings added.")}</section><section class="leadership-prompt" aria-labelledby="prompt-title"><p class="eyebrow">Leadership prompt</p><h2 id="prompt-title">${prompt}</h2></section><section class="end-day-status" aria-labelledby="end-day-title"><div><p class="eyebrow">End-of-day status</p><h2 id="end-day-title">${plan.endOfDayStatus === "complete" ? "Review complete." : "Not reviewed yet."}</h2></div><span class="status-chip status-chip--${plan.endOfDayStatus === "complete" ? "success" : "neutral"}">${plan.endOfDayStatus === "complete" ? "Complete" : "Open"}</span></section></section>${createPrioritySheet()}`;
   }
   function createPrioritySheet() {
-    return `<dialog id="priority-sheet" class="modal bottom-sheet-dialog" aria-labelledby="priority-sheet-title"><div class="modal__header"><div><p class="eyebrow">One clear commitment</p><h2 id="priority-sheet-title">Add a priority</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close priority editor">\xD7</button></div><form class="modal__body priority-form" data-priority-form><input type="hidden" name="id"><label>Outcome<input name="outcome" maxlength="120" required placeholder="What result matters most?"></label><label>Why it matters<textarea name="why" maxlength="220" rows="3" placeholder="What will this make possible?"></textarea></label><label>Due point<input name="duePoint" maxlength="80" placeholder="For example, before Friday's review"></label><label>Status<select name="status"><option value="not-started">Not started</option><option value="in-progress">In progress</option><option value="done">Complete</option></select></label><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Save priority</button></div></form></dialog>`;
+    return `<dialog id="priority-sheet" class="modal bottom-sheet-dialog" aria-labelledby="priority-sheet-title"><div class="modal__header"><div><p class="eyebrow">One clear commitment</p><h2 id="priority-sheet-title">Add a priority</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close priority editor">\xD7</button></div><form class="modal__body priority-form" data-priority-form><input type="hidden" name="id"><label>Outcome<input name="outcome" maxlength="120" required placeholder="What result matters most?"></label>${createContextualGuidance("set-priorities", "See how to set priorities")}<label>Why it matters<textarea name="why" maxlength="220" rows="3" placeholder="What will this make possible?"></textarea></label><label>Due point<input name="duePoint" maxlength="80" placeholder="For example, before Friday's review"></label><label>Status<select name="status"><option value="not-started">Not started</option><option value="in-progress">In progress</option><option value="done">Complete</option></select></label><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Save priority</button></div></form></dialog>`;
   }
   var workTypes = {
     priority: "Priority",
@@ -254,11 +280,11 @@
   }
   function workTypeFields(type, item = {}) {
     if (type === "risk")
-      return `<div class="type-fields"><label>What is at risk?<textarea name="whatAtRisk" rows="2">${escapeHtml(item.whatAtRisk || "")}</textarea></label><label>Impact<textarea name="impact" rows="2">${escapeHtml(item.impact || "")}</textarea></label><label>Immediate action<textarea name="immediateAction" rows="2">${escapeHtml(item.immediateAction || "")}</textarea></label><label>What is required?<textarea name="required" rows="2">${escapeHtml(item.required || "")}</textarea></label><label>Review date<input type="date" name="reviewDate" value="${escapeHtml(item.reviewDate || "")}"></label><label class="check-row"><input type="checkbox" name="escalationRequired" ${item.escalationRequired ? "checked" : ""}> Escalation required</label></div>`;
+      return `<div class="type-fields">${createContextualGuidance("managing-risk")}<label>What is at risk?<textarea name="whatAtRisk" rows="2">${escapeHtml(item.whatAtRisk || "")}</textarea></label><label>Impact<textarea name="impact" rows="2">${escapeHtml(item.impact || "")}</textarea></label><label>Immediate action<textarea name="immediateAction" rows="2">${escapeHtml(item.immediateAction || "")}</textarea></label><label>What is required?<textarea name="required" rows="2">${escapeHtml(item.required || "")}</textarea></label><label>Review date<input type="date" name="reviewDate" value="${escapeHtml(item.reviewDate || "")}"></label><label class="check-row"><input type="checkbox" name="escalationRequired" ${item.escalationRequired ? "checked" : ""}> Escalation required</label></div>`;
     if (type === "decision")
-      return `<div class="type-fields"><label>Decision required<textarea name="decisionRequired" rows="2">${escapeHtml(item.decisionRequired || "")}</textarea></label><label>Why it matters<textarea name="whyMatters" rows="2">${escapeHtml(item.whyMatters || "")}</textarea></label><label>Options<textarea name="options" rows="3" placeholder="One option per line">${escapeHtml(item.options || "")}</textarea></label><label>Decision made<textarea name="decisionMade" rows="2">${escapeHtml(item.decisionMade || "")}</textarea></label><label>Resulting action<textarea name="resultingAction" rows="2">${escapeHtml(item.resultingAction || "")}</textarea></label></div>`;
+      return `<div class="type-fields">${createContextualGuidance("make-decisions")}<label>Decision required<textarea name="decisionRequired" rows="2">${escapeHtml(item.decisionRequired || "")}</textarea></label><label>Why it matters<textarea name="whyMatters" rows="2">${escapeHtml(item.whyMatters || "")}</textarea></label><label>Options<textarea name="options" rows="3" placeholder="One option per line">${escapeHtml(item.options || "")}</textarea></label><label>Decision made<textarea name="decisionMade" rows="2">${escapeHtml(item.decisionMade || "")}</textarea></label><label>Resulting action<textarea name="resultingAction" rows="2">${escapeHtml(item.resultingAction || "")}</textarea></label></div>`;
     if (type === "follow-up")
-      return `<div class="type-fields"><label>What needs to happen?<textarea name="whatNeedsToHappen" rows="2">${escapeHtml(item.whatNeedsToHappen || "")}</textarea></label><label>Who or what is being followed up?<input name="followedUpWith" value="${escapeHtml(item.followedUpWith || "")}"></label><label>Why?<textarea name="why" rows="2">${escapeHtml(item.why || "")}</textarea></label><label>Result<textarea name="result" rows="2">${escapeHtml(item.result || "")}</textarea></label></div>`;
+      return `<div class="type-fields">${createContextualGuidance("following-up")}<label>What needs to happen?<textarea name="whatNeedsToHappen" rows="2">${escapeHtml(item.whatNeedsToHappen || "")}</textarea></label><label>Who or what is being followed up?<input name="followedUpWith" value="${escapeHtml(item.followedUpWith || "")}"></label><label>Why?<textarea name="why" rows="2">${escapeHtml(item.why || "")}</textarea></label><label>Result<textarea name="result" rows="2">${escapeHtml(item.result || "")}</textarea></label></div>`;
     return "";
   }
   function createWorkDetailSheet(item = {}) {
@@ -350,6 +376,36 @@
     const status = item.status || "captured";
     return `<dialog id="improvement-detail" class="modal work-detail-dialog" aria-labelledby="improvement-title"><div class="modal__header"><div><p class="eyebrow">Improve</p><h2 id="improvement-title">${item.id ? "Edit improvement" : "Capture improvement"}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close improvement">\xD7</button></div><form class="modal__body work-form" data-improvement-form><input type="hidden" name="id" value="${escapeHtml(item.id || "")}"><label>What is not working?<textarea name="notWorking" rows="2" required>${escapeHtml(item.notWorking || "")}</textarea></label><label>What should change?<textarea name="change" rows="2" required>${escapeHtml(item.change || "")}</textarea></label><label>Why would it help?<textarea name="why" rows="2">${escapeHtml(item.why || "")}</textarea></label><label>What is the next step?<textarea name="nextStep" rows="2">${escapeHtml(item.nextStep || "")}</textarea></label><div class="form-two-col"><label>Category<select name="category">${improvementCategories.map(([value, label]) => `<option value="${value}" ${category === value ? "selected" : ""}>${label}</option>`).join("")}</select></label><label>Status<select name="status">${["captured", "reviewing", "testing", "implemented", "closed"].map((value) => `<option value="${value}" ${status === value ? "selected" : ""}>${value[0].toUpperCase() + value.slice(1)}</option>`).join("")}</select></label></div><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save improvement</button></div></form></dialog>`;
   }
+  function playbookTopicById(id) {
+    return playbookTopics.find((topic) => topic.id === id);
+  }
+  function playbookTopicCard(topic, state) {
+    const saved = state.savedTopicIds?.includes(topic.id);
+    return `<article class="playbook-card"><div class="playbook-card__top"><span class="work-type">${escapeHtml(topic.group)}</span>${saved ? '<span class="status-chip status-chip--success">Saved</span>' : ""}</div><h3>${escapeHtml(topic.title)}</h3><p>${escapeHtml(topic.summary)}</p><button type="button" class="secondary-action" data-open-playbook-topic="${topic.id}">Open guidance <span aria-hidden="true">\u2192</span></button></article>`;
+  }
+  function createPlaybookView(topics, state, query = "", group = "All topics") {
+    const normalizedQuery = query.trim().toLowerCase();
+    const matching = topics.filter((topic) => {
+      const matchesGroup = group === "All topics" || topic.group === group;
+      const haystack = `${topic.title} ${topic.group} ${topic.summary} ${topic.when} ${topic.what} ${topic.say} ${topic.avoid} ${topic.success}`.toLowerCase();
+      return matchesGroup && (!normalizedQuery || haystack.includes(normalizedQuery));
+    });
+    const groups = ["All topics", ...new Set(topics.map((topic) => topic.group))];
+    const savedTopics = (state.savedTopicIds || []).map(playbookTopicById).filter(Boolean);
+    const recentTopics = (state.recentTopicIds || []).map(playbookTopicById).filter(Boolean);
+    const groupButtons = groups.map((name) => `<button type="button" class="work-filter ${group === name ? "work-filter--active" : ""}" data-playbook-group="${escapeHtml(name)}" aria-pressed="${group === name}">${escapeHtml(name)}</button>`).join("");
+    const smallSection = (label, items) => `<section class="playbook-section playbook-section--compact"><div class="section-heading"><div><p class="eyebrow">${label}</p><h2>${label}</h2></div><span class="section-count">${items.length}</span></div>${items.length ? `<div class="playbook-grid">${items.slice(0, 4).map((topic) => playbookTopicCard(topic, state)).join("")}</div>` : '<div class="section-empty"><span aria-hidden="true">\u2014</span><p>No topics here yet.</p></div>'}</section>`;
+    const content = matching.length ? `<div class="playbook-grid">${matching.map((topic) => playbookTopicCard(topic, state)).join("")}</div>` : `<div class="section-empty"><span aria-hidden="true">\u2014</span><p>No guidance matches \u201C${escapeHtml(query)}\u201D. Try a simpler phrase.</p></div>`;
+    return `<section class="playbook-command" aria-labelledby="playbook-title"><div class="work-intro"><div><p class="eyebrow">Guidance when it matters</p><h2 id="playbook-title">Lead with a clear next move.</h2><p class="secondary-text">Short, practical guidance for the moments that shape the day. Everything is available offline.</p></div></div><label class="playbook-search">Search the Playbook<input type="search" data-playbook-search value="${escapeHtml(query)}" placeholder="Try \u201Crisk\u201D, \u201Cdelegate\u201D, or \u201Cweekly review\u201D" autocomplete="off"></label><div class="work-filters playbook-filters" role="group" aria-label="Playbook topic groups">${groupButtons}</div>${smallSection("Saved topics", savedTopics)}${smallSection("Recently viewed", recentTopics)}<section class="playbook-section" aria-labelledby="all-playbook-topics"><div class="section-heading"><div><p class="eyebrow">Topic groups</p><h2 id="all-playbook-topics">${normalizedQuery ? "Search results" : group}</h2></div><span class="section-count">${matching.length}</span></div>${content}</section></section>`;
+  }
+  function createPlaybookDialog(topic, saved = false) {
+    if (!topic) return "";
+    return `<dialog id="playbook-detail" class="modal playbook-dialog" aria-labelledby="playbook-detail-title"><div class="modal__header"><div><p class="eyebrow">${escapeHtml(topic.group)}</p><h2 id="playbook-detail-title">${escapeHtml(topic.title)}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close guidance">\xD7</button></div><div class="modal__body playbook-detail"><p class="secondary-text">${escapeHtml(topic.summary)}</p><dl><div><dt>When to use it</dt><dd>${escapeHtml(topic.when)}</dd></div><div><dt>What to do</dt><dd>${escapeHtml(topic.what)}</dd></div><div><dt>What to say</dt><dd>${escapeHtml(topic.say)}</dd></div><div><dt>What to avoid</dt><dd>${escapeHtml(topic.avoid)}</dd></div><div><dt>What success looks like</dt><dd>${escapeHtml(topic.success)}</dd></div></dl><div class="modal__actions"><button type="button" class="secondary-action" data-playbook-save="${topic.id}">${saved ? "Remove from saved" : "Save topic"}</button><button type="button" class="primary-action" data-close-dialog>Done</button></div></div></dialog>`;
+  }
+  function createContextualGuidance(topicId, label = "Playbook guidance") {
+    const topic = playbookTopicById(topicId);
+    return topic ? `<p class="contextual-guidance"><span aria-hidden="true">\u2726</span><span>${escapeHtml(topic.summary)}</span><button type="button" class="text-button" data-open-playbook-topic="${topic.id}">${escapeHtml(label)}</button></p>` : "";
+  }
   function getRoute() {
     const parts = window.location.hash.slice(1).split("/");
     const key = parts[0] || "today";
@@ -392,7 +448,7 @@
     <header class="mobile-header"><a class="brand" href="#today" aria-label="TalentisOS home"><span class="brand-mark" aria-hidden="true">T</span><span class="brand-wordmark">Talentis<span>OS</span></span></a><button class="icon-button" type="button" data-open-settings aria-label="Open settings">\u2699</button></header>
     <main id="main-content" class="content-area"><div class="content-inner"><header class="page-header"><div><p class="eyebrow">${route.eyebrow}</p><h1>${route.label}</h1></div><div class="page-header__meta"><span class="date-label">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</span><span class="status-dot" aria-label="Offline-ready shell"></span></div></header><div id="view-root"></div></div></main>
     <nav class="bottom-nav" aria-label="Primary navigation">${navItems(route.key, "")}<button class="nav-item" type="button" data-open-settings><span class="nav-item__icon" aria-hidden="true">\u2022\u2022\u2022</span><span>More</span></button></nav>
-    ${route.key === "review" ? "" : `<div class="primary-action-bar"><button class="primary-action" type="button" data-primary-action>${route.action}<span aria-hidden="true">\u2192</span></button></div>`}
+    ${["review", "playbook"].includes(route.key) ? "" : `<div class="primary-action-bar"><button class="primary-action" type="button" data-primary-action>${route.action}<span aria-hidden="true">\u2192</span></button></div>`}
     ${settingsDialog()}
   </div>`;
   }
@@ -409,7 +465,7 @@
 
   // src/db.js
   var DB_NAME = "talentisos";
-  var DB_VERSION = 4;
+  var DB_VERSION = 5;
   var stores = {
     settings: "settings",
     dailyPlans: "dailyPlans",
@@ -420,6 +476,7 @@
     dayClosures: "dayClosures",
     weeklyReviews: "weeklyReviews",
     improvements: "improvements",
+    playbookState: "playbookState",
     appMeta: "appMeta"
   };
   function requestResult(request) {
@@ -469,6 +526,9 @@
           improvements.createIndex("status", "status");
           improvements.createIndex("category", "category");
           improvements.createIndex("createdAt", "createdAt");
+        }
+        if (!database2.objectStoreNames.contains(stores.playbookState)) {
+          database2.createObjectStore(stores.playbookState, { keyPath: "id" });
         }
         if (!database2.objectStoreNames.contains(stores.appMeta)) {
           database2.createObjectStore(stores.appMeta, { keyPath: "key" });
@@ -647,6 +707,18 @@
   async function deleteImprovement(database2, id) {
     return deleteRecord(database2, stores.improvements, id);
   }
+  async function getPlaybookState(database2) {
+    const existing = await getRecord(database2, stores.playbookState, "primary");
+    return existing || { id: "primary", savedTopicIds: [], recentTopicIds: [] };
+  }
+  async function savePlaybookState(database2, state) {
+    return putRecord(database2, stores.playbookState, {
+      id: "primary",
+      savedTopicIds: state.savedTopicIds || [],
+      recentTopicIds: state.recentTopicIds || [],
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
 
   // src/main.js
   var app = document.querySelector("#app");
@@ -667,6 +739,9 @@
   var currentReviewSuggestions = [];
   var currentWeeklyReview;
   var currentImprovements = [];
+  var currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
+  var currentPlaybookQuery = "";
+  var currentPlaybookGroup = "All topics";
   var autosaveTimer;
   var lastUndo;
   function showToast(message) {
@@ -790,6 +865,16 @@
       app.innerHTML = createAppShell({ ...route, action: "Capture improvement" });
       document.querySelector("#view-root").innerHTML = createImproveView(currentImprovements);
       document.title = "Improve \u2014 TalentisOS";
+    } else if (route.key === "playbook") {
+      currentPlaybookState = await getPlaybookState(database);
+      app.innerHTML = createAppShell(route);
+      document.querySelector("#view-root").innerHTML = createPlaybookView(
+        playbookTopics,
+        currentPlaybookState,
+        currentPlaybookQuery,
+        currentPlaybookGroup
+      );
+      document.title = "Playbook \u2014 TalentisOS";
     } else {
       app.innerHTML = createAppShell(route);
       renderView(route);
@@ -913,6 +998,30 @@
     if (!dialog) return;
     dialog.showModal();
     dialog.querySelector("button, [href], input, select, textarea")?.focus();
+  }
+  async function openPlaybookTopic(id) {
+    const topic = playbookTopics.find((item) => item.id === id);
+    if (!topic) return;
+    currentPlaybookState = await getPlaybookState(database);
+    currentPlaybookState.recentTopicIds = [
+      topic.id,
+      ...(currentPlaybookState.recentTopicIds || []).filter((topicId) => topicId !== topic.id)
+    ].slice(0, 6);
+    await savePlaybookState(database, currentPlaybookState);
+    const existing = document.querySelector("#playbook-detail");
+    existing?.remove();
+    app.insertAdjacentHTML("beforeend", createPlaybookDialog(topic, currentPlaybookState.savedTopicIds?.includes(topic.id)));
+    openDialog(document.querySelector("#playbook-detail"));
+  }
+  function renderPlaybookResults() {
+    const viewRoot = document.querySelector("#view-root");
+    if (!viewRoot) return;
+    viewRoot.innerHTML = createPlaybookView(
+      playbookTopics,
+      currentPlaybookState,
+      currentPlaybookQuery,
+      currentPlaybookGroup
+    );
   }
   function formValues(form) {
     return Object.fromEntries(new FormData(form).entries());
@@ -1198,6 +1307,15 @@
     }
   });
   document.addEventListener("input", (event) => {
+    const playbookSearch = event.target.closest("[data-playbook-search]");
+    if (playbookSearch) {
+      currentPlaybookQuery = playbookSearch.value;
+      renderPlaybookResults();
+      const nextSearch = document.querySelector("[data-playbook-search]");
+      nextSearch?.focus();
+      nextSearch?.setSelectionRange(currentPlaybookQuery.length, currentPlaybookQuery.length);
+      return;
+    }
     const reviewImprovement = event.target.closest("[data-review-improvement]");
     if (reviewImprovement) {
       window.clearTimeout(autosaveTimer);
@@ -1260,6 +1378,34 @@
     const settingsButton = event.target.closest("[data-open-settings]");
     if (settingsButton) {
       openDialog(document.querySelector("#settings-dialog"));
+      return;
+    }
+    const playbookTopicButton = event.target.closest("[data-open-playbook-topic]");
+    if (playbookTopicButton) {
+      await openPlaybookTopic(playbookTopicButton.dataset.openPlaybookTopic);
+      return;
+    }
+    const playbookGroup = event.target.closest("[data-playbook-group]");
+    if (playbookGroup) {
+      currentPlaybookGroup = playbookGroup.dataset.playbookGroup;
+      renderPlaybookResults();
+      return;
+    }
+    const playbookSave = event.target.closest("[data-playbook-save]");
+    if (playbookSave) {
+      const topicId = playbookSave.dataset.playbookSave;
+      const saved = new Set(currentPlaybookState.savedTopicIds || []);
+      if (saved.has(topicId)) {
+        saved.delete(topicId);
+        playbookSave.textContent = "Save topic";
+        showToast("Topic removed from saved.");
+      } else {
+        saved.add(topicId);
+        playbookSave.textContent = "Remove from saved";
+        showToast("Topic saved locally.");
+      }
+      currentPlaybookState.savedTopicIds = [...saved];
+      await savePlaybookState(database, currentPlaybookState);
       return;
     }
     const closeButton = event.target.closest("[data-close-dialog]");
