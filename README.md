@@ -15,6 +15,8 @@ npm install
 npm run dev
 ```
 
+You can also open `index.html` directly from Finder or your file manager. The repository includes a local browser bundle for `file://` mode; IndexedDB-backed onboarding and Today data continue to work locally. After source changes, `npm run build` refreshes both the production build and the direct-open bundle.
+
 Quality and production commands: `npm test`, `npm run lint`, `npm run format`, `npm run build`, and `npm run preview`.
 
 ## Product boundaries

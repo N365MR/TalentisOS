@@ -8,14 +8,25 @@
       name="description"
       content="TalentisOS is a local-first daily leadership operating system."
     />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.svg" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.svg" />
+    <link id="file-style" rel="stylesheet" href="./src/styles.css" />
     <title>TalentisOS — Daily leadership operating system</title>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <div id="app" class="app-root"></div>
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
-    <script type="module" src="/src/main.js"></script>
+    <script>
+      const talentisEntry = document.createElement('script');
+      if (window.location.protocol === 'file:') {
+        talentisEntry.src = './file-app.js';
+      } else {
+        document.querySelector('#file-style').disabled = true;
+        talentisEntry.type = 'module';
+        talentisEntry.src = '/src/main.js';
+      }
+      document.body.append(talentisEntry);
+    </script>
   </body>
 </html>
