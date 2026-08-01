@@ -10,6 +10,9 @@ Database name: `talentisos`. Schema version: `1`.
 - `dailyPlans` — one local plan per calendar date, including focus, carryover, risks, decisions, follow-ups, meetings, and end-of-day status.
 - `priorities` — dated leadership priorities with outcome, why, due point, order, and status. Today enforces a maximum of three.
 - `workItems` — focused leadership work with type, group, minimal base fields, type-specific risk/decision/follow-up fields, and related item IDs. The Work view enforces a maximum of three active items in Now.
+- `dailyReviews` — date-keyed review draft and closure state, selected actions, improvement note, and tomorrow item draft.
+- `tomorrowPlans` — date-keyed confirmed next-day items plus meetings, risks, decisions, and follow-ups to review.
+- `dayClosures` — immutable-by-default date-keyed snapshots of the plan, priorities, work, completed work, tomorrow plan, and summary.
 - `appMeta` — schema-safe application metadata, including resumable onboarding progress and completion acknowledgment.
 
 The first open creates only onboarding metadata and an empty current daily plan. It does not create sample priorities, work items, or demonstration workspace content. Existing version 1 databases migrate by adding `workItems`; future schema changes must use explicit `onupgradeneeded` migrations.

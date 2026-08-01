@@ -339,6 +339,72 @@ export function createWorkDetailSheet(item = {}) {
   return `<dialog id="work-detail" class="modal work-detail-dialog" aria-labelledby="work-detail-title"><div class="modal__header"><div><p class="eyebrow">${item.id ? 'Work item' : 'Quick add'}</p><h2 id="work-detail-title">${item.id ? 'Work item details' : 'Add work item'}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close work item">×</button></div><form class="modal__body work-form" data-work-form><input type="hidden" name="id" value="${escapeHtml(item.id || '')}"><div class="form-two-col"><label>Type<select name="type"><option value="action" ${type === 'action' ? 'selected' : ''}>Action</option><option value="priority" ${type === 'priority' ? 'selected' : ''}>Priority</option><option value="risk" ${type === 'risk' ? 'selected' : ''}>Risk</option><option value="decision" ${type === 'decision' ? 'selected' : ''}>Decision</option><option value="follow-up" ${type === 'follow-up' ? 'selected' : ''}>Follow-up</option></select></label><label>Group<select name="group"><option value="now" ${item.group === 'now' ? 'selected' : ''}>Now</option><option value="next" ${!item.group || item.group === 'next' ? 'selected' : ''}>Next</option><option value="later" ${item.group === 'later' ? 'selected' : ''}>Later</option><option value="waiting" ${item.group === 'waiting' ? 'selected' : ''}>Waiting</option></select></label></div><label>Title<input name="title" maxlength="140" value="${escapeHtml(item.title || '')}" required placeholder="What needs your leadership?"></label><label>Outcome<textarea name="outcome" rows="2" placeholder="What will be different when this is done?">${escapeHtml(item.outcome || '')}</textarea></label><div class="form-two-col"><label>Responsible person or area <span class="field-hint">optional plain text</span><input name="responsible" value="${escapeHtml(item.responsible || '')}"></label><label>Due date or time<input type="date" name="dueDate" value="${escapeHtml(item.dueDate || '')}"></label></div><div class="form-two-col"><label>Status<select name="status">${workStatusOptions(type, item.status)}</select></label><label>Risk level<select name="riskLevel"><option value="monitor" ${item.riskLevel === 'monitor' ? 'selected' : ''}>Monitor</option><option value="at-risk" ${item.riskLevel === 'at-risk' ? 'selected' : ''}>At risk</option><option value="critical" ${item.riskLevel === 'critical' ? 'selected' : ''}>Critical</option></select></label></div><label>Next action<textarea name="nextAction" rows="2">${escapeHtml(item.nextAction || '')}</textarea></label><label>Notes<textarea name="notes" rows="3">${escapeHtml(item.notes || '')}</textarea></label><label>Related item IDs <span class="field-hint">optional, comma separated</span><input name="relatedItemIds" value="${escapeHtml((item.relatedItemIds || []).join(', '))}"></label><div data-type-fields>${workTypeFields(type, item)}</div><p class="autosave-note" data-autosave-note>Changes save automatically.</p><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save item</button></div></form></dialog>`;
 }
 
+const reviewActions = [
+  ['carry-forward', 'Carry forward'],
+  ['complete', 'Complete'],
+  ['defer', 'Defer'],
+  ['escalate', 'Escalate'],
+  ['improve', 'Improve'],
+  ['remove', 'Remove from tomorrow'],
+];
+
+function reviewSuggestionCard(suggestion, review) {
+  const action = review.actions?.[suggestion.key]?.action || '';
+  return `<article class="review-item ${action ? 'review-item--handled' : ''}"><div class="review-item__heading"><div><span class="work-type">${escapeHtml(suggestion.category)}</span><h3>${escapeHtml(suggestion.title)}</h3></div>${action ? `<span class="status-chip status-chip--success">${escapeHtml(reviewActions.find(([value]) => value === action)?.[1] || action)}</span>` : ''}</div><p>${escapeHtml(suggestion.detail || suggestion.nextAction || 'No additional detail.')}</p><div class="review-item__actions">${reviewActions.map(([value, label]) => `<button type="button" class="text-button ${action === value ? 'text-button--selected' : ''}" data-review-action="${value}" data-review-key="${suggestion.key}">${label}</button>`).join('')}</div></article>`;
+}
+
+function reviewList(items, emptyMessage) {
+  return items.length
+    ? `<ul class="review-simple-list">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+    : `<div class="section-empty"><span aria-hidden="true">—</span><p>${emptyMessage}</p></div>`;
+}
+
+export function createReviewView({
+  review,
+  plan,
+  completed,
+  suggestions,
+  tomorrowPlan,
+  history,
+  editable = false,
+}) {
+  const tomorrowItems = review.tomorrowItems?.length
+    ? review.tomorrowItems
+    : tomorrowPlan.items || [];
+  const tomorrowCards = tomorrowItems.length
+    ? tomorrowItems
+        .map(
+          (item, index) =>
+            `<li class="tomorrow-item"><span class="tomorrow-item__order">0${index + 1}</span><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.outcome || item.type || 'Leadership item')}</small></span><button type="button" class="text-button" data-tomorrow-move="${item.id}" data-direction="up" ${index === 0 ? 'disabled' : ''}>Up</button><button type="button" class="text-button" data-tomorrow-remove="${item.id}">Remove</button></li>`,
+        )
+        .join('')
+    : '<li class="section-empty"><span aria-hidden="true">—</span><p>No items prepared yet.</p></li>';
+  const openSuggestions = suggestions.filter(
+    (suggestion) => !['complete', 'remove'].includes(review.actions?.[suggestion.key]?.action),
+  );
+  const completedItems = completed.map((item) => item.title || item.outcome).filter(Boolean);
+  const risks = suggestions.filter((item) => item.category === 'Risk').map((item) => item.title);
+  const escalations = suggestions
+    .filter((item) => review.actions?.[item.key]?.action === 'escalate')
+    .map((item) => item.title);
+  const historyItems = history.length
+    ? history
+        .map(
+          (closure) =>
+            `<li><span><strong>${escapeHtml(new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(`${closure.date}T12:00:00`)))}</strong><small>${escapeHtml(closure.snapshot?.summary || 'Day closed')}</small></span><button type="button" class="text-button" data-history-open="${closure.date}">View day</button></li>`,
+        )
+        .join('')
+    : '<li class="section-empty"><span aria-hidden="true">—</span><p>No closed days yet.</p></li>';
+  if (review.closed && !editable)
+    return `<section class="review-command review-closed" aria-labelledby="closed-title"><div class="completion-mark" aria-hidden="true">✓</div><p class="eyebrow">Day closure</p><h2 id="closed-title">Today is closed.</h2><p class="secondary-text">Tomorrow is prepared.</p><p class="review-closed-hint">Your complete day snapshot is saved.</p><button class="primary-action" type="button" data-review-done>Finish Day <span aria-hidden="true">→</span></button><section class="history-section"><div class="section-heading"><div><p class="eyebrow">Daily history</p><h2>Previous days</h2></div></div><ul class="history-list">${historyItems}</ul></section></section>`;
+  return `<section class="review-command" aria-labelledby="review-title"><div class="review-intro"><div><p class="eyebrow">Close the loop</p><h2 id="review-title">Finish the day lightly.</h2><p class="secondary-text">Review what changed, decide what carries forward, and leave tomorrow clearer than today.</p></div><span class="review-time">Under 5 min</span></div><section class="review-section"><div class="section-heading"><div><p class="eyebrow">1 · Completed</p><h2>What was completed?</h2></div></div>${reviewList(completedItems, 'Completed work will appear here as you close items.')}</section><section class="review-section"><div class="section-heading"><div><p class="eyebrow">2–5 · Decide</p><h2>What remains open?</h2><p class="secondary-text">Use the existing items below. Nothing needs to be retyped.</p></div></div><div class="review-items">${openSuggestions.length ? openSuggestions.map((suggestion) => reviewSuggestionCard(suggestion, review)).join('') : '<div class="section-empty"><span aria-hidden="true">✓</span><p>Everything is accounted for.</p></div>'}</div></section><div class="review-grid"><section class="review-section review-mini"><p class="eyebrow">3 · At risk</p><h2>What is now at risk?</h2>${reviewList(risks, 'No open risks surfaced.')}</section><section class="review-section review-mini"><p class="eyebrow">5 · Escalate</p><h2>What requires escalation?</h2>${reviewList(escalations, 'No escalation selected.')}</section></div><section class="review-section"><div class="section-heading"><div><p class="eyebrow">6 · Improve</p><h2>What should improve?</h2></div></div><textarea class="review-improvement" data-review-improvement rows="3" placeholder="One practical change for tomorrow">${escapeHtml(review.improvement || '')}</textarea></section><section class="tomorrow-preview" aria-labelledby="tomorrow-title"><div class="section-heading"><div><p class="eyebrow">7 · Prepare tomorrow</p><h2 id="tomorrow-title">Tomorrow preview</h2><p class="secondary-text">Keep the list small and useful.</p></div><button type="button" class="secondary-action" data-tomorrow-add>Add one item</button></div><ul class="tomorrow-list">${tomorrowCards}</ul><div class="tomorrow-support"><span>Likely priorities: ${tomorrowItems.length}</span><span>Meetings: ${(tomorrowPlan.meetings || plan.meetings || []).length}</span><span>Risks to review: ${(tomorrowPlan.risks || risks).length}</span><span>Decisions due: ${(tomorrowPlan.decisions || []).length}</span><span>Follow-ups due: ${(tomorrowPlan.followUps || []).length}</span></div><button type="button" class="secondary-action" data-tomorrow-confirm>Confirm tomorrow</button></section><section class="history-section"><div class="section-heading"><div><p class="eyebrow">Daily history</p><h2>Previous days</h2></div></div><ul class="history-list">${historyItems}</ul></section><div class="review-finish"><button class="primary-action" type="button" data-review-finish>Finish Day <span aria-hidden="true">→</span></button></div></section>`;
+}
+
+export function createHistoryDialog(closure, editable = false) {
+  const snapshot = closure.snapshot || {};
+  return `<dialog id="history-dialog" class="modal history-dialog" aria-labelledby="history-title"><div class="modal__header"><div><p class="eyebrow">Read-only day history</p><h2 id="history-title">${escapeHtml(closure.date)}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close day history">×</button></div><div class="modal__body"><p class="secondary-text">${escapeHtml(snapshot.summary || 'Day closure snapshot')}</p><dl class="history-summary"><div><dt>Daily focus</dt><dd>${escapeHtml(snapshot.plan?.focus || 'Not set')}</dd></div><div><dt>Priorities</dt><dd>${snapshot.priorities?.length || 0}</dd></div><div><dt>Huddle status</dt><dd>${escapeHtml(snapshot.plan?.huddleStatus || 'Not recorded')}</dd></div><div><dt>Completed work</dt><dd>${snapshot.completedWork?.length || 0}</dd></div><div><dt>Carryover</dt><dd>${snapshot.tomorrow?.items?.length || 0}</dd></div><div><dt>Risks</dt><dd>${snapshot.workItems?.filter((item) => item.type === 'risk').length || 0}</dd></div><div><dt>Decisions</dt><dd>${snapshot.workItems?.filter((item) => item.type === 'decision').length || 0}</dd></div><div><dt>Follow-ups</dt><dd>${snapshot.workItems?.filter((item) => item.type === 'follow-up').length || 0}</dd></div><div><dt>End-of-day summary</dt><dd>${escapeHtml(snapshot.summary || 'Not recorded')}</dd></div></dl><button type="button" class="secondary-action" data-history-edit="${closure.date}">${editable ? 'Editing enabled' : 'Edit Day'}</button></div></dialog>`;
+}
+
 export function getRoute() {
   const key = window.location.hash.slice(1).split('/')[0] || 'today';
   return routes[key] ? { ...routes[key], key } : { ...routes.today, key: 'today' };
@@ -402,7 +468,7 @@ export function createAppShell(route) {
     <header class="mobile-header"><a class="brand" href="#today" aria-label="TalentisOS home"><span class="brand-mark" aria-hidden="true">T</span><span class="brand-wordmark">Talentis<span>OS</span></span></a><button class="icon-button" type="button" data-open-settings aria-label="Open settings">⚙</button></header>
     <main id="main-content" class="content-area"><div class="content-inner"><header class="page-header"><div><p class="eyebrow">${route.eyebrow}</p><h1>${route.label}</h1></div><div class="page-header__meta"><span class="date-label">${new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())}</span><span class="status-dot" aria-label="Offline-ready shell"></span></div></header><div id="view-root"></div></div></main>
     <nav class="bottom-nav" aria-label="Primary navigation">${navItems(route.key, '')}<button class="nav-item" type="button" data-open-settings><span class="nav-item__icon" aria-hidden="true">•••</span><span>More</span></button></nav>
-    <div class="primary-action-bar"><button class="primary-action" type="button" data-primary-action>${route.action}<span aria-hidden="true">→</span></button></div>
+    ${route.key === 'review' ? '' : `<div class="primary-action-bar"><button class="primary-action" type="button" data-primary-action>${route.action}<span aria-hidden="true">→</span></button></div>`}
     ${settingsDialog()}
   </div>`;
 }

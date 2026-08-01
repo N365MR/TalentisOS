@@ -26,6 +26,10 @@
 - Follow-up Due today, Upcoming, Waiting, Overdue, and Complete views filter correctly.
 - Critical risks, due decisions, and overdue follow-ups surface on Today.
 - Work autosaves, completion/deletion provides undo, and deletion requires confirmation.
+- Review reuses existing records, suggests incomplete/open items, and keeps the close flow concise.
+- Finishing a day saves a complete read-only closure snapshot and prepares tomorrow’s plan.
+- Tomorrow preview supports confirm, reorder, remove, and one-item add.
+- Daily history is read-only by default and exposes an explicit Edit Day action.
 
 ## Lighthouse documentation
 

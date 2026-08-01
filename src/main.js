@@ -4,6 +4,8 @@ import {
   createOnboarding,
   createToast,
   createTodayView,
+  createHistoryDialog,
+  createReviewView,
   createWorkDetailSheet,
   createWorkView,
   getRoute,
@@ -13,13 +15,20 @@ import {
 } from './components.js';
 import {
   getDailyPlan,
+  getDailyReview,
+  getDayClosures,
   getOnboardingState,
   getPriorities,
   getWorkItems,
+  getTomorrowPlan,
   openDatabase,
   putRecord,
   saveOnboardingState,
   savePriority,
+  saveDailyPlan,
+  saveDailyReview,
+  saveDayClosure,
+  saveTomorrowPlan,
   saveWorkItem,
   deleteWorkItem,
   stores,
@@ -35,6 +44,12 @@ let currentPlan;
 let currentPriorities = [];
 let currentWorkItems = [];
 let currentWorkFilter = 'all';
+let currentReviewDate;
+let editingHistoricalDay = false;
+let currentReview;
+let currentTomorrowPlan;
+let currentHistory = [];
+let currentReviewSuggestions = [];
 let autosaveTimer;
 let lastUndo;
 
@@ -94,6 +109,7 @@ async function render() {
     currentPlan = await getDailyPlan(database);
     currentPriorities = await getPriorities(database, currentPlan.date);
     currentWorkItems = await getWorkItems(database);
+    await importPreparedPlanIfNeeded();
     const action = currentPriorities.length < 3 ? 'Add a priority' : 'Review priorities';
     app.innerHTML = createAppShell({ ...route, action });
     document.querySelector('#view-root').innerHTML = createTodayView(
@@ -110,12 +126,135 @@ async function render() {
       currentWorkFilter,
     );
     document.title = 'Work — TalentisOS';
+  } else if (route.key === 'review') {
+    currentReviewDate ||= new Date().toISOString().slice(0, 10);
+    currentPlan = await getDailyPlan(database, currentReviewDate);
+    currentPriorities = await getPriorities(database, currentReviewDate);
+    currentWorkItems = await getWorkItems(database);
+    currentReview = await getDailyReview(database, currentReviewDate);
+    currentTomorrowPlan = await getTomorrowPlan(database, addDays(currentReviewDate, 1));
+    currentHistory = await getDayClosures(database);
+    currentReviewSuggestions = createReviewSuggestions(
+      currentPlan,
+      currentPriorities,
+      currentWorkItems,
+    );
+    if (!currentReview.tomorrowItems?.length && !currentTomorrowPlan.items?.length) {
+      currentReview.tomorrowItems = defaultTomorrowItems(currentReviewSuggestions);
+      await saveDailyReview(database, currentReview);
+    }
+    app.innerHTML = createAppShell({
+      ...route,
+      action: currentReview.closed ? 'Finish Day' : 'Finish Day',
+    });
+    document.querySelector('#view-root').innerHTML = createReviewView({
+      review: currentReview,
+      plan: currentPlan,
+      completed: completedRecords(currentPriorities, currentWorkItems),
+      suggestions: currentReviewSuggestions,
+      tomorrowPlan: currentTomorrowPlan,
+      history: currentHistory,
+      editable: editingHistoricalDay,
+    });
+    document.title = 'Review — TalentisOS';
   } else {
     app.innerHTML = createAppShell(route);
     renderView(route);
     document.title = `${route.label} — TalentisOS`;
   }
   applyTheme(savedTheme());
+}
+
+function addDays(date, amount) {
+  const next = new Date(`${date}T12:00:00`);
+  next.setDate(next.getDate() + amount);
+  return next.toISOString().slice(0, 10);
+}
+
+function createReviewSuggestions(plan, priorities, workItems) {
+  const suggestions = priorities
+    .filter((item) => item.status !== 'done')
+    .map((item) => ({
+      key: `priority:${item.id}`,
+      sourceType: 'priority',
+      sourceId: item.id,
+      category: 'Priority',
+      title: item.outcome,
+      detail: item.why || item.duePoint,
+      nextAction: item.duePoint,
+    }));
+  workItems
+    .filter((item) => item.status !== 'complete')
+    .forEach((item) => {
+      suggestions.push({
+        key: `work:${item.id}`,
+        sourceType: 'work',
+        sourceId: item.id,
+        category:
+          item.type === 'follow-up' ? 'Follow-up' : item.type[0].toUpperCase() + item.type.slice(1),
+        title: item.title,
+        detail: item.whatAtRisk || item.decisionRequired || item.whatNeedsToHappen || item.outcome,
+        nextAction: item.nextAction || item.dueDate,
+      });
+    });
+  (plan.huddleDiscussions || []).forEach((item, index) =>
+    suggestions.push({
+      key: `huddle:${index}`,
+      sourceType: 'huddle',
+      sourceId: index,
+      category: 'Huddle',
+      title: item,
+      detail: 'Parked discussion from today',
+    }),
+  );
+  return suggestions;
+}
+
+function completedRecords(priorities, workItems) {
+  return [
+    ...priorities.filter((item) => item.status === 'done').map((item) => ({ title: item.outcome })),
+    ...workItems
+      .filter((item) => item.status === 'complete')
+      .map((item) => ({ title: item.title })),
+  ];
+}
+
+function defaultTomorrowItems(suggestions) {
+  return suggestions
+    .filter((item) => ['Priority', 'Risk', 'Decision', 'Follow-up'].includes(item.category))
+    .slice(0, 3)
+    .map((item, index) => ({
+      id: crypto.randomUUID(),
+      sourceId: item.sourceId,
+      sourceType: item.sourceType,
+      title: item.title,
+      outcome: item.detail,
+      type: item.category,
+      order: index,
+      status: 'not-started',
+    }));
+}
+
+async function importPreparedPlanIfNeeded() {
+  const prepared = await getTomorrowPlan(database, currentPlan.date);
+  if (currentPlan.preparedPlanImported || !prepared.items?.length || currentPriorities.length)
+    return;
+  for (const [index, item] of prepared.items.entries()) {
+    await savePriority(database, {
+      id: crypto.randomUUID(),
+      planDate: currentPlan.date,
+      order: index,
+      outcome: item.title,
+      why: item.outcome || '',
+      duePoint: item.dueDate || '',
+      status: 'not-started',
+      completedAt: null,
+    });
+  }
+  currentPlan.preparedPlanImported = true;
+  currentPlan.carryover = prepared.items.map((item) => item.title);
+  await saveDailyPlan(database, currentPlan);
+  currentPriorities = await getPriorities(database, currentPlan.date);
 }
 
 function openDialog(dialog) {
@@ -276,6 +415,115 @@ async function movePriority(id, direction) {
   await render();
 }
 
+function tomorrowItemsFromReview() {
+  return currentReview.tomorrowItems || currentTomorrowPlan.items || [];
+}
+
+async function applyReviewAction(key, action) {
+  const suggestion = currentReviewSuggestions.find((item) => item.key === key);
+  if (!suggestion) return;
+  let reason = '';
+  if (action === 'defer') {
+    reason = window.prompt('Why is this being deferred?') || '';
+    if (!reason) return;
+  }
+  currentReview.actions = { ...currentReview.actions, [key]: { action, reason } };
+  let tomorrowItems = tomorrowItemsFromReview();
+  if (
+    ['carry-forward', 'defer', 'escalate'].includes(action) &&
+    !tomorrowItems.some((item) => item.sourceId === suggestion.sourceId)
+  ) {
+    tomorrowItems = [
+      ...tomorrowItems,
+      {
+        id: crypto.randomUUID(),
+        sourceId: suggestion.sourceId,
+        sourceType: suggestion.sourceType,
+        title: suggestion.title,
+        outcome: suggestion.detail,
+        type: suggestion.category,
+        order: tomorrowItems.length,
+        status: 'not-started',
+        deferReason: reason,
+      },
+    ];
+  }
+  if (['complete', 'remove', 'improve'].includes(action)) {
+    tomorrowItems = tomorrowItems.filter((item) => item.sourceId !== suggestion.sourceId);
+  }
+  currentReview.tomorrowItems = tomorrowItems.map((item, index) => ({ ...item, order: index }));
+  if (suggestion.sourceType === 'priority') {
+    const source = currentPriorities.find((item) => item.id === suggestion.sourceId);
+    if (source && action === 'complete')
+      await savePriority(database, {
+        ...source,
+        status: 'done',
+        completedAt: new Date().toISOString(),
+      });
+  }
+  if (suggestion.sourceType === 'work') {
+    const source = currentWorkItems.find((item) => item.id === suggestion.sourceId);
+    if (source && ['complete', 'escalate'].includes(action))
+      await saveWorkItem(database, {
+        ...source,
+        status: action === 'complete' ? 'complete' : 'at-risk',
+      });
+  }
+  await saveDailyReview(database, currentReview);
+  await render();
+}
+
+async function finishReview() {
+  const tomorrowDate = addDays(currentReviewDate, 1);
+  const tomorrowItems = tomorrowItemsFromReview();
+  const tomorrow = {
+    date: tomorrowDate,
+    items: tomorrowItems,
+    meetings: currentPlan.meetings || [],
+    risks: currentReviewSuggestions
+      .filter((item) => item.category === 'Risk')
+      .map((item) => item.title),
+    decisions: currentReviewSuggestions
+      .filter((item) => item.category === 'Decision')
+      .map((item) => item.title),
+    followUps: currentReviewSuggestions
+      .filter((item) => item.category === 'Follow-up')
+      .map((item) => item.title),
+    confirmed: true,
+  };
+  const review = {
+    ...currentReview,
+    closed: true,
+    closedAt: new Date().toISOString(),
+    summary: currentReview.improvement || 'Day reviewed and tomorrow prepared.',
+  };
+  const snapshot = {
+    plan: currentPlan,
+    priorities: currentPriorities,
+    workItems: currentWorkItems,
+    completedWork: completedRecords(currentPriorities, currentWorkItems).map((item) => item.title),
+    tomorrow,
+    summary: review.summary,
+  };
+  await saveTomorrowPlan(database, tomorrow);
+  await saveDailyReview(database, review);
+  await saveDayClosure(database, { date: currentReviewDate, closedAt: review.closedAt, snapshot });
+  currentReview = review;
+  showToast('Today is closed. Tomorrow is prepared.');
+  await render();
+}
+
+async function reorderTomorrow(id, direction) {
+  const items = [...tomorrowItemsFromReview()];
+  const index = items.findIndex((item) => item.id === id);
+  const nextIndex = direction === 'up' ? index - 1 : index + 1;
+  if (index < 0 || nextIndex < 0 || nextIndex >= items.length) return;
+  [items[index], items[nextIndex]] = [items[nextIndex], items[index]];
+  currentReview.tomorrowItems = items.map((item, itemIndex) => ({ ...item, order: itemIndex }));
+  await saveDailyReview(database, currentReview);
+  await render();
+}
+
 document.addEventListener('submit', async (event) => {
   const onboardingForm = event.target.closest('[data-onboarding-form]');
   if (onboardingForm) {
@@ -311,6 +559,15 @@ document.addEventListener('submit', async (event) => {
 });
 
 document.addEventListener('input', (event) => {
+  const reviewImprovement = event.target.closest('[data-review-improvement]');
+  if (reviewImprovement) {
+    window.clearTimeout(autosaveTimer);
+    autosaveTimer = window.setTimeout(async () => {
+      currentReview.improvement = reviewImprovement.value;
+      await saveDailyReview(database, currentReview);
+    }, 500);
+    return;
+  }
   const workForm = event.target.closest('[data-work-form]');
   if (!workForm) return;
   window.clearTimeout(autosaveTimer);
@@ -350,6 +607,92 @@ document.addEventListener('click', async (event) => {
     return;
   }
 
+  const reviewAction = event.target.closest('[data-review-action]');
+  if (reviewAction) {
+    await applyReviewAction(reviewAction.dataset.reviewKey, reviewAction.dataset.reviewAction);
+    return;
+  }
+
+  if (event.target.closest('[data-review-finish]')) {
+    await finishReview();
+    return;
+  }
+
+  if (event.target.closest('[data-review-done]')) {
+    window.location.hash = '#today';
+    currentReviewDate = undefined;
+    editingHistoricalDay = false;
+    await render();
+    return;
+  }
+
+  if (event.target.closest('[data-tomorrow-confirm]')) {
+    await saveTomorrowPlan(database, {
+      ...currentTomorrowPlan,
+      date: addDays(currentReviewDate, 1),
+      items: tomorrowItemsFromReview(),
+      confirmed: true,
+    });
+    showToast('Tomorrow is prepared.');
+    return;
+  }
+
+  const tomorrowAdd = event.target.closest('[data-tomorrow-add]');
+  if (tomorrowAdd) {
+    const title = window.prompt('What is the one item to add for tomorrow?');
+    if (title?.trim()) {
+      currentReview.tomorrowItems = [
+        ...tomorrowItemsFromReview(),
+        {
+          id: crypto.randomUUID(),
+          title: title.trim(),
+          outcome: '',
+          type: 'Action',
+          order: tomorrowItemsFromReview().length,
+          status: 'not-started',
+        },
+      ];
+      await saveDailyReview(database, currentReview);
+      await render();
+    }
+    return;
+  }
+
+  const tomorrowMove = event.target.closest('[data-tomorrow-move]');
+  if (tomorrowMove) {
+    await reorderTomorrow(tomorrowMove.dataset.tomorrowMove, tomorrowMove.dataset.direction);
+    return;
+  }
+
+  const tomorrowRemove = event.target.closest('[data-tomorrow-remove]');
+  if (tomorrowRemove) {
+    currentReview.tomorrowItems = tomorrowItemsFromReview()
+      .filter((item) => item.id !== tomorrowRemove.dataset.tomorrowRemove)
+      .map((item, index) => ({ ...item, order: index }));
+    await saveDailyReview(database, currentReview);
+    await render();
+    return;
+  }
+
+  const historyOpen = event.target.closest('[data-history-open]');
+  if (historyOpen) {
+    const closure = currentHistory.find((item) => item.date === historyOpen.dataset.historyOpen);
+    if (closure) {
+      document.body.insertAdjacentHTML('beforeend', createHistoryDialog(closure));
+      openDialog(document.querySelector('#history-dialog'));
+    }
+    return;
+  }
+
+  const historyEdit = event.target.closest('[data-history-edit]');
+  if (historyEdit) {
+    document.querySelector('#history-dialog')?.close();
+    currentReviewDate = historyEdit.dataset.historyEdit;
+    editingHistoricalDay = true;
+    await render();
+    return;
+  }
+
   const workFilter = event.target.closest('[data-work-filter]');
   if (workFilter) {
     currentWorkFilter = workFilter.dataset.workFilter;
@@ -365,6 +708,17 @@ document.addEventListener('click', async (event) => {
 
   if (event.target.closest('[data-primary-action]') && getRoute().key === 'work') {
     openWorkEditor(null, 'action');
+    return;
+  }
+
+  if (event.target.closest('[data-primary-action]') && getRoute().key === 'review') {
+    if (currentReview.closed) {
+      window.location.hash = '#today';
+      currentReviewDate = undefined;
+      await render();
+    } else {
+      await finishReview();
+    }
     return;
   }
 

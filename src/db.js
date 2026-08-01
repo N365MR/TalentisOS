@@ -1,20 +1,20 @@
 const DB_NAME = 'talentisos';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const stores = {
   settings: 'settings',
   dailyPlans: 'dailyPlans',
   priorities: 'priorities',
   workItems: 'workItems',
+  dailyReviews: 'dailyReviews',
+  tomorrowPlans: 'tomorrowPlans',
+  dayClosures: 'dayClosures',
   appMeta: 'appMeta',
 };
 
 function requestResult(request) {
   return new Promise((resolve, reject) => {
-    request.onsuccess = () => {
-      request.result.onversionchange = () => request.result.close();
-      resolve(request.result);
-    };
+    request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
@@ -43,11 +43,23 @@ export function openDatabase() {
         workItems.createIndex('status', 'status');
         workItems.createIndex('dueDate', 'dueDate');
       }
+      if (!database.objectStoreNames.contains(stores.dailyReviews)) {
+        database.createObjectStore(stores.dailyReviews, { keyPath: 'date' });
+      }
+      if (!database.objectStoreNames.contains(stores.tomorrowPlans)) {
+        database.createObjectStore(stores.tomorrowPlans, { keyPath: 'date' });
+      }
+      if (!database.objectStoreNames.contains(stores.dayClosures)) {
+        database.createObjectStore(stores.dayClosures, { keyPath: 'date' });
+      }
       if (!database.objectStoreNames.contains(stores.appMeta)) {
         database.createObjectStore(stores.appMeta, { keyPath: 'key' });
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      request.result.onversionchange = () => request.result.close();
+      resolve(request.result);
+    };
     request.onerror = () => reject(request.error);
   });
 }
@@ -149,6 +161,60 @@ export async function saveWorkItem(database, workItem) {
 
 export async function deleteWorkItem(database, id) {
   return deleteRecord(database, stores.workItems, id);
+}
+
+export async function getDailyReview(database, date = todayKey()) {
+  const existing = await getRecord(database, stores.dailyReviews, date);
+  if (existing) return existing;
+  const review = {
+    date,
+    closed: false,
+    actions: {},
+    improvement: '',
+    tomorrowItems: [],
+    updatedAt: new Date().toISOString(),
+  };
+  await putRecord(database, stores.dailyReviews, review);
+  return review;
+}
+
+export async function saveDailyReview(database, review) {
+  return putRecord(database, stores.dailyReviews, {
+    ...review,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getTomorrowPlan(database, date = todayKey()) {
+  const existing = await getRecord(database, stores.tomorrowPlans, date);
+  if (existing) return existing;
+  return {
+    date,
+    items: [],
+    meetings: [],
+    risks: [],
+    decisions: [],
+    followUps: [],
+    confirmed: false,
+  };
+}
+
+export async function saveTomorrowPlan(database, plan) {
+  return putRecord(database, stores.tomorrowPlans, {
+    ...plan,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function saveDayClosure(database, closure) {
+  return putRecord(database, stores.dayClosures, {
+    ...closure,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getDayClosures(database) {
+  return (await getAll(database, stores.dayClosures)).sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export { stores };

@@ -265,6 +265,51 @@
     const type = item.type || "action";
     return `<dialog id="work-detail" class="modal work-detail-dialog" aria-labelledby="work-detail-title"><div class="modal__header"><div><p class="eyebrow">${item.id ? "Work item" : "Quick add"}</p><h2 id="work-detail-title">${item.id ? "Work item details" : "Add work item"}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close work item">\xD7</button></div><form class="modal__body work-form" data-work-form><input type="hidden" name="id" value="${escapeHtml(item.id || "")}"><div class="form-two-col"><label>Type<select name="type"><option value="action" ${type === "action" ? "selected" : ""}>Action</option><option value="priority" ${type === "priority" ? "selected" : ""}>Priority</option><option value="risk" ${type === "risk" ? "selected" : ""}>Risk</option><option value="decision" ${type === "decision" ? "selected" : ""}>Decision</option><option value="follow-up" ${type === "follow-up" ? "selected" : ""}>Follow-up</option></select></label><label>Group<select name="group"><option value="now" ${item.group === "now" ? "selected" : ""}>Now</option><option value="next" ${!item.group || item.group === "next" ? "selected" : ""}>Next</option><option value="later" ${item.group === "later" ? "selected" : ""}>Later</option><option value="waiting" ${item.group === "waiting" ? "selected" : ""}>Waiting</option></select></label></div><label>Title<input name="title" maxlength="140" value="${escapeHtml(item.title || "")}" required placeholder="What needs your leadership?"></label><label>Outcome<textarea name="outcome" rows="2" placeholder="What will be different when this is done?">${escapeHtml(item.outcome || "")}</textarea></label><div class="form-two-col"><label>Responsible person or area <span class="field-hint">optional plain text</span><input name="responsible" value="${escapeHtml(item.responsible || "")}"></label><label>Due date or time<input type="date" name="dueDate" value="${escapeHtml(item.dueDate || "")}"></label></div><div class="form-two-col"><label>Status<select name="status">${workStatusOptions(type, item.status)}</select></label><label>Risk level<select name="riskLevel"><option value="monitor" ${item.riskLevel === "monitor" ? "selected" : ""}>Monitor</option><option value="at-risk" ${item.riskLevel === "at-risk" ? "selected" : ""}>At risk</option><option value="critical" ${item.riskLevel === "critical" ? "selected" : ""}>Critical</option></select></label></div><label>Next action<textarea name="nextAction" rows="2">${escapeHtml(item.nextAction || "")}</textarea></label><label>Notes<textarea name="notes" rows="3">${escapeHtml(item.notes || "")}</textarea></label><label>Related item IDs <span class="field-hint">optional, comma separated</span><input name="relatedItemIds" value="${escapeHtml((item.relatedItemIds || []).join(", "))}"></label><div data-type-fields>${workTypeFields(type, item)}</div><p class="autosave-note" data-autosave-note>Changes save automatically.</p><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save item</button></div></form></dialog>`;
   }
+  var reviewActions = [
+    ["carry-forward", "Carry forward"],
+    ["complete", "Complete"],
+    ["defer", "Defer"],
+    ["escalate", "Escalate"],
+    ["improve", "Improve"],
+    ["remove", "Remove from tomorrow"]
+  ];
+  function reviewSuggestionCard(suggestion, review) {
+    const action = review.actions?.[suggestion.key]?.action || "";
+    return `<article class="review-item ${action ? "review-item--handled" : ""}"><div class="review-item__heading"><div><span class="work-type">${escapeHtml(suggestion.category)}</span><h3>${escapeHtml(suggestion.title)}</h3></div>${action ? `<span class="status-chip status-chip--success">${escapeHtml(reviewActions.find(([value]) => value === action)?.[1] || action)}</span>` : ""}</div><p>${escapeHtml(suggestion.detail || suggestion.nextAction || "No additional detail.")}</p><div class="review-item__actions">${reviewActions.map(([value, label]) => `<button type="button" class="text-button ${action === value ? "text-button--selected" : ""}" data-review-action="${value}" data-review-key="${suggestion.key}">${label}</button>`).join("")}</div></article>`;
+  }
+  function reviewList(items, emptyMessage) {
+    return items.length ? `<ul class="review-simple-list">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : `<div class="section-empty"><span aria-hidden="true">\u2014</span><p>${emptyMessage}</p></div>`;
+  }
+  function createReviewView({
+    review,
+    plan,
+    completed,
+    suggestions,
+    tomorrowPlan,
+    history,
+    editable = false
+  }) {
+    const tomorrowItems = review.tomorrowItems?.length ? review.tomorrowItems : tomorrowPlan.items || [];
+    const tomorrowCards = tomorrowItems.length ? tomorrowItems.map(
+      (item, index) => `<li class="tomorrow-item"><span class="tomorrow-item__order">0${index + 1}</span><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.outcome || item.type || "Leadership item")}</small></span><button type="button" class="text-button" data-tomorrow-move="${item.id}" data-direction="up" ${index === 0 ? "disabled" : ""}>Up</button><button type="button" class="text-button" data-tomorrow-remove="${item.id}">Remove</button></li>`
+    ).join("") : '<li class="section-empty"><span aria-hidden="true">\u2014</span><p>No items prepared yet.</p></li>';
+    const openSuggestions = suggestions.filter(
+      (suggestion) => !["complete", "remove"].includes(review.actions?.[suggestion.key]?.action)
+    );
+    const completedItems = completed.map((item) => item.title || item.outcome).filter(Boolean);
+    const risks = suggestions.filter((item) => item.category === "Risk").map((item) => item.title);
+    const escalations = suggestions.filter((item) => review.actions?.[item.key]?.action === "escalate").map((item) => item.title);
+    const historyItems = history.length ? history.map(
+      (closure) => `<li><span><strong>${escapeHtml(new Intl.DateTimeFormat(void 0, { weekday: "short", month: "short", day: "numeric" }).format(/* @__PURE__ */ new Date(`${closure.date}T12:00:00`)))}</strong><small>${escapeHtml(closure.snapshot?.summary || "Day closed")}</small></span><button type="button" class="text-button" data-history-open="${closure.date}">View day</button></li>`
+    ).join("") : '<li class="section-empty"><span aria-hidden="true">\u2014</span><p>No closed days yet.</p></li>';
+    if (review.closed && !editable)
+      return `<section class="review-command review-closed" aria-labelledby="closed-title"><div class="completion-mark" aria-hidden="true">\u2713</div><p class="eyebrow">Day closure</p><h2 id="closed-title">Today is closed.</h2><p class="secondary-text">Tomorrow is prepared.</p><p class="review-closed-hint">Your complete day snapshot is saved.</p><button class="primary-action" type="button" data-review-done>Finish Day <span aria-hidden="true">\u2192</span></button><section class="history-section"><div class="section-heading"><div><p class="eyebrow">Daily history</p><h2>Previous days</h2></div></div><ul class="history-list">${historyItems}</ul></section></section>`;
+    return `<section class="review-command" aria-labelledby="review-title"><div class="review-intro"><div><p class="eyebrow">Close the loop</p><h2 id="review-title">Finish the day lightly.</h2><p class="secondary-text">Review what changed, decide what carries forward, and leave tomorrow clearer than today.</p></div><span class="review-time">Under 5 min</span></div><section class="review-section"><div class="section-heading"><div><p class="eyebrow">1 \xB7 Completed</p><h2>What was completed?</h2></div></div>${reviewList(completedItems, "Completed work will appear here as you close items.")}</section><section class="review-section"><div class="section-heading"><div><p class="eyebrow">2\u20135 \xB7 Decide</p><h2>What remains open?</h2><p class="secondary-text">Use the existing items below. Nothing needs to be retyped.</p></div></div><div class="review-items">${openSuggestions.length ? openSuggestions.map((suggestion) => reviewSuggestionCard(suggestion, review)).join("") : '<div class="section-empty"><span aria-hidden="true">\u2713</span><p>Everything is accounted for.</p></div>'}</div></section><div class="review-grid"><section class="review-section review-mini"><p class="eyebrow">3 \xB7 At risk</p><h2>What is now at risk?</h2>${reviewList(risks, "No open risks surfaced.")}</section><section class="review-section review-mini"><p class="eyebrow">5 \xB7 Escalate</p><h2>What requires escalation?</h2>${reviewList(escalations, "No escalation selected.")}</section></div><section class="review-section"><div class="section-heading"><div><p class="eyebrow">6 \xB7 Improve</p><h2>What should improve?</h2></div></div><textarea class="review-improvement" data-review-improvement rows="3" placeholder="One practical change for tomorrow">${escapeHtml(review.improvement || "")}</textarea></section><section class="tomorrow-preview" aria-labelledby="tomorrow-title"><div class="section-heading"><div><p class="eyebrow">7 \xB7 Prepare tomorrow</p><h2 id="tomorrow-title">Tomorrow preview</h2><p class="secondary-text">Keep the list small and useful.</p></div><button type="button" class="secondary-action" data-tomorrow-add>Add one item</button></div><ul class="tomorrow-list">${tomorrowCards}</ul><div class="tomorrow-support"><span>Likely priorities: ${tomorrowItems.length}</span><span>Meetings: ${(tomorrowPlan.meetings || plan.meetings || []).length}</span><span>Risks to review: ${(tomorrowPlan.risks || risks).length}</span><span>Decisions due: ${(tomorrowPlan.decisions || []).length}</span><span>Follow-ups due: ${(tomorrowPlan.followUps || []).length}</span></div><button type="button" class="secondary-action" data-tomorrow-confirm>Confirm tomorrow</button></section><section class="history-section"><div class="section-heading"><div><p class="eyebrow">Daily history</p><h2>Previous days</h2></div></div><ul class="history-list">${historyItems}</ul></section><div class="review-finish"><button class="primary-action" type="button" data-review-finish>Finish Day <span aria-hidden="true">\u2192</span></button></div></section>`;
+  }
+  function createHistoryDialog(closure, editable = false) {
+    const snapshot = closure.snapshot || {};
+    return `<dialog id="history-dialog" class="modal history-dialog" aria-labelledby="history-title"><div class="modal__header"><div><p class="eyebrow">Read-only day history</p><h2 id="history-title">${escapeHtml(closure.date)}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close day history">\xD7</button></div><div class="modal__body"><p class="secondary-text">${escapeHtml(snapshot.summary || "Day closure snapshot")}</p><dl class="history-summary"><div><dt>Daily focus</dt><dd>${escapeHtml(snapshot.plan?.focus || "Not set")}</dd></div><div><dt>Priorities</dt><dd>${snapshot.priorities?.length || 0}</dd></div><div><dt>Huddle status</dt><dd>${escapeHtml(snapshot.plan?.huddleStatus || "Not recorded")}</dd></div><div><dt>Completed work</dt><dd>${snapshot.completedWork?.length || 0}</dd></div><div><dt>Carryover</dt><dd>${snapshot.tomorrow?.items?.length || 0}</dd></div><div><dt>Risks</dt><dd>${snapshot.workItems?.filter((item) => item.type === "risk").length || 0}</dd></div><div><dt>Decisions</dt><dd>${snapshot.workItems?.filter((item) => item.type === "decision").length || 0}</dd></div><div><dt>Follow-ups</dt><dd>${snapshot.workItems?.filter((item) => item.type === "follow-up").length || 0}</dd></div><div><dt>End-of-day summary</dt><dd>${escapeHtml(snapshot.summary || "Not recorded")}</dd></div></dl><button type="button" class="secondary-action" data-history-edit="${closure.date}">${editable ? "Editing enabled" : "Edit Day"}</button></div></dialog>`;
+  }
   function getRoute() {
     const key = window.location.hash.slice(1).split("/")[0] || "today";
     return routes[key] ? { ...routes[key], key } : { ...routes.today, key: "today" };
@@ -305,7 +350,7 @@
     <header class="mobile-header"><a class="brand" href="#today" aria-label="TalentisOS home"><span class="brand-mark" aria-hidden="true">T</span><span class="brand-wordmark">Talentis<span>OS</span></span></a><button class="icon-button" type="button" data-open-settings aria-label="Open settings">\u2699</button></header>
     <main id="main-content" class="content-area"><div class="content-inner"><header class="page-header"><div><p class="eyebrow">${route.eyebrow}</p><h1>${route.label}</h1></div><div class="page-header__meta"><span class="date-label">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</span><span class="status-dot" aria-label="Offline-ready shell"></span></div></header><div id="view-root"></div></div></main>
     <nav class="bottom-nav" aria-label="Primary navigation">${navItems(route.key, "")}<button class="nav-item" type="button" data-open-settings><span class="nav-item__icon" aria-hidden="true">\u2022\u2022\u2022</span><span>More</span></button></nav>
-    <div class="primary-action-bar"><button class="primary-action" type="button" data-primary-action>${route.action}<span aria-hidden="true">\u2192</span></button></div>
+    ${route.key === "review" ? "" : `<div class="primary-action-bar"><button class="primary-action" type="button" data-primary-action>${route.action}<span aria-hidden="true">\u2192</span></button></div>`}
     ${settingsDialog()}
   </div>`;
   }
@@ -322,20 +367,20 @@
 
   // src/db.js
   var DB_NAME = "talentisos";
-  var DB_VERSION = 2;
+  var DB_VERSION = 3;
   var stores = {
     settings: "settings",
     dailyPlans: "dailyPlans",
     priorities: "priorities",
     workItems: "workItems",
+    dailyReviews: "dailyReviews",
+    tomorrowPlans: "tomorrowPlans",
+    dayClosures: "dayClosures",
     appMeta: "appMeta"
   };
   function requestResult(request) {
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => {
-        request.result.onversionchange = () => request.result.close();
-        resolve(request.result);
-      };
+      request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
   }
@@ -363,11 +408,23 @@
           workItems.createIndex("status", "status");
           workItems.createIndex("dueDate", "dueDate");
         }
+        if (!database2.objectStoreNames.contains(stores.dailyReviews)) {
+          database2.createObjectStore(stores.dailyReviews, { keyPath: "date" });
+        }
+        if (!database2.objectStoreNames.contains(stores.tomorrowPlans)) {
+          database2.createObjectStore(stores.tomorrowPlans, { keyPath: "date" });
+        }
+        if (!database2.objectStoreNames.contains(stores.dayClosures)) {
+          database2.createObjectStore(stores.dayClosures, { keyPath: "date" });
+        }
         if (!database2.objectStoreNames.contains(stores.appMeta)) {
           database2.createObjectStore(stores.appMeta, { keyPath: "key" });
         }
       };
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        request.result.onversionchange = () => request.result.close();
+        resolve(request.result);
+      };
       request.onerror = () => reject(request.error);
     });
   }
@@ -429,6 +486,9 @@
     await putRecord(database2, stores.dailyPlans, plan);
     return plan;
   }
+  async function saveDailyPlan(database2, plan) {
+    return putRecord(database2, stores.dailyPlans, { ...plan, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
+  }
   async function getPriorities(database2, planDate = todayKey()) {
     const records = await getAll(database2, stores.priorities);
     return records.filter((priority) => priority.planDate === planDate).sort((a, b) => a.order - b.order);
@@ -451,6 +511,54 @@
   async function deleteWorkItem(database2, id) {
     return deleteRecord(database2, stores.workItems, id);
   }
+  async function getDailyReview(database2, date = todayKey()) {
+    const existing = await getRecord(database2, stores.dailyReviews, date);
+    if (existing) return existing;
+    const review = {
+      date,
+      closed: false,
+      actions: {},
+      improvement: "",
+      tomorrowItems: [],
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    await putRecord(database2, stores.dailyReviews, review);
+    return review;
+  }
+  async function saveDailyReview(database2, review) {
+    return putRecord(database2, stores.dailyReviews, {
+      ...review,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
+  async function getTomorrowPlan(database2, date = todayKey()) {
+    const existing = await getRecord(database2, stores.tomorrowPlans, date);
+    if (existing) return existing;
+    return {
+      date,
+      items: [],
+      meetings: [],
+      risks: [],
+      decisions: [],
+      followUps: [],
+      confirmed: false
+    };
+  }
+  async function saveTomorrowPlan(database2, plan) {
+    return putRecord(database2, stores.tomorrowPlans, {
+      ...plan,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
+  async function saveDayClosure(database2, closure) {
+    return putRecord(database2, stores.dayClosures, {
+      ...closure,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
+  async function getDayClosures(database2) {
+    return (await getAll(database2, stores.dayClosures)).sort((a, b) => b.date.localeCompare(a.date));
+  }
 
   // src/main.js
   var app = document.querySelector("#app");
@@ -463,6 +571,12 @@
   var currentPriorities = [];
   var currentWorkItems = [];
   var currentWorkFilter = "all";
+  var currentReviewDate;
+  var editingHistoricalDay = false;
+  var currentReview;
+  var currentTomorrowPlan;
+  var currentHistory = [];
+  var currentReviewSuggestions = [];
   var autosaveTimer;
   var lastUndo;
   function showToast(message) {
@@ -515,6 +629,7 @@
       currentPlan = await getDailyPlan(database);
       currentPriorities = await getPriorities(database, currentPlan.date);
       currentWorkItems = await getWorkItems(database);
+      await importPreparedPlanIfNeeded();
       const action = currentPriorities.length < 3 ? "Add a priority" : "Review priorities";
       app.innerHTML = createAppShell({ ...route, action });
       document.querySelector("#view-root").innerHTML = createTodayView(
@@ -531,12 +646,120 @@
         currentWorkFilter
       );
       document.title = "Work \u2014 TalentisOS";
+    } else if (route.key === "review") {
+      currentReviewDate ||= (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      currentPlan = await getDailyPlan(database, currentReviewDate);
+      currentPriorities = await getPriorities(database, currentReviewDate);
+      currentWorkItems = await getWorkItems(database);
+      currentReview = await getDailyReview(database, currentReviewDate);
+      currentTomorrowPlan = await getTomorrowPlan(database, addDays(currentReviewDate, 1));
+      currentHistory = await getDayClosures(database);
+      currentReviewSuggestions = createReviewSuggestions(
+        currentPlan,
+        currentPriorities,
+        currentWorkItems
+      );
+      if (!currentReview.tomorrowItems?.length && !currentTomorrowPlan.items?.length) {
+        currentReview.tomorrowItems = defaultTomorrowItems(currentReviewSuggestions);
+        await saveDailyReview(database, currentReview);
+      }
+      app.innerHTML = createAppShell({
+        ...route,
+        action: currentReview.closed ? "Finish Day" : "Finish Day"
+      });
+      document.querySelector("#view-root").innerHTML = createReviewView({
+        review: currentReview,
+        plan: currentPlan,
+        completed: completedRecords(currentPriorities, currentWorkItems),
+        suggestions: currentReviewSuggestions,
+        tomorrowPlan: currentTomorrowPlan,
+        history: currentHistory,
+        editable: editingHistoricalDay
+      });
+      document.title = "Review \u2014 TalentisOS";
     } else {
       app.innerHTML = createAppShell(route);
       renderView(route);
       document.title = `${route.label} \u2014 TalentisOS`;
     }
     applyTheme(savedTheme());
+  }
+  function addDays(date, amount) {
+    const next = /* @__PURE__ */ new Date(`${date}T12:00:00`);
+    next.setDate(next.getDate() + amount);
+    return next.toISOString().slice(0, 10);
+  }
+  function createReviewSuggestions(plan, priorities, workItems) {
+    const suggestions = priorities.filter((item) => item.status !== "done").map((item) => ({
+      key: `priority:${item.id}`,
+      sourceType: "priority",
+      sourceId: item.id,
+      category: "Priority",
+      title: item.outcome,
+      detail: item.why || item.duePoint,
+      nextAction: item.duePoint
+    }));
+    workItems.filter((item) => item.status !== "complete").forEach((item) => {
+      suggestions.push({
+        key: `work:${item.id}`,
+        sourceType: "work",
+        sourceId: item.id,
+        category: item.type === "follow-up" ? "Follow-up" : item.type[0].toUpperCase() + item.type.slice(1),
+        title: item.title,
+        detail: item.whatAtRisk || item.decisionRequired || item.whatNeedsToHappen || item.outcome,
+        nextAction: item.nextAction || item.dueDate
+      });
+    });
+    (plan.huddleDiscussions || []).forEach(
+      (item, index) => suggestions.push({
+        key: `huddle:${index}`,
+        sourceType: "huddle",
+        sourceId: index,
+        category: "Huddle",
+        title: item,
+        detail: "Parked discussion from today"
+      })
+    );
+    return suggestions;
+  }
+  function completedRecords(priorities, workItems) {
+    return [
+      ...priorities.filter((item) => item.status === "done").map((item) => ({ title: item.outcome })),
+      ...workItems.filter((item) => item.status === "complete").map((item) => ({ title: item.title }))
+    ];
+  }
+  function defaultTomorrowItems(suggestions) {
+    return suggestions.filter((item) => ["Priority", "Risk", "Decision", "Follow-up"].includes(item.category)).slice(0, 3).map((item, index) => ({
+      id: crypto.randomUUID(),
+      sourceId: item.sourceId,
+      sourceType: item.sourceType,
+      title: item.title,
+      outcome: item.detail,
+      type: item.category,
+      order: index,
+      status: "not-started"
+    }));
+  }
+  async function importPreparedPlanIfNeeded() {
+    const prepared = await getTomorrowPlan(database, currentPlan.date);
+    if (currentPlan.preparedPlanImported || !prepared.items?.length || currentPriorities.length)
+      return;
+    for (const [index, item] of prepared.items.entries()) {
+      await savePriority(database, {
+        id: crypto.randomUUID(),
+        planDate: currentPlan.date,
+        order: index,
+        outcome: item.title,
+        why: item.outcome || "",
+        duePoint: item.dueDate || "",
+        status: "not-started",
+        completedAt: null
+      });
+    }
+    currentPlan.preparedPlanImported = true;
+    currentPlan.carryover = prepared.items.map((item) => item.title);
+    await saveDailyPlan(database, currentPlan);
+    currentPriorities = await getPriorities(database, currentPlan.date);
   }
   function openDialog(dialog) {
     if (!dialog) return;
@@ -678,6 +901,102 @@
     await savePriority(database, { ...next, order: current.order });
     await render();
   }
+  function tomorrowItemsFromReview() {
+    return currentReview.tomorrowItems || currentTomorrowPlan.items || [];
+  }
+  async function applyReviewAction(key, action) {
+    const suggestion = currentReviewSuggestions.find((item) => item.key === key);
+    if (!suggestion) return;
+    let reason = "";
+    if (action === "defer") {
+      reason = window.prompt("Why is this being deferred?") || "";
+      if (!reason) return;
+    }
+    currentReview.actions = { ...currentReview.actions, [key]: { action, reason } };
+    let tomorrowItems = tomorrowItemsFromReview();
+    if (["carry-forward", "defer", "escalate"].includes(action) && !tomorrowItems.some((item) => item.sourceId === suggestion.sourceId)) {
+      tomorrowItems = [
+        ...tomorrowItems,
+        {
+          id: crypto.randomUUID(),
+          sourceId: suggestion.sourceId,
+          sourceType: suggestion.sourceType,
+          title: suggestion.title,
+          outcome: suggestion.detail,
+          type: suggestion.category,
+          order: tomorrowItems.length,
+          status: "not-started",
+          deferReason: reason
+        }
+      ];
+    }
+    if (["complete", "remove", "improve"].includes(action)) {
+      tomorrowItems = tomorrowItems.filter((item) => item.sourceId !== suggestion.sourceId);
+    }
+    currentReview.tomorrowItems = tomorrowItems.map((item, index) => ({ ...item, order: index }));
+    if (suggestion.sourceType === "priority") {
+      const source = currentPriorities.find((item) => item.id === suggestion.sourceId);
+      if (source && action === "complete")
+        await savePriority(database, {
+          ...source,
+          status: "done",
+          completedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+    }
+    if (suggestion.sourceType === "work") {
+      const source = currentWorkItems.find((item) => item.id === suggestion.sourceId);
+      if (source && ["complete", "escalate"].includes(action))
+        await saveWorkItem(database, {
+          ...source,
+          status: action === "complete" ? "complete" : "at-risk"
+        });
+    }
+    await saveDailyReview(database, currentReview);
+    await render();
+  }
+  async function finishReview() {
+    const tomorrowDate = addDays(currentReviewDate, 1);
+    const tomorrowItems = tomorrowItemsFromReview();
+    const tomorrow = {
+      date: tomorrowDate,
+      items: tomorrowItems,
+      meetings: currentPlan.meetings || [],
+      risks: currentReviewSuggestions.filter((item) => item.category === "Risk").map((item) => item.title),
+      decisions: currentReviewSuggestions.filter((item) => item.category === "Decision").map((item) => item.title),
+      followUps: currentReviewSuggestions.filter((item) => item.category === "Follow-up").map((item) => item.title),
+      confirmed: true
+    };
+    const review = {
+      ...currentReview,
+      closed: true,
+      closedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      summary: currentReview.improvement || "Day reviewed and tomorrow prepared."
+    };
+    const snapshot = {
+      plan: currentPlan,
+      priorities: currentPriorities,
+      workItems: currentWorkItems,
+      completedWork: completedRecords(currentPriorities, currentWorkItems).map((item) => item.title),
+      tomorrow,
+      summary: review.summary
+    };
+    await saveTomorrowPlan(database, tomorrow);
+    await saveDailyReview(database, review);
+    await saveDayClosure(database, { date: currentReviewDate, closedAt: review.closedAt, snapshot });
+    currentReview = review;
+    showToast("Today is closed. Tomorrow is prepared.");
+    await render();
+  }
+  async function reorderTomorrow(id, direction) {
+    const items = [...tomorrowItemsFromReview()];
+    const index = items.findIndex((item) => item.id === id);
+    const nextIndex = direction === "up" ? index - 1 : index + 1;
+    if (index < 0 || nextIndex < 0 || nextIndex >= items.length) return;
+    [items[index], items[nextIndex]] = [items[nextIndex], items[index]];
+    currentReview.tomorrowItems = items.map((item, itemIndex) => ({ ...item, order: itemIndex }));
+    await saveDailyReview(database, currentReview);
+    await render();
+  }
   document.addEventListener("submit", async (event) => {
     const onboardingForm = event.target.closest("[data-onboarding-form]");
     if (onboardingForm) {
@@ -712,6 +1031,15 @@
     }
   });
   document.addEventListener("input", (event) => {
+    const reviewImprovement = event.target.closest("[data-review-improvement]");
+    if (reviewImprovement) {
+      window.clearTimeout(autosaveTimer);
+      autosaveTimer = window.setTimeout(async () => {
+        currentReview.improvement = reviewImprovement.value;
+        await saveDailyReview(database, currentReview);
+      }, 500);
+      return;
+    }
     const workForm = event.target.closest("[data-work-form]");
     if (!workForm) return;
     window.clearTimeout(autosaveTimer);
@@ -745,6 +1073,81 @@
       showToast(collapsed ? "Sidebar collapsed." : "Sidebar expanded.");
       return;
     }
+    const reviewAction = event.target.closest("[data-review-action]");
+    if (reviewAction) {
+      await applyReviewAction(reviewAction.dataset.reviewKey, reviewAction.dataset.reviewAction);
+      return;
+    }
+    if (event.target.closest("[data-review-finish]")) {
+      await finishReview();
+      return;
+    }
+    if (event.target.closest("[data-review-done]")) {
+      window.location.hash = "#today";
+      currentReviewDate = void 0;
+      editingHistoricalDay = false;
+      await render();
+      return;
+    }
+    if (event.target.closest("[data-tomorrow-confirm]")) {
+      await saveTomorrowPlan(database, {
+        ...currentTomorrowPlan,
+        date: addDays(currentReviewDate, 1),
+        items: tomorrowItemsFromReview(),
+        confirmed: true
+      });
+      showToast("Tomorrow is prepared.");
+      return;
+    }
+    const tomorrowAdd = event.target.closest("[data-tomorrow-add]");
+    if (tomorrowAdd) {
+      const title = window.prompt("What is the one item to add for tomorrow?");
+      if (title?.trim()) {
+        currentReview.tomorrowItems = [
+          ...tomorrowItemsFromReview(),
+          {
+            id: crypto.randomUUID(),
+            title: title.trim(),
+            outcome: "",
+            type: "Action",
+            order: tomorrowItemsFromReview().length,
+            status: "not-started"
+          }
+        ];
+        await saveDailyReview(database, currentReview);
+        await render();
+      }
+      return;
+    }
+    const tomorrowMove = event.target.closest("[data-tomorrow-move]");
+    if (tomorrowMove) {
+      await reorderTomorrow(tomorrowMove.dataset.tomorrowMove, tomorrowMove.dataset.direction);
+      return;
+    }
+    const tomorrowRemove = event.target.closest("[data-tomorrow-remove]");
+    if (tomorrowRemove) {
+      currentReview.tomorrowItems = tomorrowItemsFromReview().filter((item) => item.id !== tomorrowRemove.dataset.tomorrowRemove).map((item, index) => ({ ...item, order: index }));
+      await saveDailyReview(database, currentReview);
+      await render();
+      return;
+    }
+    const historyOpen = event.target.closest("[data-history-open]");
+    if (historyOpen) {
+      const closure = currentHistory.find((item) => item.date === historyOpen.dataset.historyOpen);
+      if (closure) {
+        document.body.insertAdjacentHTML("beforeend", createHistoryDialog(closure));
+        openDialog(document.querySelector("#history-dialog"));
+      }
+      return;
+    }
+    const historyEdit = event.target.closest("[data-history-edit]");
+    if (historyEdit) {
+      document.querySelector("#history-dialog")?.close();
+      currentReviewDate = historyEdit.dataset.historyEdit;
+      editingHistoricalDay = true;
+      await render();
+      return;
+    }
     const workFilter = event.target.closest("[data-work-filter]");
     if (workFilter) {
       currentWorkFilter = workFilter.dataset.workFilter;
@@ -758,6 +1161,16 @@
     }
     if (event.target.closest("[data-primary-action]") && getRoute().key === "work") {
       openWorkEditor(null, "action");
+      return;
+    }
+    if (event.target.closest("[data-primary-action]") && getRoute().key === "review") {
+      if (currentReview.closed) {
+        window.location.hash = "#today";
+        currentReviewDate = void 0;
+        await render();
+      } else {
+        await finishReview();
+      }
       return;
     }
     const editWork = event.target.closest("[data-edit-work]");

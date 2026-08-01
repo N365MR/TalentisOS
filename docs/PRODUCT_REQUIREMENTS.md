@@ -32,6 +32,10 @@ Today surfaces greeting/date, daily focus, up to three priorities, carryover, ri
 
 Work is a focused daily leadership operating view, not a project-management board. It groups work into Now, Next, Later, and Waiting. Supported types are Priority, Risk, Decision, Follow-up, and Action. Now contains no more than three active leadership actions. Work items may carry optional plain-text responsibility and related IDs, but no person or employee entity exists.
 
+## Phase 5 requirements
+
+Review reuses existing day records to guide completion, open items, risks, carryover, escalation, improvement, and likely tomorrow priorities. Finish Day saves a complete snapshot, confirms a small tomorrow plan, and makes the day available in read-only history with an explicit Edit Day action.
+
 ## Boundaries
 
 No employee profile entity, employee personal information, HR records, performance reviews, payroll, recruitment, skills matrices, surveillance, time tracking, CRM, ERP, full project management, chat, email, or complex workflow builders.

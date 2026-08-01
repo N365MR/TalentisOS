@@ -16,6 +16,10 @@ Add minimal resumable onboarding with five leader-only questions, the Today comm
 
 Build the focused Work area with Now, Next, Later, and Waiting groups; contextual quick add; type-specific risk, decision, and follow-up fields; IndexedDB version 2 `workItems` migration; relationships; autosave; undo; and Today surfacing for critical risks, due decisions, and overdue follow-ups. No board configuration or employee records are included.
 
+## Phase 5 (complete)
+
+Add the concise End-of-Day Review, explicit day closure, tomorrow preparation, date-keyed daily history, and IndexedDB version 3 stores for `dailyReviews`, `tomorrowPlans`, and `dayClosures`.
+
 ## Later phases
 
 Add carefully scoped import/export, stronger offline update handling, accessibility hardening, and user-requested refinements. Do not add features from excluded product categories or build future phases prematurely.
