@@ -1,5 +1,5 @@
 const DB_NAME = 'talentisos';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 const stores = {
   settings: 'settings',
@@ -9,6 +9,8 @@ const stores = {
   dailyReviews: 'dailyReviews',
   tomorrowPlans: 'tomorrowPlans',
   dayClosures: 'dayClosures',
+  weeklyReviews: 'weeklyReviews',
+  improvements: 'improvements',
   appMeta: 'appMeta',
 };
 
@@ -51,6 +53,15 @@ export function openDatabase() {
       }
       if (!database.objectStoreNames.contains(stores.dayClosures)) {
         database.createObjectStore(stores.dayClosures, { keyPath: 'date' });
+      }
+      if (!database.objectStoreNames.contains(stores.weeklyReviews)) {
+        database.createObjectStore(stores.weeklyReviews, { keyPath: 'weekStart' });
+      }
+      if (!database.objectStoreNames.contains(stores.improvements)) {
+        const improvements = database.createObjectStore(stores.improvements, { keyPath: 'id' });
+        improvements.createIndex('status', 'status');
+        improvements.createIndex('category', 'category');
+        improvements.createIndex('createdAt', 'createdAt');
       }
       if (!database.objectStoreNames.contains(stores.appMeta)) {
         database.createObjectStore(stores.appMeta, { keyPath: 'key' });
@@ -152,6 +163,10 @@ export async function getWorkItems(database) {
   return getAll(database, stores.workItems);
 }
 
+export async function getAllPriorities(database) {
+  return getAll(database, stores.priorities);
+}
+
 export async function saveWorkItem(database, workItem) {
   return putRecord(database, stores.workItems, {
     ...workItem,
@@ -215,6 +230,43 @@ export async function saveDayClosure(database, closure) {
 
 export async function getDayClosures(database) {
   return (await getAll(database, stores.dayClosures)).sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export async function getWeeklyReview(database, weekStart) {
+  const existing = await getRecord(database, stores.weeklyReviews, weekStart);
+  if (existing) return existing;
+  return {
+    weekStart,
+    answers: {},
+    nextPriorities: ['', '', ''],
+    operatingImprovement: '',
+    leadershipFocus: '',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function saveWeeklyReview(database, review) {
+  return putRecord(database, stores.weeklyReviews, {
+    ...review,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getImprovements(database) {
+  return (await getAll(database, stores.improvements)).sort((a, b) =>
+    (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''),
+  );
+}
+
+export async function saveImprovement(database, improvement) {
+  return putRecord(database, stores.improvements, {
+    ...improvement,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function deleteImprovement(database, id) {
+  return deleteRecord(database, stores.improvements, id);
 }
 
 export { stores };

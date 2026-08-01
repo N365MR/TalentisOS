@@ -37,7 +37,7 @@ const routes = {
     title: 'Improve the rhythm.',
     description: 'Turn small observations into practical changes to the way you lead.',
     prompt: 'Improvement capture will be introduced in a later phase.',
-    action: 'See improvements',
+    action: 'Capture improvement',
   },
 };
 
@@ -405,13 +405,66 @@ export function createHistoryDialog(closure, editable = false) {
   return `<dialog id="history-dialog" class="modal history-dialog" aria-labelledby="history-title"><div class="modal__header"><div><p class="eyebrow">Read-only day history</p><h2 id="history-title">${escapeHtml(closure.date)}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close day history">×</button></div><div class="modal__body"><p class="secondary-text">${escapeHtml(snapshot.summary || 'Day closure snapshot')}</p><dl class="history-summary"><div><dt>Daily focus</dt><dd>${escapeHtml(snapshot.plan?.focus || 'Not set')}</dd></div><div><dt>Priorities</dt><dd>${snapshot.priorities?.length || 0}</dd></div><div><dt>Huddle status</dt><dd>${escapeHtml(snapshot.plan?.huddleStatus || 'Not recorded')}</dd></div><div><dt>Completed work</dt><dd>${snapshot.completedWork?.length || 0}</dd></div><div><dt>Carryover</dt><dd>${snapshot.tomorrow?.items?.length || 0}</dd></div><div><dt>Risks</dt><dd>${snapshot.workItems?.filter((item) => item.type === 'risk').length || 0}</dd></div><div><dt>Decisions</dt><dd>${snapshot.workItems?.filter((item) => item.type === 'decision').length || 0}</dd></div><div><dt>Follow-ups</dt><dd>${snapshot.workItems?.filter((item) => item.type === 'follow-up').length || 0}</dd></div><div><dt>End-of-day summary</dt><dd>${escapeHtml(snapshot.summary || 'Not recorded')}</dd></div></dl><button type="button" class="secondary-action" data-history-edit="${closure.date}">${editable ? 'Editing enabled' : 'Edit Day'}</button></div></dialog>`;
 }
 
+export function createWeeklyReviewView({ review, summary, weekStart, weekEnd }) {
+  const questions = [
+    ['achieved', 'What was achieved?', 'Name the outcomes that moved forward.'],
+    ['incomplete', 'What remained incomplete?', 'Keep this factual; it will inform next week.'],
+    ['repeatedRisks', 'What risks repeated?', 'Look for patterns worth improving.'],
+    ['delayedDecisions', 'What decisions were delayed?', 'Capture the decision, not the backstory.'],
+    ['unnecessaryTime', 'What consumed unnecessary time?', 'One observation is enough.'],
+    ['continue', 'What should continue?', 'Keep the leadership habits that helped.'],
+    ['stop', 'What should stop?', 'Remove one source of avoidable noise.'],
+    ['improve', 'What should improve?', 'Turn this into one practical next step.'],
+  ];
+  const answerFields = questions
+    .map(
+      ([key, title, hint]) =>
+        `<label class="weekly-question"><span>${title}</span><small>${hint}</small><textarea rows="2" data-weekly-answer="${key}" placeholder="Capture a short note">${escapeHtml(review.answers?.[key] || '')}</textarea></label>`,
+    )
+    .join('');
+  const metric = (label, value) => `<div class="summary-metric"><strong>${value}</strong><span>${label}</span></div>`;
+  const repeatedRiskText = summary.repeatedRiskLabels?.length ? summary.repeatedRiskLabels.join(' · ') : 'No repeated risk pattern yet.';
+  const repeatedRiskAction = summary.repeatedRiskLabels?.[0] ? `<button type="button" class="secondary-action" data-improvement-from-risk="${escapeHtml(summary.repeatedRiskLabels[0])}">Turn into improvement</button>` : '';
+  return `<section class="weekly-command" aria-labelledby="weekly-title"><div class="review-intro"><div><p class="eyebrow">Review the rhythm</p><h2 id="weekly-title">Make the week useful.</h2><p class="secondary-text">${escapeHtml(weekStart)} to ${escapeHtml(weekEnd)} · A concise local summary of what your days are teaching you.</p></div><span class="review-time">10 min</span></div><div class="review-switcher" role="group" aria-label="Review period"><a href="#review" class="secondary-action">Daily review</a><a href="#review/weekly" class="secondary-action review-switcher--active">Weekly review</a></div><section class="weekly-summary" aria-labelledby="summary-title"><div class="section-heading"><div><p class="eyebrow">Automatic summary</p><h2 id="summary-title">What the week says</h2></div></div><div class="summary-metrics">${metric('priorities completed', summary.prioritiesCompleted)}${metric('carried forward', summary.prioritiesCarried)}${metric('repeated risks', summary.repeatedRisks)}${metric('overdue follow-ups', summary.overdueFollowUps)}${metric('decisions completed', summary.decisionsCompleted)}${metric('improvements captured', summary.improvementsCaptured)}${metric('morning preparations', summary.morningPreparations)}${metric('huddles completed', summary.huddlesCompleted)}${metric('day reviews completed', summary.dayReviewsCompleted)}</div><div class="summary-callout"><p><strong>Most common blocker:</strong> ${escapeHtml(summary.mostCommonBlocker || 'No repeated blocker yet.')}</p><p><strong>Repeated pattern:</strong> ${escapeHtml(repeatedRiskText)}</p>${repeatedRiskAction}</div></section><section class="weekly-questions" aria-labelledby="questions-title"><div class="section-heading"><div><p class="eyebrow">Reflect</p><h2 id="questions-title">What should change?</h2></div></div>${answerFields}</section><section class="weekly-output" aria-labelledby="next-week-title"><div class="section-heading"><div><p class="eyebrow">Prepare next week</p><h2 id="next-week-title">Three priorities, one improvement, one focus.</h2></div></div><div class="weekly-priority-fields">${[0, 1, 2].map((index) => `<label>Priority ${index + 1}<input data-weekly-priority="${index}" value="${escapeHtml(review.nextPriorities?.[index] || '')}" placeholder="A meaningful outcome"></label>`).join('')}</div><div class="form-two-col"><label>Operating improvement<textarea rows="2" data-weekly-improvement placeholder="One change to test">${escapeHtml(review.operatingImprovement || '')}</textarea></label><label>Leadership focus<textarea rows="2" data-weekly-focus placeholder="How you want to lead">${escapeHtml(review.leadershipFocus || '')}</textarea></label></div><button type="button" class="primary-action" data-weekly-save>Save weekly review <span aria-hidden="true">→</span></button></section></section>`;
+}
+
+const improvementCategories = [
+  ['simplify', 'Simplify'],
+  ['remove-delay', 'Remove delay'],
+  ['clarity', 'Improve clarity'],
+  ['reduce-error', 'Reduce error'],
+  ['handover', 'Improve handover'],
+  ['meeting', 'Improve meeting'],
+  ['customer-outcome', 'Improve customer outcome'],
+  ['workflow', 'Improve workflow'],
+];
+
+export function createImproveView(improvements) {
+  const cards = improvements.length
+    ? improvements
+        .map(
+          (item) =>
+            `<article class="improvement-card"><div class="improvement-card__top"><div><span class="work-type">${escapeHtml(improvementCategories.find(([value]) => value === item.category)?.[1] || 'Improvement')}</span><h3>${escapeHtml(item.notWorking)}</h3></div><span class="status-chip status-chip--${item.status === 'implemented' ? 'success' : 'neutral'}">${escapeHtml((item.status || 'captured')[0].toUpperCase() + (item.status || 'captured').slice(1))}</span></div><p>${escapeHtml(item.change || 'No change captured yet.')}</p><dl class="improvement-meta"><div><dt>Why it helps</dt><dd>${escapeHtml(item.why || 'Not captured')}</dd></div><div><dt>Next step</dt><dd>${escapeHtml(item.nextStep || 'Not captured')}</dd></div></dl><div class="work-card__actions"><button type="button" class="text-button" data-edit-improvement="${item.id}">Edit</button><button type="button" class="text-button text-button--quiet" data-delete-improvement="${item.id}">Delete</button></div></article>`,
+        )
+        .join('')
+    : `<div class="section-empty"><span aria-hidden="true">—</span><p>No improvements captured yet. Start with one small change.</p></div>`;
+  return `<section class="improve-command" aria-labelledby="improve-title"><div class="work-intro"><div><p class="eyebrow">Learn and refine</p><h2 id="improve-title">Improve the rhythm.</h2><p class="secondary-text">Keep observations small, actionable, and close to the work.</p></div><button type="button" class="primary-action" data-add-improvement>Capture improvement <span aria-hidden="true">→</span></button></div><div class="improvement-summary"><span>${improvements.length} captured</span><span>${improvements.filter((item) => item.status === 'implemented').length} implemented</span><span>Local-only</span></div><div class="improvement-list">${cards}</div></section>${createImprovementSheet()}`;
+}
+
+export function createImprovementSheet(item = {}) {
+  const category = item.category || 'simplify';
+  const status = item.status || 'captured';
+  return `<dialog id="improvement-detail" class="modal work-detail-dialog" aria-labelledby="improvement-title"><div class="modal__header"><div><p class="eyebrow">Improve</p><h2 id="improvement-title">${item.id ? 'Edit improvement' : 'Capture improvement'}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close improvement">×</button></div><form class="modal__body work-form" data-improvement-form><input type="hidden" name="id" value="${escapeHtml(item.id || '')}"><label>What is not working?<textarea name="notWorking" rows="2" required>${escapeHtml(item.notWorking || '')}</textarea></label><label>What should change?<textarea name="change" rows="2" required>${escapeHtml(item.change || '')}</textarea></label><label>Why would it help?<textarea name="why" rows="2">${escapeHtml(item.why || '')}</textarea></label><label>What is the next step?<textarea name="nextStep" rows="2">${escapeHtml(item.nextStep || '')}</textarea></label><div class="form-two-col"><label>Category<select name="category">${improvementCategories.map(([value, label]) => `<option value="${value}" ${category === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label><label>Status<select name="status">${['captured', 'reviewing', 'testing', 'implemented', 'closed'].map((value) => `<option value="${value}" ${status === value ? 'selected' : ''}>${value[0].toUpperCase() + value.slice(1)}</option>`).join('')}</select></label></div><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save improvement</button></div></form></dialog>`;
+}
+
 export function getRoute() {
-  const key = window.location.hash.slice(1).split('/')[0] || 'today';
-  return routes[key] ? { ...routes[key], key } : { ...routes.today, key: 'today' };
+  const parts = window.location.hash.slice(1).split('/');
+  const key = parts[0] || 'today';
+  return routes[key] ? { ...routes[key], key, subroute: parts[1] || '' } : { ...routes.today, key: 'today', subroute: '' };
 }
 
 function navItems(currentKey, className) {
-  return navigation
+  const items = navigation
     .map(
       ([key, label, icon]) =>
         `<a class="nav-item ${className}" href="#${key}" ${
@@ -419,6 +472,7 @@ function navItems(currentKey, className) {
         }><span class="nav-item__icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`,
     )
     .join('');
+  return `${items}${currentKey === 'review' ? '<a class="nav-item nav-item--subtle" href="#review/weekly"><span class="nav-item__icon" aria-hidden="true">↳</span><span>Weekly review</span></a>' : ''}`;
 }
 
 function settingsDialog() {

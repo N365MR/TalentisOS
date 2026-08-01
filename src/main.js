@@ -6,6 +6,9 @@ import {
   createTodayView,
   createHistoryDialog,
   createReviewView,
+  createWeeklyReviewView,
+  createImproveView,
+  createImprovementSheet,
   createWorkDetailSheet,
   createWorkView,
   getRoute,
@@ -19,8 +22,14 @@ import {
   getDayClosures,
   getOnboardingState,
   getPriorities,
+  getAllPriorities,
   getWorkItems,
   getTomorrowPlan,
+  getWeeklyReview,
+  saveWeeklyReview,
+  getImprovements,
+  saveImprovement,
+  deleteImprovement,
   openDatabase,
   putRecord,
   saveOnboardingState,
@@ -50,6 +59,8 @@ let currentReview;
 let currentTomorrowPlan;
 let currentHistory = [];
 let currentReviewSuggestions = [];
+let currentWeeklyReview;
+let currentImprovements = [];
 let autosaveTimer;
 let lastUndo;
 
@@ -147,22 +158,83 @@ async function render() {
       ...route,
       action: currentReview.closed ? 'Finish Day' : 'Finish Day',
     });
-    document.querySelector('#view-root').innerHTML = createReviewView({
-      review: currentReview,
-      plan: currentPlan,
-      completed: completedRecords(currentPriorities, currentWorkItems),
-      suggestions: currentReviewSuggestions,
-      tomorrowPlan: currentTomorrowPlan,
-      history: currentHistory,
-      editable: editingHistoricalDay,
-    });
+    if (route.subroute === 'weekly') {
+      const weekStart = startOfWeek(new Date());
+      currentWeeklyReview = await getWeeklyReview(database, weekStart);
+      currentImprovements = await getImprovements(database);
+      const closures = currentHistory.filter((closure) => closure.date >= weekStart && closure.date <= addDays(weekStart, 6));
+      const weekPriorities = (await getAllPriorities(database)).filter((item) => item.planDate >= weekStart && item.planDate <= addDays(weekStart, 6));
+      const weekWork = currentWorkItems.filter((item) => {
+        const updatedDate = item.updatedAt?.slice(0, 10);
+        return (updatedDate >= weekStart && updatedDate <= addDays(weekStart, 6)) ||
+          (item.dueDate >= weekStart && item.dueDate <= addDays(weekStart, 6));
+      });
+      document.querySelector('#view-root').innerHTML = createWeeklyReviewView({
+        review: currentWeeklyReview,
+        summary: weeklySummary(closures, weekPriorities, weekWork, weekStart, addDays(weekStart, 6)),
+        weekStart,
+        weekEnd: addDays(weekStart, 6),
+      }) + createImprovementSheet();
+    } else {
+      document.querySelector('#view-root').innerHTML = createReviewView({
+        review: currentReview,
+        plan: currentPlan,
+        completed: completedRecords(currentPriorities, currentWorkItems),
+        suggestions: currentReviewSuggestions,
+        tomorrowPlan: currentTomorrowPlan,
+        history: currentHistory,
+        editable: editingHistoricalDay,
+      });
+    }
     document.title = 'Review — TalentisOS';
+  } else if (route.key === 'improve') {
+    currentImprovements = await getImprovements(database);
+    app.innerHTML = createAppShell({ ...route, action: 'Capture improvement' });
+    document.querySelector('#view-root').innerHTML = createImproveView(currentImprovements);
+    document.title = 'Improve — TalentisOS';
   } else {
     app.innerHTML = createAppShell(route);
     renderView(route);
     document.title = `${route.label} — TalentisOS`;
   }
   applyTheme(savedTheme());
+}
+
+function startOfWeek(date) {
+  const next = new Date(date);
+  const day = next.getDay() || 7;
+  next.setDate(next.getDate() - day + 1);
+  return next.toISOString().slice(0, 10);
+}
+
+function weeklySummary(closures, priorities, workItems, weekStart, weekEnd) {
+  const incomplete = priorities.filter((item) => item.status !== 'done').length;
+  const risks = workItems.filter((item) => item.type === 'risk');
+  const blockerCounts = new Map();
+  risks.forEach((item) => {
+    const blocker = (item.whatAtRisk || item.impact || item.title || 'Unspecified risk').trim();
+    const key = blocker.toLowerCase();
+    const existing = blockerCounts.get(key) || { label: blocker, count: 0 };
+    blockerCounts.set(key, { ...existing, count: existing.count + 1 });
+  });
+  const repeatedBlockers = [...blockerCounts.values()].filter((item) => item.count > 1);
+  const mostCommonBlocker = [...blockerCounts.values()].sort((a, b) => b.count - a.count)[0]?.label || '';
+  return {
+    prioritiesCompleted: priorities.filter((item) => item.status === 'done').length,
+    prioritiesCarried: incomplete,
+    repeatedRisks: repeatedBlockers.reduce((total, item) => total + item.count, 0),
+    repeatedRiskLabels: repeatedBlockers.map((item) => item.label),
+    overdueFollowUps: workItems.filter((item) => item.type === 'follow-up' && item.status !== 'complete' && item.dueDate && item.dueDate < new Date().toISOString().slice(0, 10)).length,
+    decisionsCompleted: workItems.filter((item) => item.type === 'decision' && item.status === 'decided').length,
+    improvementsCaptured: currentImprovements.filter((item) => {
+      const createdDate = item.createdAt?.slice(0, 10);
+      return createdDate >= weekStart && createdDate <= weekEnd;
+    }).length,
+    mostCommonBlocker,
+    morningPreparations: closures.filter((closure) => closure.snapshot?.plan?.preparedPlanImported).length,
+    huddlesCompleted: closures.filter((closure) => closure.snapshot?.plan?.huddleStatus === 'complete').length,
+    dayReviewsCompleted: closures.length,
+  };
 }
 
 function addDays(date, amount) {
@@ -555,6 +627,25 @@ document.addEventListener('submit', async (event) => {
     workForm.closest('dialog').close();
     showToast('Work item saved.');
     await render();
+    return;
+  }
+  const improvementForm = event.target.closest('[data-improvement-form]');
+  if (improvementForm) {
+    event.preventDefault();
+    const values = formValues(improvementForm);
+    await saveImprovement(database, {
+      id: values.id || crypto.randomUUID(),
+      notWorking: values.notWorking.trim(),
+      change: values.change.trim(),
+      why: values.why.trim(),
+      nextStep: values.nextStep.trim(),
+      category: values.category,
+      status: values.status,
+      createdAt: values.id ? currentImprovements.find((item) => item.id === values.id)?.createdAt : new Date().toISOString(),
+    });
+    improvementForm.closest('dialog').close();
+    showToast('Improvement saved.');
+    await render();
   }
 });
 
@@ -565,6 +656,37 @@ document.addEventListener('input', (event) => {
     autosaveTimer = window.setTimeout(async () => {
       currentReview.improvement = reviewImprovement.value;
       await saveDailyReview(database, currentReview);
+    }, 500);
+    return;
+  }
+  const weeklyAnswer = event.target.closest('[data-weekly-answer]');
+  if (weeklyAnswer && currentWeeklyReview) {
+    window.clearTimeout(autosaveTimer);
+    autosaveTimer = window.setTimeout(async () => {
+      currentWeeklyReview.answers = { ...currentWeeklyReview.answers, [weeklyAnswer.dataset.weeklyAnswer]: weeklyAnswer.value };
+      await saveWeeklyReview(database, currentWeeklyReview);
+    }, 500);
+    return;
+  }
+  const weeklyPriority = event.target.closest('[data-weekly-priority]');
+  if (weeklyPriority && currentWeeklyReview) {
+    window.clearTimeout(autosaveTimer);
+    autosaveTimer = window.setTimeout(async () => {
+      const priorities = [...(currentWeeklyReview.nextPriorities || ['', '', ''])];
+      priorities[Number(weeklyPriority.dataset.weeklyPriority)] = weeklyPriority.value;
+      currentWeeklyReview.nextPriorities = priorities;
+      await saveWeeklyReview(database, currentWeeklyReview);
+    }, 500);
+    return;
+  }
+  const weeklyImprovement = event.target.closest('[data-weekly-improvement]');
+  const weeklyFocus = event.target.closest('[data-weekly-focus]');
+  if ((weeklyImprovement || weeklyFocus) && currentWeeklyReview) {
+    window.clearTimeout(autosaveTimer);
+    autosaveTimer = window.setTimeout(async () => {
+      if (weeklyImprovement) currentWeeklyReview.operatingImprovement = weeklyImprovement.value;
+      if (weeklyFocus) currentWeeklyReview.leadershipFocus = weeklyFocus.value;
+      await saveWeeklyReview(database, currentWeeklyReview);
     }, 500);
     return;
   }
@@ -610,6 +732,58 @@ document.addEventListener('click', async (event) => {
   const reviewAction = event.target.closest('[data-review-action]');
   if (reviewAction) {
     await applyReviewAction(reviewAction.dataset.reviewKey, reviewAction.dataset.reviewAction);
+    return;
+  }
+
+  if (event.target.closest('[data-weekly-save]')) {
+    await saveWeeklyReview(database, currentWeeklyReview);
+    showToast('Weekly review saved locally.');
+    return;
+  }
+
+  const repeatedRiskButton = event.target.closest('[data-improvement-from-risk]');
+  if (repeatedRiskButton) {
+    const dialog = document.querySelector('#improvement-detail');
+    if (dialog) {
+      dialog.outerHTML = createImprovementSheet({
+        notWorking: repeatedRiskButton.dataset.improvementFromRisk,
+        change: 'Define and test a small change that prevents this risk from repeating.',
+        why: 'Reduce a recurring blocker in the operating rhythm.',
+        category: 'workflow',
+        status: 'captured',
+      });
+      document.querySelector('#improvement-detail')?.showModal();
+      document.querySelector('#improvement-detail textarea')?.focus();
+    }
+    return;
+  }
+
+  if (event.target.closest('[data-add-improvement]') || (event.target.closest('[data-primary-action]') && getRoute().key === 'improve')) {
+    const dialog = document.querySelector('#improvement-detail');
+    dialog?.showModal();
+    dialog?.querySelector('textarea')?.focus();
+    return;
+  }
+
+  const editImprovement = event.target.closest('[data-edit-improvement]');
+  if (editImprovement) {
+    const item = currentImprovements.find((improvement) => improvement.id === editImprovement.dataset.editImprovement);
+    const dialog = document.querySelector('#improvement-detail');
+    if (dialog && item) {
+      dialog.outerHTML = createImprovementSheet(item);
+      document.querySelector('#improvement-detail')?.showModal();
+      document.querySelector('#improvement-detail textarea')?.focus();
+    }
+    return;
+  }
+
+  const deleteImprovementButton = event.target.closest('[data-delete-improvement]');
+  if (deleteImprovementButton) {
+    if (window.confirm('Delete this improvement?')) {
+      await deleteImprovement(database, deleteImprovementButton.dataset.deleteImprovement);
+      showToast('Improvement deleted.');
+      await render();
+    }
     return;
   }
 

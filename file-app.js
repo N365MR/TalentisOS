@@ -39,7 +39,7 @@
       title: "Improve the rhythm.",
       description: "Turn small observations into practical changes to the way you lead.",
       prompt: "Improvement capture will be introduced in a later phase.",
-      action: "See improvements"
+      action: "Capture improvement"
     }
   };
   var navigation = [
@@ -310,14 +310,56 @@
     const snapshot = closure.snapshot || {};
     return `<dialog id="history-dialog" class="modal history-dialog" aria-labelledby="history-title"><div class="modal__header"><div><p class="eyebrow">Read-only day history</p><h2 id="history-title">${escapeHtml(closure.date)}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close day history">\xD7</button></div><div class="modal__body"><p class="secondary-text">${escapeHtml(snapshot.summary || "Day closure snapshot")}</p><dl class="history-summary"><div><dt>Daily focus</dt><dd>${escapeHtml(snapshot.plan?.focus || "Not set")}</dd></div><div><dt>Priorities</dt><dd>${snapshot.priorities?.length || 0}</dd></div><div><dt>Huddle status</dt><dd>${escapeHtml(snapshot.plan?.huddleStatus || "Not recorded")}</dd></div><div><dt>Completed work</dt><dd>${snapshot.completedWork?.length || 0}</dd></div><div><dt>Carryover</dt><dd>${snapshot.tomorrow?.items?.length || 0}</dd></div><div><dt>Risks</dt><dd>${snapshot.workItems?.filter((item) => item.type === "risk").length || 0}</dd></div><div><dt>Decisions</dt><dd>${snapshot.workItems?.filter((item) => item.type === "decision").length || 0}</dd></div><div><dt>Follow-ups</dt><dd>${snapshot.workItems?.filter((item) => item.type === "follow-up").length || 0}</dd></div><div><dt>End-of-day summary</dt><dd>${escapeHtml(snapshot.summary || "Not recorded")}</dd></div></dl><button type="button" class="secondary-action" data-history-edit="${closure.date}">${editable ? "Editing enabled" : "Edit Day"}</button></div></dialog>`;
   }
+  function createWeeklyReviewView({ review, summary, weekStart, weekEnd }) {
+    const questions = [
+      ["achieved", "What was achieved?", "Name the outcomes that moved forward."],
+      ["incomplete", "What remained incomplete?", "Keep this factual; it will inform next week."],
+      ["repeatedRisks", "What risks repeated?", "Look for patterns worth improving."],
+      ["delayedDecisions", "What decisions were delayed?", "Capture the decision, not the backstory."],
+      ["unnecessaryTime", "What consumed unnecessary time?", "One observation is enough."],
+      ["continue", "What should continue?", "Keep the leadership habits that helped."],
+      ["stop", "What should stop?", "Remove one source of avoidable noise."],
+      ["improve", "What should improve?", "Turn this into one practical next step."]
+    ];
+    const answerFields = questions.map(
+      ([key, title, hint]) => `<label class="weekly-question"><span>${title}</span><small>${hint}</small><textarea rows="2" data-weekly-answer="${key}" placeholder="Capture a short note">${escapeHtml(review.answers?.[key] || "")}</textarea></label>`
+    ).join("");
+    const metric = (label, value) => `<div class="summary-metric"><strong>${value}</strong><span>${label}</span></div>`;
+    const repeatedRiskText = summary.repeatedRiskLabels?.length ? summary.repeatedRiskLabels.join(" \xB7 ") : "No repeated risk pattern yet.";
+    const repeatedRiskAction = summary.repeatedRiskLabels?.[0] ? `<button type="button" class="secondary-action" data-improvement-from-risk="${escapeHtml(summary.repeatedRiskLabels[0])}">Turn into improvement</button>` : "";
+    return `<section class="weekly-command" aria-labelledby="weekly-title"><div class="review-intro"><div><p class="eyebrow">Review the rhythm</p><h2 id="weekly-title">Make the week useful.</h2><p class="secondary-text">${escapeHtml(weekStart)} to ${escapeHtml(weekEnd)} \xB7 A concise local summary of what your days are teaching you.</p></div><span class="review-time">10 min</span></div><div class="review-switcher" role="group" aria-label="Review period"><a href="#review" class="secondary-action">Daily review</a><a href="#review/weekly" class="secondary-action review-switcher--active">Weekly review</a></div><section class="weekly-summary" aria-labelledby="summary-title"><div class="section-heading"><div><p class="eyebrow">Automatic summary</p><h2 id="summary-title">What the week says</h2></div></div><div class="summary-metrics">${metric("priorities completed", summary.prioritiesCompleted)}${metric("carried forward", summary.prioritiesCarried)}${metric("repeated risks", summary.repeatedRisks)}${metric("overdue follow-ups", summary.overdueFollowUps)}${metric("decisions completed", summary.decisionsCompleted)}${metric("improvements captured", summary.improvementsCaptured)}${metric("morning preparations", summary.morningPreparations)}${metric("huddles completed", summary.huddlesCompleted)}${metric("day reviews completed", summary.dayReviewsCompleted)}</div><div class="summary-callout"><p><strong>Most common blocker:</strong> ${escapeHtml(summary.mostCommonBlocker || "No repeated blocker yet.")}</p><p><strong>Repeated pattern:</strong> ${escapeHtml(repeatedRiskText)}</p>${repeatedRiskAction}</div></section><section class="weekly-questions" aria-labelledby="questions-title"><div class="section-heading"><div><p class="eyebrow">Reflect</p><h2 id="questions-title">What should change?</h2></div></div>${answerFields}</section><section class="weekly-output" aria-labelledby="next-week-title"><div class="section-heading"><div><p class="eyebrow">Prepare next week</p><h2 id="next-week-title">Three priorities, one improvement, one focus.</h2></div></div><div class="weekly-priority-fields">${[0, 1, 2].map((index) => `<label>Priority ${index + 1}<input data-weekly-priority="${index}" value="${escapeHtml(review.nextPriorities?.[index] || "")}" placeholder="A meaningful outcome"></label>`).join("")}</div><div class="form-two-col"><label>Operating improvement<textarea rows="2" data-weekly-improvement placeholder="One change to test">${escapeHtml(review.operatingImprovement || "")}</textarea></label><label>Leadership focus<textarea rows="2" data-weekly-focus placeholder="How you want to lead">${escapeHtml(review.leadershipFocus || "")}</textarea></label></div><button type="button" class="primary-action" data-weekly-save>Save weekly review <span aria-hidden="true">\u2192</span></button></section></section>`;
+  }
+  var improvementCategories = [
+    ["simplify", "Simplify"],
+    ["remove-delay", "Remove delay"],
+    ["clarity", "Improve clarity"],
+    ["reduce-error", "Reduce error"],
+    ["handover", "Improve handover"],
+    ["meeting", "Improve meeting"],
+    ["customer-outcome", "Improve customer outcome"],
+    ["workflow", "Improve workflow"]
+  ];
+  function createImproveView(improvements) {
+    const cards = improvements.length ? improvements.map(
+      (item) => `<article class="improvement-card"><div class="improvement-card__top"><div><span class="work-type">${escapeHtml(improvementCategories.find(([value]) => value === item.category)?.[1] || "Improvement")}</span><h3>${escapeHtml(item.notWorking)}</h3></div><span class="status-chip status-chip--${item.status === "implemented" ? "success" : "neutral"}">${escapeHtml((item.status || "captured")[0].toUpperCase() + (item.status || "captured").slice(1))}</span></div><p>${escapeHtml(item.change || "No change captured yet.")}</p><dl class="improvement-meta"><div><dt>Why it helps</dt><dd>${escapeHtml(item.why || "Not captured")}</dd></div><div><dt>Next step</dt><dd>${escapeHtml(item.nextStep || "Not captured")}</dd></div></dl><div class="work-card__actions"><button type="button" class="text-button" data-edit-improvement="${item.id}">Edit</button><button type="button" class="text-button text-button--quiet" data-delete-improvement="${item.id}">Delete</button></div></article>`
+    ).join("") : `<div class="section-empty"><span aria-hidden="true">\u2014</span><p>No improvements captured yet. Start with one small change.</p></div>`;
+    return `<section class="improve-command" aria-labelledby="improve-title"><div class="work-intro"><div><p class="eyebrow">Learn and refine</p><h2 id="improve-title">Improve the rhythm.</h2><p class="secondary-text">Keep observations small, actionable, and close to the work.</p></div><button type="button" class="primary-action" data-add-improvement>Capture improvement <span aria-hidden="true">\u2192</span></button></div><div class="improvement-summary"><span>${improvements.length} captured</span><span>${improvements.filter((item) => item.status === "implemented").length} implemented</span><span>Local-only</span></div><div class="improvement-list">${cards}</div></section>${createImprovementSheet()}`;
+  }
+  function createImprovementSheet(item = {}) {
+    const category = item.category || "simplify";
+    const status = item.status || "captured";
+    return `<dialog id="improvement-detail" class="modal work-detail-dialog" aria-labelledby="improvement-title"><div class="modal__header"><div><p class="eyebrow">Improve</p><h2 id="improvement-title">${item.id ? "Edit improvement" : "Capture improvement"}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close improvement">\xD7</button></div><form class="modal__body work-form" data-improvement-form><input type="hidden" name="id" value="${escapeHtml(item.id || "")}"><label>What is not working?<textarea name="notWorking" rows="2" required>${escapeHtml(item.notWorking || "")}</textarea></label><label>What should change?<textarea name="change" rows="2" required>${escapeHtml(item.change || "")}</textarea></label><label>Why would it help?<textarea name="why" rows="2">${escapeHtml(item.why || "")}</textarea></label><label>What is the next step?<textarea name="nextStep" rows="2">${escapeHtml(item.nextStep || "")}</textarea></label><div class="form-two-col"><label>Category<select name="category">${improvementCategories.map(([value, label]) => `<option value="${value}" ${category === value ? "selected" : ""}>${label}</option>`).join("")}</select></label><label>Status<select name="status">${["captured", "reviewing", "testing", "implemented", "closed"].map((value) => `<option value="${value}" ${status === value ? "selected" : ""}>${value[0].toUpperCase() + value.slice(1)}</option>`).join("")}</select></label></div><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save improvement</button></div></form></dialog>`;
+  }
   function getRoute() {
-    const key = window.location.hash.slice(1).split("/")[0] || "today";
-    return routes[key] ? { ...routes[key], key } : { ...routes.today, key: "today" };
+    const parts = window.location.hash.slice(1).split("/");
+    const key = parts[0] || "today";
+    return routes[key] ? { ...routes[key], key, subroute: parts[1] || "" } : { ...routes.today, key: "today", subroute: "" };
   }
   function navItems(currentKey, className) {
-    return navigation.map(
+    const items = navigation.map(
       ([key, label, icon]) => `<a class="nav-item ${className}" href="#${key}" ${currentKey === key ? 'aria-current="page"' : ""}><span class="nav-item__icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`
     ).join("");
+    return `${items}${currentKey === "review" ? '<a class="nav-item nav-item--subtle" href="#review/weekly"><span class="nav-item__icon" aria-hidden="true">\u21B3</span><span>Weekly review</span></a>' : ""}`;
   }
   function settingsDialog() {
     return `<dialog id="settings-dialog" class="modal" aria-labelledby="settings-title">
@@ -367,7 +409,7 @@
 
   // src/db.js
   var DB_NAME = "talentisos";
-  var DB_VERSION = 3;
+  var DB_VERSION = 4;
   var stores = {
     settings: "settings",
     dailyPlans: "dailyPlans",
@@ -376,6 +418,8 @@
     dailyReviews: "dailyReviews",
     tomorrowPlans: "tomorrowPlans",
     dayClosures: "dayClosures",
+    weeklyReviews: "weeklyReviews",
+    improvements: "improvements",
     appMeta: "appMeta"
   };
   function requestResult(request) {
@@ -416,6 +460,15 @@
         }
         if (!database2.objectStoreNames.contains(stores.dayClosures)) {
           database2.createObjectStore(stores.dayClosures, { keyPath: "date" });
+        }
+        if (!database2.objectStoreNames.contains(stores.weeklyReviews)) {
+          database2.createObjectStore(stores.weeklyReviews, { keyPath: "weekStart" });
+        }
+        if (!database2.objectStoreNames.contains(stores.improvements)) {
+          const improvements = database2.createObjectStore(stores.improvements, { keyPath: "id" });
+          improvements.createIndex("status", "status");
+          improvements.createIndex("category", "category");
+          improvements.createIndex("createdAt", "createdAt");
         }
         if (!database2.objectStoreNames.contains(stores.appMeta)) {
           database2.createObjectStore(stores.appMeta, { keyPath: "key" });
@@ -502,6 +555,9 @@
   async function getWorkItems(database2) {
     return getAll(database2, stores.workItems);
   }
+  async function getAllPriorities(database2) {
+    return getAll(database2, stores.priorities);
+  }
   async function saveWorkItem(database2, workItem) {
     return putRecord(database2, stores.workItems, {
       ...workItem,
@@ -559,6 +615,38 @@
   async function getDayClosures(database2) {
     return (await getAll(database2, stores.dayClosures)).sort((a, b) => b.date.localeCompare(a.date));
   }
+  async function getWeeklyReview(database2, weekStart) {
+    const existing = await getRecord(database2, stores.weeklyReviews, weekStart);
+    if (existing) return existing;
+    return {
+      weekStart,
+      answers: {},
+      nextPriorities: ["", "", ""],
+      operatingImprovement: "",
+      leadershipFocus: "",
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+  async function saveWeeklyReview(database2, review) {
+    return putRecord(database2, stores.weeklyReviews, {
+      ...review,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
+  async function getImprovements(database2) {
+    return (await getAll(database2, stores.improvements)).sort(
+      (a, b) => (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || "")
+    );
+  }
+  async function saveImprovement(database2, improvement) {
+    return putRecord(database2, stores.improvements, {
+      ...improvement,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
+  async function deleteImprovement(database2, id) {
+    return deleteRecord(database2, stores.improvements, id);
+  }
 
   // src/main.js
   var app = document.querySelector("#app");
@@ -577,6 +665,8 @@
   var currentTomorrowPlan;
   var currentHistory = [];
   var currentReviewSuggestions = [];
+  var currentWeeklyReview;
+  var currentImprovements = [];
   var autosaveTimer;
   var lastUndo;
   function showToast(message) {
@@ -667,22 +757,80 @@
         ...route,
         action: currentReview.closed ? "Finish Day" : "Finish Day"
       });
-      document.querySelector("#view-root").innerHTML = createReviewView({
-        review: currentReview,
-        plan: currentPlan,
-        completed: completedRecords(currentPriorities, currentWorkItems),
-        suggestions: currentReviewSuggestions,
-        tomorrowPlan: currentTomorrowPlan,
-        history: currentHistory,
-        editable: editingHistoricalDay
-      });
+      if (route.subroute === "weekly") {
+        const weekStart = startOfWeek(/* @__PURE__ */ new Date());
+        currentWeeklyReview = await getWeeklyReview(database, weekStart);
+        currentImprovements = await getImprovements(database);
+        const closures = currentHistory.filter((closure) => closure.date >= weekStart && closure.date <= addDays(weekStart, 6));
+        const weekPriorities = (await getAllPriorities(database)).filter((item) => item.planDate >= weekStart && item.planDate <= addDays(weekStart, 6));
+        const weekWork = currentWorkItems.filter((item) => {
+          const updatedDate = item.updatedAt?.slice(0, 10);
+          return updatedDate >= weekStart && updatedDate <= addDays(weekStart, 6) || item.dueDate >= weekStart && item.dueDate <= addDays(weekStart, 6);
+        });
+        document.querySelector("#view-root").innerHTML = createWeeklyReviewView({
+          review: currentWeeklyReview,
+          summary: weeklySummary(closures, weekPriorities, weekWork, weekStart, addDays(weekStart, 6)),
+          weekStart,
+          weekEnd: addDays(weekStart, 6)
+        }) + createImprovementSheet();
+      } else {
+        document.querySelector("#view-root").innerHTML = createReviewView({
+          review: currentReview,
+          plan: currentPlan,
+          completed: completedRecords(currentPriorities, currentWorkItems),
+          suggestions: currentReviewSuggestions,
+          tomorrowPlan: currentTomorrowPlan,
+          history: currentHistory,
+          editable: editingHistoricalDay
+        });
+      }
       document.title = "Review \u2014 TalentisOS";
+    } else if (route.key === "improve") {
+      currentImprovements = await getImprovements(database);
+      app.innerHTML = createAppShell({ ...route, action: "Capture improvement" });
+      document.querySelector("#view-root").innerHTML = createImproveView(currentImprovements);
+      document.title = "Improve \u2014 TalentisOS";
     } else {
       app.innerHTML = createAppShell(route);
       renderView(route);
       document.title = `${route.label} \u2014 TalentisOS`;
     }
     applyTheme(savedTheme());
+  }
+  function startOfWeek(date) {
+    const next = new Date(date);
+    const day = next.getDay() || 7;
+    next.setDate(next.getDate() - day + 1);
+    return next.toISOString().slice(0, 10);
+  }
+  function weeklySummary(closures, priorities, workItems, weekStart, weekEnd) {
+    const incomplete = priorities.filter((item) => item.status !== "done").length;
+    const risks = workItems.filter((item) => item.type === "risk");
+    const blockerCounts = /* @__PURE__ */ new Map();
+    risks.forEach((item) => {
+      const blocker = (item.whatAtRisk || item.impact || item.title || "Unspecified risk").trim();
+      const key = blocker.toLowerCase();
+      const existing = blockerCounts.get(key) || { label: blocker, count: 0 };
+      blockerCounts.set(key, { ...existing, count: existing.count + 1 });
+    });
+    const repeatedBlockers = [...blockerCounts.values()].filter((item) => item.count > 1);
+    const mostCommonBlocker = [...blockerCounts.values()].sort((a, b) => b.count - a.count)[0]?.label || "";
+    return {
+      prioritiesCompleted: priorities.filter((item) => item.status === "done").length,
+      prioritiesCarried: incomplete,
+      repeatedRisks: repeatedBlockers.reduce((total, item) => total + item.count, 0),
+      repeatedRiskLabels: repeatedBlockers.map((item) => item.label),
+      overdueFollowUps: workItems.filter((item) => item.type === "follow-up" && item.status !== "complete" && item.dueDate && item.dueDate < (/* @__PURE__ */ new Date()).toISOString().slice(0, 10)).length,
+      decisionsCompleted: workItems.filter((item) => item.type === "decision" && item.status === "decided").length,
+      improvementsCaptured: currentImprovements.filter((item) => {
+        const createdDate = item.createdAt?.slice(0, 10);
+        return createdDate >= weekStart && createdDate <= weekEnd;
+      }).length,
+      mostCommonBlocker,
+      morningPreparations: closures.filter((closure) => closure.snapshot?.plan?.preparedPlanImported).length,
+      huddlesCompleted: closures.filter((closure) => closure.snapshot?.plan?.huddleStatus === "complete").length,
+      dayReviewsCompleted: closures.length
+    };
   }
   function addDays(date, amount) {
     const next = /* @__PURE__ */ new Date(`${date}T12:00:00`);
@@ -1028,6 +1176,25 @@
       workForm.closest("dialog").close();
       showToast("Work item saved.");
       await render();
+      return;
+    }
+    const improvementForm = event.target.closest("[data-improvement-form]");
+    if (improvementForm) {
+      event.preventDefault();
+      const values = formValues(improvementForm);
+      await saveImprovement(database, {
+        id: values.id || crypto.randomUUID(),
+        notWorking: values.notWorking.trim(),
+        change: values.change.trim(),
+        why: values.why.trim(),
+        nextStep: values.nextStep.trim(),
+        category: values.category,
+        status: values.status,
+        createdAt: values.id ? currentImprovements.find((item) => item.id === values.id)?.createdAt : (/* @__PURE__ */ new Date()).toISOString()
+      });
+      improvementForm.closest("dialog").close();
+      showToast("Improvement saved.");
+      await render();
     }
   });
   document.addEventListener("input", (event) => {
@@ -1037,6 +1204,37 @@
       autosaveTimer = window.setTimeout(async () => {
         currentReview.improvement = reviewImprovement.value;
         await saveDailyReview(database, currentReview);
+      }, 500);
+      return;
+    }
+    const weeklyAnswer = event.target.closest("[data-weekly-answer]");
+    if (weeklyAnswer && currentWeeklyReview) {
+      window.clearTimeout(autosaveTimer);
+      autosaveTimer = window.setTimeout(async () => {
+        currentWeeklyReview.answers = { ...currentWeeklyReview.answers, [weeklyAnswer.dataset.weeklyAnswer]: weeklyAnswer.value };
+        await saveWeeklyReview(database, currentWeeklyReview);
+      }, 500);
+      return;
+    }
+    const weeklyPriority = event.target.closest("[data-weekly-priority]");
+    if (weeklyPriority && currentWeeklyReview) {
+      window.clearTimeout(autosaveTimer);
+      autosaveTimer = window.setTimeout(async () => {
+        const priorities = [...currentWeeklyReview.nextPriorities || ["", "", ""]];
+        priorities[Number(weeklyPriority.dataset.weeklyPriority)] = weeklyPriority.value;
+        currentWeeklyReview.nextPriorities = priorities;
+        await saveWeeklyReview(database, currentWeeklyReview);
+      }, 500);
+      return;
+    }
+    const weeklyImprovement = event.target.closest("[data-weekly-improvement]");
+    const weeklyFocus = event.target.closest("[data-weekly-focus]");
+    if ((weeklyImprovement || weeklyFocus) && currentWeeklyReview) {
+      window.clearTimeout(autosaveTimer);
+      autosaveTimer = window.setTimeout(async () => {
+        if (weeklyImprovement) currentWeeklyReview.operatingImprovement = weeklyImprovement.value;
+        if (weeklyFocus) currentWeeklyReview.leadershipFocus = weeklyFocus.value;
+        await saveWeeklyReview(database, currentWeeklyReview);
       }, 500);
       return;
     }
@@ -1076,6 +1274,53 @@
     const reviewAction = event.target.closest("[data-review-action]");
     if (reviewAction) {
       await applyReviewAction(reviewAction.dataset.reviewKey, reviewAction.dataset.reviewAction);
+      return;
+    }
+    if (event.target.closest("[data-weekly-save]")) {
+      await saveWeeklyReview(database, currentWeeklyReview);
+      showToast("Weekly review saved locally.");
+      return;
+    }
+    const repeatedRiskButton = event.target.closest("[data-improvement-from-risk]");
+    if (repeatedRiskButton) {
+      const dialog = document.querySelector("#improvement-detail");
+      if (dialog) {
+        dialog.outerHTML = createImprovementSheet({
+          notWorking: repeatedRiskButton.dataset.improvementFromRisk,
+          change: "Define and test a small change that prevents this risk from repeating.",
+          why: "Reduce a recurring blocker in the operating rhythm.",
+          category: "workflow",
+          status: "captured"
+        });
+        document.querySelector("#improvement-detail")?.showModal();
+        document.querySelector("#improvement-detail textarea")?.focus();
+      }
+      return;
+    }
+    if (event.target.closest("[data-add-improvement]") || event.target.closest("[data-primary-action]") && getRoute().key === "improve") {
+      const dialog = document.querySelector("#improvement-detail");
+      dialog?.showModal();
+      dialog?.querySelector("textarea")?.focus();
+      return;
+    }
+    const editImprovement = event.target.closest("[data-edit-improvement]");
+    if (editImprovement) {
+      const item = currentImprovements.find((improvement) => improvement.id === editImprovement.dataset.editImprovement);
+      const dialog = document.querySelector("#improvement-detail");
+      if (dialog && item) {
+        dialog.outerHTML = createImprovementSheet(item);
+        document.querySelector("#improvement-detail")?.showModal();
+        document.querySelector("#improvement-detail textarea")?.focus();
+      }
+      return;
+    }
+    const deleteImprovementButton = event.target.closest("[data-delete-improvement]");
+    if (deleteImprovementButton) {
+      if (window.confirm("Delete this improvement?")) {
+        await deleteImprovement(database, deleteImprovementButton.dataset.deleteImprovement);
+        showToast("Improvement deleted.");
+        await render();
+      }
       return;
     }
     if (event.target.closest("[data-review-finish]")) {

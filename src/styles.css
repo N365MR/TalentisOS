@@ -1390,6 +1390,156 @@ dialog:focus-visible {
 .work-command {
   padding-bottom: var(--space-12);
 }
+.weekly-command,
+.improve-command {
+  padding-bottom: var(--space-12);
+}
+.weekly-command .review-intro,
+.improve-command .work-intro {
+  border-top: 1px solid var(--color-divider);
+}
+.review-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+.review-switcher--active {
+  background: var(--color-surface-strong);
+  color: var(--color-text);
+}
+.weekly-summary,
+.weekly-questions,
+.weekly-output {
+  margin-top: var(--space-8);
+  padding: var(--space-6);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+.summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-divider);
+}
+.summary-metric {
+  display: grid;
+  gap: var(--space-1);
+  min-height: 5.75rem;
+  align-content: center;
+  padding: var(--space-4);
+  background: var(--color-surface);
+}
+.summary-metric strong {
+  font-size: var(--text-xl);
+  letter-spacing: -0.04em;
+}
+.summary-metric span {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+.summary-callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+  margin: var(--space-5) 0 0;
+  padding: var(--space-4);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+}
+.summary-callout p {
+  margin: 0;
+}
+.weekly-questions {
+  display: grid;
+  gap: var(--space-4);
+}
+.weekly-question {
+  display: grid;
+  gap: var(--space-1);
+}
+.weekly-question span {
+  font-weight: 650;
+}
+.weekly-question small {
+  color: var(--color-text-secondary);
+}
+.weekly-question textarea {
+  margin-top: var(--space-2);
+}
+.weekly-priority-fields {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.weekly-output .primary-action {
+  margin-top: var(--space-5);
+}
+.improvement-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+.improvement-summary span {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.improvement-list {
+  display: grid;
+  gap: var(--space-3);
+}
+.improvement-card {
+  padding: var(--space-5);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+.improvement-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.improvement-card h3 {
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+.improvement-card > p {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-secondary);
+}
+.improvement-meta {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+.improvement-meta div {
+  display: grid;
+  gap: var(--space-1);
+}
+.improvement-meta dt {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.improvement-meta dd {
+  margin: 0;
+}
 .work-intro {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1681,6 +1831,21 @@ dialog:focus-visible {
   .review-time {
     display: inline-block;
     margin-top: var(--space-4);
+  }
+  .summary-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .weekly-summary,
+  .weekly-questions,
+  .weekly-output {
+    padding: var(--space-4);
+  }
+  .improvement-card__top {
+    display: block;
+  }
+  .improvement-card__top .status-chip {
+    display: inline-block;
+    margin-top: var(--space-2);
   }
   .review-grid {
     grid-template-columns: 1fr;
