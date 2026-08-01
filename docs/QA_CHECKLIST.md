@@ -19,7 +19,13 @@
 - Returning users open directly to Today after reload.
 - Today renders correctly with empty data and answers the focus, carryover, risk, decision, follow-up, meeting, prompt, and end-of-day questions.
 - Priorities can be added, edited, reordered, completed, and capped at three.
-- IndexedDB version 1 persists settings, daily plans, and priorities after reload and creates no sample workspace data.
+- IndexedDB version 2 migrates existing data, persists settings, daily plans, priorities, and work items after reload, and creates no sample workspace data.
+- Work uses only Now, Next, Later, and Waiting groups; Now never shows more than three active items.
+- Priority, Risk, Decision, Follow-up, and Action quick adds open the correct minimal fields.
+- Risk, decision, and follow-up type-specific fields persist, including escalation and review details.
+- Follow-up Due today, Upcoming, Waiting, Overdue, and Complete views filter correctly.
+- Critical risks, due decisions, and overdue follow-ups surface on Today.
+- Work autosaves, completion/deletion provides undo, and deletion requires confirmation.
 
 ## Lighthouse documentation
 
