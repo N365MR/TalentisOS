@@ -10,4 +10,11 @@
 - No placeholder employee data or employee profile entity exists.
 - No analytics, trackers, backend, or cloud database is included.
 - Service worker and manifest are present and do not erase local data.
+- `service-worker.js` registers, updates, caches the shell, and serves `offline.html` for an offline navigation.
+- Light, dark, and system appearance modes work; reduced motion and forced-colors fallbacks are present.
+- Desktop sidebar, tablet navigation, mobile bottom navigation, sticky primary action, and safe-area insets are verified.
 - Keyboard focus and skip navigation are visible and usable.
+
+## Lighthouse documentation
+
+Run Lighthouse against a production preview with `npm run build && npm run preview`, then record Performance, Accessibility, Best Practices, and PWA scores here. The Phase 1 implementation is structured for installability and accessibility, but scores are environment-dependent and must be captured in the target browser before release.

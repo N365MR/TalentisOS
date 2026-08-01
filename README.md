@@ -6,7 +6,7 @@ Its core rhythm is **End of Day → Morning Huddle → Today’s Work** and its 
 
 ## Status
 
-This repository is prepared for Phase 1. The current shell contains the five primary navigation areas and PWA foundations; product workflows and persistence are intentionally not implemented yet.
+Phase 1 is complete. The shell contains the five primary navigation areas, responsive navigation, appearance controls, accessible reusable UI primitives, and PWA foundations. Product workflows, onboarding, and persistence are intentionally not implemented yet.
 
 ## Local development
 
