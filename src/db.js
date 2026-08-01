@@ -19,7 +19,10 @@ const stores = {
 function requestResult(request) {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => {
+      if (request.error?.name === 'QuotaExceededError') reject(new Error('Local workspace storage is full. Export a backup and remove unused data.'));
+      else reject(request.error);
+    };
   });
 }
 

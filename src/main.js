@@ -90,6 +90,7 @@ let currentPlaybookGroup = 'All topics';
 let currentSnapshots = [];
 let pendingRestore = null;
 let pendingCsvImport = null;
+let updateRequested = false;
 let autosaveTimer;
 let lastUndo;
 
@@ -106,6 +107,26 @@ function showToast(message) {
     toast.append(undo);
   }
   window.setTimeout(() => toast?.remove(), 3600);
+}
+
+function showUpdateToast(registration) {
+  toastRegion.replaceChildren();
+  toastRegion.innerHTML = createToast('A new TalentisOS version is ready. Your saved data is safe.');
+  const toast = toastRegion.firstElementChild;
+  const update = document.createElement('button');
+  update.className = 'toast__action';
+  update.type = 'button';
+  update.textContent = 'Update now';
+  update.addEventListener('click', () => {
+    updateRequested = true;
+    registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+  });
+  const later = document.createElement('button');
+  later.className = 'toast__action';
+  later.type = 'button';
+  later.textContent = 'Later';
+  later.addEventListener('click', () => toast.remove());
+  toast.append(update, later);
 }
 
 function resolvedTheme(theme) {
@@ -585,6 +606,38 @@ function formValues(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+function draftStorageKey(form) {
+  return form.matches('[data-priority-form]') ? 'talentisos-draft-priority' : 'talentisos-draft-improvement';
+}
+
+function saveDraft(form) {
+  try {
+    localStorage.setItem(draftStorageKey(form), JSON.stringify(formValues(form)));
+  } catch {
+    // Draft saving is best effort when browser storage is unavailable.
+  }
+}
+
+function restoreDraft(form) {
+  try {
+    const draft = JSON.parse(localStorage.getItem(draftStorageKey(form)) || 'null');
+    if (!draft || form.elements.id?.value) return;
+    Object.entries(draft).forEach(([name, value]) => {
+      if (form.elements[name]) form.elements[name].value = value;
+    });
+  } catch {
+    // Ignore malformed or unavailable browser draft storage.
+  }
+}
+
+function clearDraft(form) {
+  try {
+    localStorage.removeItem(draftStorageKey(form));
+  } catch {
+    // Ignore unavailable browser draft storage.
+  }
+}
+
 function workItemFromForm(form) {
   const values = formValues(form);
   const existing = currentWorkItems.find((item) => item.id === values.id);
@@ -694,6 +747,7 @@ function openPriorityEditor(priority) {
   form.elements.why.value = priority?.why || '';
   form.elements.duePoint.value = priority?.duePoint || '';
   form.elements.status.value = priority?.status || 'not-started';
+  if (!priority) restoreDraft(form);
   dialog.querySelector('#priority-sheet-title').textContent = priority
     ? 'Edit priority'
     : 'Add a priority';
@@ -718,6 +772,7 @@ async function savePriorityForm(form) {
     completedAt: values.status === 'done' ? new Date().toISOString() : null,
   });
   form.closest('dialog').close();
+  clearDraft(form);
   showToast(existing ? 'Priority updated.' : 'Priority added.');
   await render();
 }
@@ -843,6 +898,18 @@ async function reorderTomorrow(id, direction) {
 }
 
 document.addEventListener('submit', async (event) => {
+  const submittedForm = event.target;
+  if (submittedForm.dataset.submitting === 'true') {
+    event.preventDefault();
+    return;
+  }
+  submittedForm.dataset.submitting = 'true';
+  const submitButton = submittedForm.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+  window.setTimeout(() => {
+    submittedForm.dataset.submitting = 'false';
+    if (submitButton) submitButton.disabled = false;
+  }, 2500);
   const onboardingForm = event.target.closest('[data-onboarding-form]');
   if (onboardingForm) {
     event.preventDefault();
@@ -890,12 +957,15 @@ document.addEventListener('submit', async (event) => {
       createdAt: values.id ? currentImprovements.find((item) => item.id === values.id)?.createdAt : new Date().toISOString(),
     });
     improvementForm.closest('dialog').close();
+    clearDraft(improvementForm);
     showToast('Improvement saved.');
     await render();
   }
 });
 
 document.addEventListener('input', (event) => {
+  const draftForm = event.target.closest('[data-priority-form], [data-improvement-form]');
+  if (draftForm && !draftForm.elements.id?.value) saveDraft(draftForm);
   const playbookSearch = event.target.closest('[data-playbook-search]');
   if (playbookSearch) {
     currentPlaybookQuery = playbookSearch.value;
@@ -1133,6 +1203,8 @@ document.addEventListener('click', async (event) => {
   if (event.target.closest('[data-add-improvement]') || (event.target.closest('[data-primary-action]') && getRoute().key === 'improve')) {
     const dialog = document.querySelector('#improvement-detail');
     dialog?.showModal();
+    const form = dialog?.querySelector('[data-improvement-form]');
+    if (form) restoreDraft(form);
     dialog?.querySelector('textarea')?.focus();
     return;
   }
@@ -1380,6 +1452,14 @@ themeQuery.addEventListener('change', () => {
   if (document.documentElement.dataset.theme === 'system') applyTheme('system');
 });
 
+window.addEventListener('unhandledrejection', (event) => {
+  event.preventDefault();
+  const message = event.reason?.message || '';
+  showToast(message.includes('storage') || message.includes('Quota')
+    ? message
+    : 'That local change could not be saved. Your existing data is unchanged.');
+});
+
 async function initialize() {
   try {
     database = await openDatabase();
@@ -1403,10 +1483,19 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const registration = await navigator.serviceWorker.register('/service-worker.js');
-      registration.addEventListener('updatefound', () => showToast('A fresh version is ready.'));
-      navigator.serviceWorker.addEventListener('controllerchange', () =>
-        showToast('TalentisOS is up to date.'),
-      );
+      const announceWaiting = () => {
+        if (registration.waiting && navigator.serviceWorker.controller) showUpdateToast(registration);
+      };
+      registration.addEventListener('updatefound', () => {
+        const worker = registration.installing;
+        worker?.addEventListener('statechange', () => {
+          if (worker.state === 'installed') announceWaiting();
+        });
+      });
+      announceWaiting();
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (updateRequested) window.location.reload();
+      });
     } catch {
       showToast('Offline support is unavailable in this browser session.');
     }

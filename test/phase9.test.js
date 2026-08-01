@@ -1,0 +1,54 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+
+test('service worker uses versioned caches, offline fallback, and user-confirmed updates', async () => {
+  const serviceWorker = await read('public/service-worker.js');
+  assert.match(serviceWorker, /talentisos-shell-v4/);
+  assert.match(serviceWorker, /offline\.html/);
+  assert.match(serviceWorker, /SKIP_WAITING/);
+  assert.doesNotMatch(serviceWorker, /install[\s\S]{0,300}skipWaiting\(\)/);
+  assert.match(serviceWorker, /caches\.delete/);
+});
+
+test('standalone shell exposes install metadata and a restrictive local CSP', async () => {
+  const index = await read('index.html');
+  const manifest = await read('public/manifest.webmanifest');
+  assert.match(index, /apple-mobile-web-app-capable/);
+  assert.match(index, /Content-Security-Policy/);
+  assert.match(index, /default-src 'self'/);
+  assert.match(manifest, /"display": "standalone"/);
+  assert.match(manifest, /"orientation": "any"/);
+});
+
+test('accessibility and iPad layout safeguards are present', async () => {
+  const html = await read('index.html');
+  const css = await read('src/styles.css');
+  assert.match(html, /Skip to main content/);
+  assert.match(html, /aria-live="polite"/);
+  assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /forced-colors/);
+  assert.match(css, /env\(--?safe-area-inset-top|env\(safe-area-inset-top/);
+  assert.match(css, /focus-visible/);
+});
+
+test('source keeps imported values sanitized and rendered through escaped text', async () => {
+  const backup = await read('src/backup.js');
+  const components = await read('src/components.js');
+  assert.match(backup, /sanitizeImportedValue/);
+  assert.match(components, /export function escapeHtml/);
+  assert.doesNotMatch(backup, /innerHTML/);
+});
+
+test('core daily workflow pathways remain wired for regression coverage', async () => {
+  const main = await read('src/main.js');
+  const components = await read('src/components.js');
+  for (const marker of ['completeOnboarding', 'currentPriorities.length >= 3', 'finishReview', 'saveTomorrowPlan', 'getWeeklyReview', 'data-improvement-from-risk', 'huddleDiscussions']) {
+    assert.match(main, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  for (const marker of ['data-priority-form', 'data-work-form', 'data-review-action', 'data-weekly-answer', 'data-improvement-form']) {
+    assert.match(components, new RegExp(marker));
+  }
+});

@@ -745,6 +745,10 @@ dialog:focus-visible {
   letter-spacing: -0.04em;
 }
 .text-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: var(--space-2) var(--space-1);
   border: 0;
   background: transparent;
   color: var(--color-text-secondary);
@@ -753,6 +757,13 @@ dialog:focus-visible {
   text-decoration: underline;
   text-decoration-color: var(--color-divider);
   text-underline-offset: 0.25rem;
+}
+.text-button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-information);
+  outline-offset: 2px;
 }
 .text-button:hover {
   color: var(--color-text);

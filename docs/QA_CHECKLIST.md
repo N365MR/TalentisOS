@@ -34,3 +34,31 @@
 ## Lighthouse documentation
 
 Run Lighthouse against a production preview with `npm run build && npm run preview`, then record Performance, Accessibility, Best Practices, and PWA scores here. The Phase 1 implementation is structured for installability and accessibility, but scores are environment-dependent and must be captured in the target browser before release.
+
+## Phase 9 hardening results — 2026-08-01
+
+Automated checks completed locally:
+
+- `npm run build` — PASS
+- `npm run lint` — PASS
+- `npm test` — PASS (10 tests)
+- `git diff --check` — PASS
+- `npm run format` — FAILS on existing long-form markup/style formatting; no formatter rewrite was applied during hardening.
+
+Automated coverage includes regression checks for fresh onboarding, returning users, priority limit, huddle generation, risk escalation, decision lifecycle, follow-up reminders, end-of-day carryover, tomorrow preparation, weekly review, improvement conversion, JSON export/restore, CSV import/export, local snapshots, offline operation, service-worker update behavior, responsive layout safeguards, dark-mode styling, accessibility safeguards, and data deletion protection.
+
+Manual device/browser verification before release:
+
+- [ ] Install from Safari to iPad Home Screen and reopen after force-close.
+- [ ] Verify portrait, landscape, Split View, and Stage Manager layouts.
+- [ ] Verify file import/export through the iPad Files picker and share sheet.
+- [ ] Verify service-worker “Update now” and “Later” behavior with an unsaved draft.
+- [ ] Verify VoiceOver focus order, dialog close behavior, dynamic text, contrast, and keyboard focus.
+- [ ] Verify offline launch after a successful online load and reload recovery.
+
+Security review:
+
+- No external trackers, analytics, secrets, or network data services are present.
+- Imported JSON/CSV text is sanitized before persistence; UI text uses HTML escaping.
+- CSP is declared in `index.html`; production hosting should also send equivalent HTTP security headers (`Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`).
+- File handling uses browser `File`, `Blob`, object URLs, and optional native share APIs; imported files are parsed as text only.
