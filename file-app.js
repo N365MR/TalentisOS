@@ -118,6 +118,13 @@
     const end = /* @__PURE__ */ new Date(`${date}T12:00:00`);
     return Math.max(0, Math.round((end - start) / 864e5));
   }
+  function getNextWorkday(value = /* @__PURE__ */ new Date()) {
+    const date = /* @__PURE__ */ new Date(`${dateOnly(value)}T12:00:00`);
+    const day = date.getDay();
+    const offset = day === 5 ? 3 : day === 6 ? 2 : day === 0 ? 1 : 1;
+    date.setDate(date.getDate() + offset);
+    return dateOnly(date);
+  }
 
   // src/components.js
   var routes = {
@@ -319,7 +326,7 @@ Projects" required>${onboardingAnswer(state, "reportingRoles")}</textarea></labe
 Priority review
 Decisions and next actions"></textarea></label><button class="primary-action meeting-schedule-submit" type="submit">Add recurring meeting</button></form><section class="meeting-schedule-list"><h3>Saved schedules</h3><ul class="history-list">${rows || '<li class="section-empty"><p>No recurring meetings yet.</p></li>'}</ul></section></div></dialog>`;
   }
-  function createTodayView(plan, priorities, workItems = []) {
+  function createTodayView(plan, priorities, workItems = [], todayReferences = []) {
     const focus = generateDailyFocus(priorities, plan);
     const prompt = promptLibrary[(/* @__PURE__ */ new Date(`${plan.date}T12:00:00`)).getDate() % promptLibrary.length];
     const criticalRisks = workItems.filter(
@@ -338,7 +345,9 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     const signalList = (items, emptyMessage) => items.length ? items.map(
       (item) => `<p class="signal-item"><strong>${escapeHtml(item.title || item.outcome || item.whatNeedsToHappen)}</strong><span>${escapeHtml(item.nextAction || item.impact || item.dueDate || "")}</span></p>`
     ).join("") : empty(emptyMessage);
-    return `<section class="today-command" aria-labelledby="today-focus-title"><div class="today-greeting"><p class="eyebrow">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</p><h2 id="today-focus-title">Good morning.</h2><p class="secondary-text">Here is the shape of your leadership day.</p></div><section class="daily-focus"><div><p class="card-kicker">Daily focus</p><h3>${escapeHtml(focus)}</h3></div><span class="focus-card__icon" aria-hidden="true">\u2726</span></section><section class="today-section" aria-labelledby="priorities-title"><div class="section-heading"><div><p class="eyebrow">What matters now?</p><h2 id="priorities-title">Top three priorities</h2></div><button class="secondary-action" type="button" data-add-priority ${priorities.length >= 3 ? "disabled" : ""}>${priorities.length >= 3 ? "Three set" : "Add priority"}</button></div><div class="priority-list">${priorityCards}</div></section><div class="today-grid"><section class="today-section compact-section" aria-labelledby="carryover-title"><div class="section-heading"><h2 id="carryover-title">Carryover</h2><span class="section-count">${plan.carryover?.length || 0}</span></div>${plan.carryover?.length ? plan.carryover.map((item) => `<p>${escapeHtml(item)}</p>`).join("") : empty("Nothing carried over.")}</section><section class="today-section compact-section" aria-labelledby="risk-title"><div class="section-heading"><h2 id="risk-title">At risk</h2><span class="section-count section-count--warning">${criticalRisks.length}</span></div>${signalList(criticalRisks, "No critical risks surfaced.")}</section><section class="today-section compact-section" aria-labelledby="decision-title"><div class="section-heading"><h2 id="decision-title">Decisions</h2><span class="section-count">${dueDecisions.length}</span></div>${signalList(dueDecisions, "No decisions due.")}</section><section class="today-section compact-section" aria-labelledby="follow-up-title"><div class="section-heading"><h2 id="follow-up-title">Follow-ups due</h2><span class="section-count">${overdueFollowUps.length}</span></div>${signalList(overdueFollowUps, "No overdue follow-ups.")}</section></div><section class="today-section meetings-section" aria-labelledby="meetings-title"><div class="section-heading"><h2 id="meetings-title">Meetings</h2><span class="section-count">${plan.meetings?.length || 0}</span></div>${plan.meetings?.length ? plan.meetings.map((item) => `<p>${escapeHtml(item)}</p>`).join("") : empty("No meetings added.")}</section><section class="leadership-prompt" aria-labelledby="prompt-title"><p class="eyebrow">Leadership prompt</p><h2 id="prompt-title">${prompt}</h2></section><section class="end-day-status" aria-labelledby="end-day-title"><div><p class="eyebrow">End-of-day status</p><h2 id="end-day-title">${plan.endOfDayStatus === "complete" ? "Review complete." : "Not reviewed yet."}</h2></div><span class="status-chip status-chip--${plan.endOfDayStatus === "complete" ? "success" : "neutral"}">${plan.endOfDayStatus === "complete" ? "Complete" : "Open"}</span></section></section>${createPrioritySheet()}`;
+    const todayWork = todayReferences.map((ref) => workItems.find((item) => item.id === ref.itemId)).filter((item) => item && item.status !== "complete");
+    const todayWorkSection = todayWork.length ? `<section class="today-section" aria-labelledby="huddle-work-title"><div class="section-heading"><div><p class="eyebrow">Morning Huddle</p><h2 id="huddle-work-title">Added to Today</h2></div><span class="section-count">${todayWork.length}</span></div><div class="work-list">${todayWork.map((item) => `<article class="work-card"><div class="work-card__top"><div><span class="work-type">${escapeHtml(item.priority || "Action")}</span><h3>${escapeHtml(item.title || item.outcome)}</h3></div><span class="status-chip status-chip--neutral">${escapeHtml(workStatusLabel(item.status))}</span></div><div class="work-card__meta"><span>Raised ${escapeHtml(workDateLabel(item.raisedDate || item.createdAt?.slice(0, 10)))}</span>${item.dueDate ? `<span>Due ${escapeHtml(workDateLabel(item.dueDate))}</span>` : ""}</div><div class="work-card__actions"><button type="button" class="text-button" data-complete-work="${escapeHtml(item.id)}">Complete</button><button type="button" class="text-button" data-edit-work="${escapeHtml(item.id)}">Open details</button></div></article>`).join("")}</div></section>` : "";
+    return `<section class="today-command" aria-labelledby="today-focus-title"><div class="today-greeting"><p class="eyebrow">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</p><h2 id="today-focus-title">Good morning.</h2><p class="secondary-text">Here is the shape of your leadership day.</p></div><section class="daily-focus"><div><p class="card-kicker">Daily focus</p><h3>${escapeHtml(focus)}</h3></div><span class="focus-card__icon" aria-hidden="true">\u2726</span></section><section class="today-section" aria-labelledby="priorities-title"><div class="section-heading"><div><p class="eyebrow">What matters now?</p><h2 id="priorities-title">Top three priorities</h2></div><button class="secondary-action" type="button" data-add-priority ${priorities.length >= 3 ? "disabled" : ""}>${priorities.length >= 3 ? "Three set" : "Add priority"}</button></div><div class="priority-list">${priorityCards}</div></section>${todayWorkSection}<div class="today-grid"><section class="today-section compact-section" aria-labelledby="carryover-title"><div class="section-heading"><h2 id="carryover-title">Carryover</h2><span class="section-count">${plan.carryover?.length || 0}</span></div>${plan.carryover?.length ? plan.carryover.map((item) => `<p>${escapeHtml(item)}</p>`).join("") : empty("Nothing carried over.")}</section><section class="today-section compact-section" aria-labelledby="risk-title"><div class="section-heading"><h2 id="risk-title">At risk</h2><span class="section-count section-count--warning">${criticalRisks.length}</span></div>${signalList(criticalRisks, "No critical risks surfaced.")}</section><section class="today-section compact-section" aria-labelledby="decision-title"><div class="section-heading"><h2 id="decision-title">Decisions</h2><span class="section-count">${dueDecisions.length}</span></div>${signalList(dueDecisions, "No decisions due.")}</section><section class="today-section compact-section" aria-labelledby="follow-up-title"><div class="section-heading"><h2 id="follow-up-title">Follow-ups due</h2><span class="section-count">${overdueFollowUps.length}</span></div>${signalList(overdueFollowUps, "No overdue follow-ups.")}</section></div><section class="today-section meetings-section" aria-labelledby="meetings-title"><div class="section-heading"><h2 id="meetings-title">Meetings</h2><span class="section-count">${plan.meetings?.length || 0}</span></div>${plan.meetings?.length ? plan.meetings.map((item) => `<p>${escapeHtml(item)}</p>`).join("") : empty("No meetings added.")}</section><section class="leadership-prompt" aria-labelledby="prompt-title"><p class="eyebrow">Leadership prompt</p><h2 id="prompt-title">${prompt}</h2></section><section class="end-day-status" aria-labelledby="end-day-title"><div><p class="eyebrow">End-of-day status</p><h2 id="end-day-title">${plan.endOfDayStatus === "complete" ? "Review complete." : "Not reviewed yet."}</h2></div><span class="status-chip status-chip--${plan.endOfDayStatus === "complete" ? "success" : "neutral"}">${plan.endOfDayStatus === "complete" ? "Complete" : "Open"}</span></section></section>${createPrioritySheet()}`;
   }
   function eodTaskProgress(task) {
     const subtasks = task.subtasks || [];
@@ -348,19 +357,21 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
   }
   function eodTaskCard(task, action = "complete", selectedIds = []) {
     const progress = eodTaskProgress(task);
-    return `<article class="eod-task-card"><div><span class="work-type">${escapeHtml(task.priority || "Normal")}</span><h3>${escapeHtml(task.title || task.outcome || "Untitled task")}</h3><p>${task.dueDate ? `Due ${escapeHtml(task.dueDate)} \xB7 ` : ""}${progress.total ? `${progress.completed} of ${progress.total} subtasks complete` : "No subtasks"}</p><div class="eod-progress"><span style="width:${progress.percent}%"></span></div></div>${action === "complete" ? `<button type="button" class="secondary-action" data-eod-complete-task="${escapeHtml(task.id)}">${task.status === "complete" ? "Completed" : "Complete"}</button>` : `<label class="eod-task-select"><input type="checkbox" data-eod-tomorrow-task="${escapeHtml(task.id)}" ${selectedIds.includes(task.id) ? "checked" : ""}><span>Make priority</span></label>`}</article>`;
+    return `<article class="eod-task-card"><div><span class="work-type">${escapeHtml(task.priority || "Normal")}</span><h3>${escapeHtml(task.title || task.outcome || "Untitled task")}</h3><p>${task.raisedDate || task.createdAt ? `Raised ${escapeHtml(String(task.raisedDate || task.createdAt).slice(0, 10))} \xB7 ` : ""}${task.completedDate ? `Completed ${escapeHtml(task.completedDate)} \xB7 ` : ""}${task.dueDate ? `Due ${escapeHtml(task.dueDate)} \xB7 ` : ""}${progress.total ? `${progress.completed} of ${progress.total} subtasks complete` : "No subtasks"}</p><div class="eod-progress"><span style="width:${progress.percent}%"></span></div></div>${action === "complete" ? `<div class="eod-task-actions"><button type="button" class="secondary-action" data-eod-complete-task="${escapeHtml(task.id)}">${task.status === "complete" ? "Completed" : "Complete"}</button>${task.status !== "complete" ? `<button type="button" class="text-button" data-add-to-huddle="${escapeHtml(task.id)}">Add to Huddle</button>` : ""}</div>` : `<label class="eod-task-select"><input type="checkbox" data-eod-tomorrow-task="${escapeHtml(task.id)}" ${selectedIds.includes(task.id) ? "checked" : ""}><span>Make priority</span></label>`}</article>`;
   }
   function createEodView({ eod, date, workItems = [], history = [], filter = "all" }) {
     const tasks = workItems.filter((item) => ["action", "priority"].includes(item.type) || item.source === "eod");
     const outstandingTasks = tasks.filter((item) => item.status !== "complete");
     const completedTasks = tasks.filter((item) => item.status === "complete" && String(item.completedAt || "").startsWith(date));
+    const completedSubtasks = completedTasks.reduce((count, task) => count + (task.subtasks || []).filter((subtask) => subtask.completed && String(subtask.completedAt || "").startsWith(date)).length, 0);
     const outstandingSubtasks = outstandingTasks.reduce((count, task) => count + eodTaskProgress(task).remaining, 0);
     const risks = workItems.filter((item) => item.type === "risk" && item.status !== "complete");
     const tomorrowIds = eod.tomorrowPriorityIds || [];
     const tomorrowTasks = tomorrowIds.map((id) => tasks.find((task) => task.id === id)).filter(Boolean);
     const visibleTasks = filter === "completed" ? completedTasks : filter === "outstanding" ? outstandingTasks : tasks;
+    const filterPanel = filter === "all" ? "" : `<section class="eod-filter-panel" aria-labelledby="eod-filter-title"><div class="section-heading"><div><p class="eyebrow">Filtered view</p><h2 id="eod-filter-title">${filter === "outstanding" ? "Outstanding Work" : filter === "risks" ? "Active Risks" : filter === "tomorrow" ? "Tomorrow\u2019s Priorities" : "Completed Today"}</h2><p class="secondary-text">${filter === "outstanding" ? `${outstandingTasks.length} tasks \xB7 ${outstandingSubtasks} subtasks still open.` : filter === "risks" ? "Open and watching risks that may affect tomorrow." : filter === "tomorrow" ? "The work selected for the next leadership day." : "Work completed during today\u2019s close-out."}</p></div><button type="button" class="secondary-action" data-eod-clear-filter>Back to EOD</button></div>${filter === "risks" ? `<div class="eod-risk-list">${risks.length ? risks.map((risk) => `<article class="eod-risk-card"><div><span class="status-chip status-chip--${risk.riskLevel === "critical" ? "warning" : "neutral"}">${escapeHtml(risk.riskLevel || "medium")}</span><h3>${escapeHtml(risk.title)}</h3><p><strong>Impact:</strong> ${escapeHtml(risk.impact || "Not specified")} \xB7 <strong>Next:</strong> ${escapeHtml(risk.nextAction || "Not recorded")}</p></div></article>`).join("") : '<div class="section-empty"><p>No active risks.</p><small>Nothing currently needs escalation.</small></div>'}</div>` : filter === "tomorrow" ? `<div class="eod-filter-list">${tomorrowTasks.length ? tomorrowTasks.map((task, index) => `<article class="eod-filter-item"><strong>${index + 1}</strong><div><h3>${escapeHtml(task.title || task.outcome)}</h3><p>${escapeHtml(task.priority || "Normal")} \xB7 ${task.dueDate ? `Due ${escapeHtml(task.dueDate)}` : "No due date"}</p></div></article>`).join("") : '<div class="section-empty"><p>No priorities selected.</p><small>Choose up to three things that matter most tomorrow.</small></div>'}</div>` : `<div class="eod-filter-list">${visibleTasks.length ? visibleTasks.map((task) => `<article class="eod-filter-item"><div><h3>${escapeHtml(task.title || task.outcome)}</h3><p>${escapeHtml(task.priority || "Normal")} \xB7 ${task.dueDate ? `Due ${escapeHtml(task.dueDate)}` : "No due date"}${(task.subtasks || []).length ? ` \xB7 ${eodTaskProgress(task).completed} of ${task.subtasks.length} subtasks complete` : ""}</p>${filter === "outstanding" && (task.subtasks || []).length ? `<ul>${task.subtasks.filter((subtask) => !subtask.completed).map((subtask) => `<li>${escapeHtml(subtask.title)}</li>`).join("")}</ul>` : ""}</div><button type="button" class="secondary-action" data-eod-complete-task="${escapeHtml(task.id)}">${filter === "completed" ? "Completed" : "Complete"}</button></article>`).join("") : `<div class="section-empty"><p>${filter === "completed" ? "Nothing completed yet." : "Nothing outstanding."}</p><small>${filter === "completed" ? "Completed work will appear here." : "You\u2019re clear for tomorrow."}</small></div>`}</div>`}</section>`;
     const active = eod.status === "in-progress" && eod.step > 0 ? "Continue End of Day" : eod.status === "closed" ? "View Today's EOD" : "Enter End of Day";
-    const tile = (key, value, label, detail) => `<button type="button" class="eod-summary-tile" data-eod-filter="${key}"><strong>${value}</strong><span>${label}</span><small>${detail}</small></button>`;
+    const tile = (key, value, label, detail) => `<button type="button" class="eod-summary-tile eod-summary-tile--${key}" data-eod-filter="${key}"><strong>${value}</strong><span>${label}</span><small>${detail}</small></button>`;
     let wizard = "";
     if (eod.status === "in-progress") {
       const step = Math.max(0, Math.min(4, eod.step || 0));
@@ -373,9 +384,12 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       if (step === 4) content = `<div class="eod-close-summary"><div><strong>${completedTasks.length}</strong><span>Completed</span></div><div><strong>${outstandingTasks.length}</strong><span>Outstanding</span></div><div><strong>${outstandingSubtasks}</strong><span>Subtasks</span></div><div><strong>${risks.length}</strong><span>Risks</span></div></div>${risks.some((risk) => risk.riskLevel === "critical") ? '<div class="eod-high-risk-warning"><strong>You have unresolved high-priority risks.</strong><span>You can review them or close anyway.</span></div>' : ""}<h3>Tomorrow</h3><ol class="eod-tomorrow-list">${tomorrowTasks.map((task) => `<li>${escapeHtml(task.title || task.outcome)}</li>`).join("") || "<li>No priorities selected.</li>"}</ol><label class="eod-handover-field">Handover note<textarea data-eod-handover-note rows="4" placeholder="What would someone need to know if you were unavailable tomorrow?">${escapeHtml(eod.handoverNote || "")}</textarea></label>`;
       wizard = `<section class="eod-wizard" aria-labelledby="eod-wizard-title"><div class="eod-wizard__top"><div><p class="eyebrow">Step ${step + 1} of 5</p><h2 id="eod-wizard-title">${titles[step]}</h2></div><div class="eod-progress-track"><span style="width:${(step + 1) / 5 * 100}%"></span></div></div>${content}<div class="eod-wizard-actions">${step > 0 ? '<button type="button" class="secondary-action" data-eod-back>Back</button>' : "<span></span>"}${step === 4 ? '<button type="button" class="primary-action" data-eod-close>Close My Day</button>' : '<button type="button" class="primary-action" data-eod-next>Continue <span aria-hidden="true">\u2192</span></button>'}</div></section>`;
     }
-    const historyMarkup = history.length ? `<section class="eod-history"><div class="section-heading"><div><p class="eyebrow">Past close-outs</p><h2>EOD History</h2></div></div><div class="eod-history-list">${history.map((item) => `<article><div><strong>${escapeHtml(item.date)}</strong><span>${item.status === "closed" ? "Closed" : "In progress"} \xB7 ${item.completedTaskIds?.length || 0} completed \xB7 ${item.riskIds?.length || 0} risks</span></div><button type="button" class="text-button" data-eod-history-id="${escapeHtml(item.id)}">View summary</button></article>`).join("")}</div></section>` : "";
-    if (eod.status === "closed") wizard = `<section class="eod-closed-state"><div class="completion-mark" aria-hidden="true">\u2713</div><p class="eyebrow">Today\u2019s close-out</p><h2>Day Closed</h2><p class="secondary-text">Tomorrow is already clearer.</p><div class="eod-close-summary"><div><strong>${completedTasks.length}</strong><span>Completed</span></div><div><strong>${outstandingTasks.length}</strong><span>Outstanding</span></div><div><strong>${risks.length}</strong><span>Risks</span></div><div><strong>${tomorrowTasks.length}</strong><span>Tomorrow</span></div></div><button type="button" class="secondary-action" data-eod-filter="completed">View Summary</button></section>`;
-    return `<section class="eod-command" aria-labelledby="eod-title"><div class="eod-intro"><div><p class="eyebrow">Review \xB7 Prepare</p><h2 id="eod-title">End of Day</h2><p class="secondary-text">Close today. Prepare tomorrow.</p></div><div class="eod-date">${escapeHtml(date)}</div></div><div class="eod-actions"><button type="button" class="primary-action" data-eod-enter>${active} <span aria-hidden="true">\u2192</span></button><button type="button" class="secondary-action" data-eod-history>EOD History</button></div><div class="eod-summary-grid">${tile("outstanding", outstandingTasks.length + outstandingSubtasks, "Outstanding", `${outstandingTasks.length} tasks \xB7 ${outstandingSubtasks} subtasks`)}${tile("risks", risks.length, "Risks", "Active risks and issues")}${tile("tomorrow", tomorrowTasks.length, "Tomorrow\u2019s Priorities", "Selected for tomorrow")}${tile("completed", completedTasks.length, "Completed Today", "Tasks closed today")}</div>${wizard}${historyMarkup}</section>`;
+    const historyMarkup = history.length ? `<section class="eod-history"><div class="section-heading"><div><p class="eyebrow">Past close-outs</p><h2>EOD History</h2></div></div><div class="eod-history-list">${history.map((item) => `<article><div><strong>${escapeHtml(item.date)}</strong><span>${item.status === "closed" ? "Closed" : "In progress"} \xB7 ${item.completedTaskIds?.length || 0} completed \xB7 ${item.carriedForwardIds?.length || 0} carried to Huddle \xB7 ${item.riskIds?.length || 0} risks</span></div><button type="button" class="text-button" data-eod-history-id="${escapeHtml(item.id)}">View summary</button></article>`).join("")}</div></section>` : "";
+    if (eod.status === "closed") wizard = `<section class="eod-closed-state"><div class="completion-mark" aria-hidden="true">\u2713</div><p class="eyebrow">Today\u2019s close-out</p><h2>Day Closed</h2><p class="secondary-text">Tomorrow is already clearer.</p><div class="eod-close-summary"><div><strong>${completedTasks.length}</strong><span>Completed</span></div><div><strong>${outstandingTasks.length}</strong><span>Outstanding</span></div><div><strong>${risks.length}</strong><span>Risks</span></div><div><strong>${tomorrowTasks.length}</strong><span>Tomorrow</span></div></div><div class="eod-closed-actions"><button type="button" class="secondary-action" data-eod-filter="completed">View Summary</button><button type="button" class="secondary-action" data-eod-edit-current>Edit Today\u2019s EOD</button></div></section>`;
+    return `<section class="eod-command" aria-labelledby="eod-title"><div class="eod-intro"><div><p class="eyebrow">Review \xB7 Prepare</p><h2 id="eod-title">End of Day</h2><p class="secondary-text">Close today. Prepare tomorrow.</p></div><div class="eod-date">${escapeHtml(date)}</div></div><div class="eod-actions"><button type="button" class="primary-action" data-eod-enter>${active} <span aria-hidden="true">\u2192</span></button><button type="button" class="secondary-action" data-eod-history>EOD History</button></div><div class="eod-summary-grid">${tile("outstanding", outstandingTasks.length + outstandingSubtasks, "Outstanding", `${outstandingTasks.length} tasks \xB7 ${outstandingSubtasks} subtasks`)}${tile("risks", risks.length, "Risks", "Active risks and issues")}${tile("tomorrow", tomorrowTasks.length, "Tomorrow\u2019s Priorities", "Selected for tomorrow")}${tile("completed", completedTasks.length + completedSubtasks, "Completed Today", `${completedTasks.length} tasks \xB7 ${completedSubtasks} subtasks`)}</div>${outstandingTasks.length ? `<section class="eod-carry-forward"><div><p class="eyebrow">Continuity</p><h2>Carry outstanding work forward</h2><p class="secondary-text">Add ${outstandingTasks.length} tasks and ${outstandingSubtasks} subtasks to the next Morning Huddle without creating duplicates.</p></div><div class="eod-carry-forward__actions"><button type="button" class="primary-action" data-eod-add-all-huddle>Add all to next Huddle <span aria-hidden="true">\u2192</span></button><button type="button" class="secondary-action" data-eod-review-items>Review items</button><button type="button" class="text-button" data-eod-not-now>Not now</button></div></section>` : ""}${filterPanel}${wizard}${historyMarkup}</section>`;
+  }
+  function createEodHistoryDialog(record = {}) {
+    return `<dialog id="eod-history-dialog" class="modal eod-history-dialog" aria-labelledby="eod-history-title"><div class="modal__header"><div><p class="eyebrow">EOD History \xB7 ${escapeHtml(record.status === "closed" ? "Closed" : "In progress")}</p><h2 id="eod-history-title">${escapeHtml(record.date || "End of Day")}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close EOD history">\xD7</button></div><form class="modal__body" data-eod-history-edit><input type="hidden" name="id" value="${escapeHtml(record.id || "")}"><div class="eod-close-summary"><div><strong>${record.completedTaskIds?.length || 0}</strong><span>Completed</span></div><div><strong>${record.outstandingTaskIds?.length || 0}</strong><span>Outstanding</span></div><div><strong>${record.riskIds?.length || 0}</strong><span>Risks</span></div><div><strong>${record.tomorrowPriorityIds?.length || 0}</strong><span>Tomorrow</span></div></div><label class="eod-handover-field">Tomorrow note<textarea name="tomorrowNote" rows="3">${escapeHtml(record.tomorrowNote || "")}</textarea></label><label class="eod-handover-field">Handover note<textarea name="handoverNote" rows="4">${escapeHtml(record.handoverNote || "")}</textarea></label><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Save EOD changes</button></div></form></dialog>`;
   }
   function createPrioritySheet() {
     return `<dialog id="priority-sheet" class="modal bottom-sheet-dialog" aria-labelledby="priority-sheet-title"><div class="modal__header"><div><p class="eyebrow">One clear commitment</p><h2 id="priority-sheet-title">Add a priority</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close priority editor">\xD7</button></div><form class="modal__body priority-form" data-priority-form><input type="hidden" name="id"><label>Outcome<input name="outcome" maxlength="120" required placeholder="What result matters most?"></label>${createContextualGuidance("set-priorities", "See how to set priorities")}<label>Why it matters<textarea name="why" maxlength="220" rows="3" placeholder="What will this make possible?"></textarea></label><label>Due point<input name="duePoint" maxlength="80" placeholder="For example, before Friday's review"></label><label>Status<select name="status"><option value="not-started">Not started</option><option value="in-progress">In progress</option><option value="done">Complete</option></select></label><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Save priority</button></div></form></dialog>`;
@@ -436,7 +450,18 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
   }
   function workCard(item) {
     const statusClass = item.status === "complete" ? "success" : item.status === "at-risk" || item.riskLevel === "critical" ? "warning" : "neutral";
-    return `<article class="work-card ${item.status === "complete" ? "work-card--complete" : ""}" data-work-id="${item.id}"><div class="work-card__top"><div><span class="work-type">${workTypes[item.type] || "Action"}</span><h3>${escapeHtml(item.title || item.outcome || "Untitled work item")}</h3></div><span class="status-chip status-chip--${statusClass}">${escapeHtml(workStatusLabel(item.status))}</span></div><p class="work-card__outcome">${escapeHtml(item.outcome || item.nextAction || item.impact || "No outcome added yet.")}</p><div class="work-card__meta"><span>${item.dueDate ? escapeHtml(workDateLabel(item.dueDate)) : "No due point"}</span>${item.responsible ? `<span>With ${escapeHtml(item.responsible)}</span>` : ""}${item.group === "waiting" ? `<span class="waiting-note">Awaiting ${escapeHtml(item.followedUpWith || item.responsible || "a response")} \xB7 next follow-up ${escapeHtml(workDateLabel(item.dueDate))}</span>` : ""}${item.relatedItemIds?.length ? `<span>${item.relatedItemIds.length} related</span>` : ""}</div><div class="work-card__actions"><button class="text-button" type="button" data-edit-work="${item.id}">Open details</button>${item.status === "complete" ? '<button class="text-button" type="button" data-undo-work>Undo</button>' : `<button class="text-button" type="button" data-complete-work="${item.id}">Complete</button>`}<button class="text-button text-button--quiet" type="button" data-delete-work="${item.id}">Delete</button></div></article>`;
+    const raised = item.raisedDate ? `<span>Raised ${escapeHtml(workDateLabel(item.raisedDate))}</span>` : "";
+    const completed = item.completedDate ? `<span>Completed ${escapeHtml(workDateLabel(item.completedDate))}</span>` : "";
+    const age = item.status !== "complete" && item.raisedDate ? `<span class="work-age work-age--${workAgeClass(item.raisedDate)}">${workAge(item.raisedDate)}</span>` : "";
+    return `<article class="work-card ${item.status === "complete" ? "work-card--complete" : ""}" data-work-id="${item.id}"><div class="work-card__top"><div><span class="work-type">${workTypes[item.type] || "Action"}</span><h3>${escapeHtml(item.title || item.outcome || "Untitled work item")}</h3></div><span class="status-chip status-chip--${statusClass}">${escapeHtml(workStatusLabel(item.status))}</span></div><p class="work-card__outcome">${escapeHtml(item.outcome || item.nextAction || item.impact || "No outcome added yet.")}</p><div class="work-card__meta">${raised}${completed}${age}<span>${item.dueDate ? escapeHtml(workDateLabel(item.dueDate)) : "No due point"}</span>${item.responsible ? `<span>With ${escapeHtml(item.responsible)}</span>` : ""}${item.group === "waiting" ? `<span class="waiting-note">Awaiting ${escapeHtml(item.followedUpWith || item.responsible || "a response")} \xB7 next follow-up ${escapeHtml(workDateLabel(item.dueDate))}</span>` : ""}${item.relatedItemIds?.length ? `<span>${item.relatedItemIds.length} related</span>` : ""}</div><div class="work-card__actions"><button class="text-button" type="button" data-edit-work="${item.id}">Open details</button>${item.status === "complete" ? '<button class="text-button" type="button" data-undo-work>Undo</button>' : `<button class="text-button" type="button" data-complete-work="${item.id}">Complete</button><button class="text-button" type="button" data-add-to-huddle="${item.id}">Add to Huddle</button>`}<button class="text-button text-button--quiet" type="button" data-delete-work="${item.id}">Delete</button></div></article>`;
+  }
+  function workAgeClass(raisedDate) {
+    const days = Math.max(0, Math.round((/* @__PURE__ */ new Date(`${dateOnly()}T12:00:00`) - /* @__PURE__ */ new Date(`${raisedDate}T12:00:00`)) / 864e5));
+    return days >= 6 ? "attention" : days >= 3 ? "warning" : "normal";
+  }
+  function workAge(raisedDate) {
+    const days = Math.max(0, Math.round((/* @__PURE__ */ new Date(`${dateOnly()}T12:00:00`) - /* @__PURE__ */ new Date(`${raisedDate}T12:00:00`)) / 864e5));
+    return `Open ${days} day${days === 1 ? "" : "s"}`;
   }
   function workFilterResults(items, filter, today) {
     const filtered = items.filter(
@@ -488,7 +513,33 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     const subtasks = item.subtasks || [];
     const subtaskProgress = subtasks.length ? Math.round(subtasks.filter((subtask) => subtask.completed).length / subtasks.length * 100) : item.status === "complete" ? 100 : 0;
     const taskProgress = ["action", "priority"].includes(type) ? `<section class="task-progress-panel"><div class="section-heading"><div><p class="eyebrow">Task progress</p><h3>Subtasks</h3></div><strong>${subtaskProgress}%</strong></div><div class="task-progress-bar"><span style="width:${subtaskProgress}%"></span></div><p class="secondary-text">${subtasks.filter((subtask) => subtask.completed).length} of ${subtasks.length} subtasks complete</p><label>Subtasks <span class="field-hint">one per line</span><textarea name="subtasksText" rows="4" placeholder="Add the steps that make this outcome complete">${escapeHtml(subtasks.map((subtask) => subtask.title).join("\n"))}</textarea></label></section>` : "";
-    return `<dialog id="work-detail" class="modal work-detail-dialog" aria-labelledby="work-detail-title"><div class="modal__header"><div><p class="eyebrow">${item.id ? "Work item" : "Quick add"}</p><h2 id="work-detail-title">${item.id ? "Work item details" : "Add work item"}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close work item">\xD7</button></div><form class="modal__body work-form" data-work-form><input type="hidden" name="id" value="${escapeHtml(item.id || "")}"><div class="form-two-col"><label>Type<select name="type"><option value="action" ${type === "action" ? "selected" : ""}>Action</option><option value="priority" ${type === "priority" ? "selected" : ""}>Priority</option><option value="risk" ${type === "risk" ? "selected" : ""}>Risk</option><option value="decision" ${type === "decision" ? "selected" : ""}>Decision</option><option value="follow-up" ${type === "follow-up" ? "selected" : ""}>Follow-up</option></select></label><label>Group<select name="group"><option value="now" ${item.group === "now" ? "selected" : ""}>Now</option><option value="next" ${!item.group || item.group === "next" ? "selected" : ""}>Next</option><option value="later" ${item.group === "later" ? "selected" : ""}>Later</option><option value="waiting" ${item.group === "waiting" ? "selected" : ""}>Waiting</option></select></label></div><label>Title<input name="title" maxlength="140" value="${escapeHtml(item.title || "")}" required placeholder="What needs your leadership?"></label><label>Outcome<textarea name="outcome" rows="2" placeholder="What will be different when this is done?">${escapeHtml(item.outcome || "")}</textarea></label><div class="form-two-col"><label>Responsible person or area <span class="field-hint">optional plain text</span><input name="responsible" value="${escapeHtml(item.responsible || "")}"></label><label>Due date or time<input type="date" name="dueDate" value="${escapeHtml(item.dueDate || "")}"></label></div><div class="form-two-col"><label>Status<select name="status">${workStatusOptions(type, item.status)}</select></label><label>Risk level<select name="riskLevel"><option value="monitor" ${item.riskLevel === "monitor" ? "selected" : ""}>Monitor</option><option value="at-risk" ${item.riskLevel === "at-risk" ? "selected" : ""}>At risk</option><option value="critical" ${item.riskLevel === "critical" ? "selected" : ""}>Critical</option></select></label></div>${taskProgress}<label>Next action<textarea name="nextAction" rows="2">${escapeHtml(item.nextAction || "")}</textarea></label><label>Notes<textarea name="notes" rows="3">${escapeHtml(item.notes || "")}</textarea></label><label>Related item IDs <span class="field-hint">optional, comma separated</span><input name="relatedItemIds" value="${escapeHtml((item.relatedItemIds || []).join(", "))}"></label><div data-type-fields>${workTypeFields(type, item)}</div><p class="autosave-note" data-autosave-note>Changes save automatically.</p><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save item</button></div></form></dialog>`;
+    const history = (item.movementHistory || []).slice().sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)));
+    const historyMarkup = item.id ? `<details class="work-history"><summary>History</summary><div class="work-history__timeline">${history.length ? history.map((event) => `<div><time>${escapeHtml(workDateLabel(event.date || event.timestamp?.slice(0, 10)))}</time><p><strong>${escapeHtml(event.action)}</strong>${event.note ? ` \xB7 ${escapeHtml(event.note)}` : ""}</p></div>`).join("") : '<p class="secondary-text">No history recorded yet.</p>'}</div></details>` : "";
+    const metadata = item.id ? `<dl class="work-detail-meta"><div><dt>Raised</dt><dd>${escapeHtml(item.raisedDate || "Not recorded")}</dd></div><div><dt>Completed</dt><dd>${escapeHtml(item.completedDate || "Open")}</dd></div></dl>` : "";
+    return `<dialog id="work-detail" class="modal work-detail-dialog" aria-labelledby="work-detail-title"><div class="modal__header"><div><p class="eyebrow">${item.id ? "Work item" : "Quick add"}</p><h2 id="work-detail-title">${item.id ? "Work item details" : "Add work item"}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close work item">\xD7</button></div><form class="modal__body work-form" data-work-form><input type="hidden" name="id" value="${escapeHtml(item.id || "")}"><div class="form-two-col"><label>Type<select name="type"><option value="action" ${type === "action" ? "selected" : ""}>Action</option><option value="priority" ${type === "priority" ? "selected" : ""}>Priority</option><option value="risk" ${type === "risk" ? "selected" : ""}>Risk</option><option value="decision" ${type === "decision" ? "selected" : ""}>Decision</option><option value="follow-up" ${type === "follow-up" ? "selected" : ""}>Follow-up</option></select></label><label>Group<select name="group"><option value="now" ${item.group === "now" ? "selected" : ""}>Now</option><option value="next" ${!item.group || item.group === "next" ? "selected" : ""}>Next</option><option value="later" ${item.group === "later" ? "selected" : ""}>Later</option><option value="waiting" ${item.group === "waiting" ? "selected" : ""}>Waiting</option></select></label></div><label>Title<input name="title" maxlength="140" value="${escapeHtml(item.title || "")}" required placeholder="What needs your leadership?"></label><label>Outcome<textarea name="outcome" rows="2" placeholder="What will be different when this is done?">${escapeHtml(item.outcome || "")}</textarea></label><div class="form-two-col"><label>Responsible person or area <span class="field-hint">optional plain text</span><input name="responsible" value="${escapeHtml(item.responsible || "")}"></label><label>Due date or time<input type="date" name="dueDate" value="${escapeHtml(item.dueDate || "")}"></label></div><div class="form-two-col"><label>Status<select name="status">${workStatusOptions(type, item.status)}</select></label><label>Risk level<select name="riskLevel"><option value="monitor" ${item.riskLevel === "monitor" ? "selected" : ""}>Monitor</option><option value="at-risk" ${item.riskLevel === "at-risk" ? "selected" : ""}>At risk</option><option value="critical" ${item.riskLevel === "critical" ? "selected" : ""}>Critical</option></select></label></div>${metadata}${taskProgress}<label class="check-row"><input type="checkbox" name="blocked" ${item.blocked ? "checked" : ""}> Blocked</label><label>What\u2019s blocking this?<textarea name="blockerNote" rows="2" placeholder="Optional short blocker note">${escapeHtml(item.blockerNote || "")}</textarea></label><label>Waiting on <input name="waitingOn" value="${escapeHtml(item.waitingOn || "")}" placeholder="Optional person, area or dependency"></label><label>Next action<textarea name="nextAction" rows="2">${escapeHtml(item.nextAction || "")}</textarea></label><label>Notes<textarea name="notes" rows="3">${escapeHtml(item.notes || "")}</textarea></label><label>Related item IDs <span class="field-hint">optional, comma separated</span><input name="relatedItemIds" value="${escapeHtml((item.relatedItemIds || []).join(", "))}"></label><div data-type-fields>${workTypeFields(type, item)}</div>${item.id && item.status !== "complete" ? '<button type="button" class="secondary-action" data-add-to-huddle="' + escapeHtml(item.id) + '">Add to Huddle</button>' : ""}${historyMarkup}<p class="autosave-note" data-autosave-note>Changes save automatically.</p><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save item</button></div></form></dialog>`;
+  }
+  function createHuddlePickerDialog(item = {}, nextWorkday = dateOnly()) {
+    return `<dialog id="huddle-picker-dialog" class="modal" aria-labelledby="huddle-picker-title"><div class="modal__header"><div><p class="eyebrow">Morning Huddle</p><h2 id="huddle-picker-title">Add to Huddle</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close Huddle date picker">\xD7</button></div><form class="modal__body" data-huddle-picker-form><input type="hidden" name="itemId" value="${escapeHtml(item.id || "")}"><p class="secondary-text">Keep the existing work item and make it visible on the selected Huddle date.</p><label>Huddle date<input type="date" name="huddleDate" value="${escapeHtml(nextWorkday)}" required></label><div class="modal__actions"><button type="button" class="secondary-action" data-huddle-next-workday>Next Workday</button><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Add to Huddle</button></div></form></dialog>`;
+  }
+  function createEodCarryReviewDialog(tasks = [], nextWorkday = dateOnly()) {
+    return `<dialog id="eod-carry-review-dialog" class="modal" aria-labelledby="eod-carry-review-title"><div class="modal__header"><div><p class="eyebrow">Carry Forward</p><h2 id="eod-carry-review-title">Review items for the next Huddle</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close carry-forward review">\xD7</button></div><form class="modal__body" data-eod-carry-review-form><p class="secondary-text">All outstanding work is selected. Deselect anything that does not need Huddle visibility.</p><label>Huddle date<input type="date" name="huddleDate" value="${escapeHtml(nextWorkday)}" required></label><div class="carry-review-list">${tasks.map((task) => `<label class="carry-review-item"><input type="checkbox" name="itemId" value="${escapeHtml(task.id)}" checked><span><strong>${escapeHtml(task.title || task.outcome)}</strong><small>${escapeHtml(task.priority || "Standard")} \xB7 ${task.subtasks?.filter((item) => !item.completed).length || 0} incomplete subtasks${task.blocked ? " \xB7 Blocked" : task.status === "waiting" ? " \xB7 Waiting" : ""}</small></span></label>`).join("")}</div><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Add selected</button></div></form></dialog>`;
+  }
+  function createHuddleView(date, workItems, huddleItems) {
+    const refs = huddleItems.map((ref) => {
+      const parent = workItems.find((item) => item.id === (ref.parentItemId || ref.itemId));
+      const subtask = ref.itemType === "subtask" ? parent?.subtasks?.find((item) => item.id === ref.itemId) : null;
+      return { ref, item: subtask ? { ...parent, id: ref.itemId, title: subtask.title, status: subtask.completed ? "complete" : "not-started", raisedDate: subtask.raisedDate || parent.raisedDate, completedDate: subtask.completedDate } : parent };
+    }).filter(({ item }) => item);
+    const grouped = refs.reduce((groups, { ref, item }) => {
+      const key = item.id;
+      if (!groups[key]) groups[key] = { ref, item };
+      return groups;
+    }, {});
+    return `<section class="huddle-command" aria-labelledby="huddle-title"><div class="review-intro"><div><p class="eyebrow">Prepare \xB7 Align</p><h2 id="huddle-title">Morning Huddle</h2><p class="secondary-text">${escapeHtml(date)} \xB7 Carried work stays connected to the original item.</p></div></div><section class="today-section" aria-labelledby="carried-forward-title"><div class="section-heading"><div><p class="eyebrow">Continuity</p><h2 id="carried-forward-title">Carried forward</h2></div><span class="section-count">${Object.keys(grouped).length}</span></div>${Object.keys(grouped).length ? `<div class="work-list">${Object.values(grouped).map(({ item }) => {
+      const incomplete = (item.subtasks || []).filter((subtask) => !subtask.completed);
+      const carryCount = (item.movementHistory || []).filter((event) => ["Copied to Huddle", "Carried Forward", "Moved to Huddle"].includes(event.action)).length;
+      return `<article class="work-card ${item.status === "complete" ? "work-card--complete" : ""}"><div class="work-card__top"><div><span class="work-type">${escapeHtml(item.priority || item.type || "Action")}</span><h3>${escapeHtml(item.title || item.outcome)}</h3></div><span class="status-chip status-chip--${item.status === "complete" ? "success" : item.blocked ? "warning" : "neutral"}">${item.status === "complete" ? "Completed" : item.blocked ? "Blocked" : item.status === "waiting" ? "Waiting" : "Open"}</span></div><div class="work-card__meta"><span>Raised ${escapeHtml(workDateLabel(item.raisedDate || item.createdAt?.slice(0, 10)))}</span><span>Open ${escapeHtml(workAge(item.raisedDate || item.createdAt?.slice(0, 10)).replace("Open ", ""))}</span>${item.dueDate ? `<span>Due ${escapeHtml(workDateLabel(item.dueDate))}</span>` : ""}${carryCount > 1 ? `<span>Carried forward ${carryCount} times</span>` : ""}</div>${incomplete.length ? `<p class="work-card__outcome">${incomplete.length} incomplete subtask${incomplete.length === 1 ? "" : "s"}: ${escapeHtml(incomplete.map((subtask) => subtask.title).join(" \xB7 "))}</p>` : ""}<div class="work-card__actions">${item.status === "complete" ? "" : `<button type="button" class="text-button" data-complete-work="${escapeHtml(item.id)}">Complete</button><button type="button" class="text-button" data-huddle-add-today="${escapeHtml(item.id)}">Add to Today</button><button type="button" class="text-button" data-huddle-block="${escapeHtml(item.id)}">${item.blocked ? "Unblock" : "Block"}</button><button type="button" class="text-button" data-huddle-move="${escapeHtml(item.id)}">Move</button>`}<button type="button" class="text-button" data-edit-work="${escapeHtml(item.id)}">Open details</button></div></article>`;
+    }).join("")}</div>` : '<div class="section-empty"><p>No carried-forward work for this Huddle.</p><small>Add an outstanding item from Work or End of Day.</small></div>'}</section></section>${createWorkDetailSheet()}`;
   }
   var reviewActions = [
     ["carry-forward", "Carry forward"],
@@ -716,7 +767,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     return `<div class="toast" role="status">${message}</div>`;
   }
   function createAppShell(route) {
-    return `<div class="app-layout">
+    return `<div class="app-layout ${route.key === "eod" ? "app-layout--eod" : ""}">
     <header class="top-header" aria-label="Application header"><a class="brand" href="#today" aria-label="TalentisOS home"><span class="brand-mark" aria-hidden="true">T</span><span class="brand-wordmark">Talentis<span>OS</span></span></a><nav class="top-nav" aria-label="Primary navigation">${navItems(route.key, "top-nav__links")}</nav><div class="top-header__actions">${["review", "playbook"].includes(route.key) ? "" : `<button class="primary-action top-header__cta" type="button" data-primary-action>${route.action}<span aria-hidden="true">\u2192</span></button>`}<button class="secondary-action top-header__settings" type="button" data-open-settings>Settings</button><button class="icon-button menu-toggle" type="button" data-mobile-menu-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label="Open navigation menu"><span aria-hidden="true">\u2630</span></button></div></header>
     <div class="mobile-menu-backdrop" data-close-mobile-menu></div><aside id="mobile-menu" class="mobile-menu" aria-label="Mobile navigation" aria-hidden="true"><div class="mobile-menu__header"><span class="eyebrow">Workspace</span><button class="icon-button" type="button" data-close-mobile-menu aria-label="Close navigation menu">\xD7</button></div><nav>${navItems(route.key, "mobile-menu__link")}</nav><button class="nav-item mobile-menu__settings" type="button" data-open-settings data-close-mobile-menu><span class="nav-item__icon" aria-hidden="true">\u2699</span><span>Settings</span></button></aside>
     <main id="main-content" class="content-area"><div class="content-inner"><header class="page-header"><div><p class="eyebrow">${route.eyebrow}</p><h1>${route.label}</h1></div><div class="page-header__meta"><span class="date-label">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</span><span class="status-dot" aria-label="Offline-ready shell"></span></div></header><div id="view-root"></div></div></main>
@@ -736,7 +787,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
 
   // src/db.js
   var DB_NAME = "talentisos";
-  var DB_VERSION = 10;
+  var DB_VERSION = 11;
   var stores = {
     settings: "settings",
     dailyPlans: "dailyPlans",
@@ -757,6 +808,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     l10Meetings: "l10Meetings",
     meetingSchedules: "meetingSchedules",
     eodRecords: "eodRecords",
+    huddleItems: "huddleItems",
     backupSnapshots: "backupSnapshots",
     appMeta: "appMeta"
   };
@@ -845,6 +897,11 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
           eodRecords.createIndex("date", "date");
           eodRecords.createIndex("status", "status");
         }
+        if (!database2.objectStoreNames.contains(stores.huddleItems)) {
+          const huddleItems = database2.createObjectStore(stores.huddleItems, { keyPath: "id" });
+          huddleItems.createIndex("huddleDate", "huddleDate");
+          huddleItems.createIndex("itemId", "itemId");
+        }
         if (!database2.objectStoreNames.contains(stores.appMeta)) {
           database2.createObjectStore(stores.appMeta, { keyPath: "key" });
         }
@@ -923,9 +980,15 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     return records.filter((priority) => priority.planDate === planDate).sort((a, b) => a.order - b.order);
   }
   async function savePriority(database2, priority) {
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const completedAt = priority.status === "done" ? priority.completedAt || now : "";
     return putRecord(database2, stores.priorities, {
       ...priority,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      raisedDate: priority.raisedDate || priority.createdAt?.slice(0, 10) || todayKey(),
+      createdAt: priority.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
+      completedAt,
+      completedDate: completedAt ? completedAt.slice(0, 10) : "",
+      updatedAt: now
     });
   }
   async function getWorkItems(database2) {
@@ -935,9 +998,45 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     return getAll(database2, stores.priorities);
   }
   async function saveWorkItem(database2, workItem) {
+    const existing = await getRecord(database2, stores.workItems, workItem.id);
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const createdAt = workItem.createdAt || existing?.createdAt || now;
+    const raisedDate = workItem.raisedDate || existing?.raisedDate || createdAt.slice(0, 10);
+    const history = [...existing?.movementHistory || workItem.movementHistory || []];
+    const addHistory = (action, from = "", to = "", note = "") => history.push({ id: crypto.randomUUID(), timestamp: now, date: now.slice(0, 10), action, from, to, note });
+    if (!existing) addHistory(workItem.type === "risk" ? "Risk Raised" : "Created", workItem.source || "Work", workItem.source || "Work");
+    if (existing && existing.status !== "complete" && workItem.status === "complete") addHistory("Completed", existing.status, "complete");
+    if (existing && existing.status === "complete" && workItem.status !== "complete") addHistory("Reopened", "complete", workItem.status || "in-progress");
+    let completedAt = workItem.completedAt ?? existing?.completedAt ?? "";
+    let completedDate = workItem.completedDate ?? existing?.completedDate ?? "";
+    if (workItem.status === "complete" && !completedAt) {
+      completedAt = now;
+      completedDate = now.slice(0, 10);
+    }
+    if (existing?.status === "complete" && workItem.status !== "complete") {
+      completedAt = "";
+      completedDate = "";
+    }
+    const subtasks = (workItem.subtasks || existing?.subtasks || []).map((subtask) => {
+      const previous = (existing?.subtasks || []).find((item) => item.id === subtask.id || item.title === subtask.title);
+      const subtaskCreatedAt = subtask.createdAt || previous?.createdAt || now;
+      const subtaskRaisedDate = subtask.raisedDate || previous?.raisedDate || subtaskCreatedAt.slice(0, 10);
+      const subtaskHistory = [...previous?.movementHistory || subtask.movementHistory || []];
+      if (!previous) subtaskHistory.push({ id: crypto.randomUUID(), timestamp: now, date: now.slice(0, 10), action: "Created", from: "Work", to: "Work" });
+      if (previous && !previous.completed && subtask.completed) subtaskHistory.push({ id: crypto.randomUUID(), timestamp: now, date: now.slice(0, 10), action: "Completed", from: "open", to: "complete" });
+      if (previous?.completed && !subtask.completed) subtaskHistory.push({ id: crypto.randomUUID(), timestamp: now, date: now.slice(0, 10), action: "Reopened", from: "complete", to: "open" });
+      const subtaskCompletedAt = subtask.completed ? subtask.completedAt || previous?.completedAt || now : "";
+      return { ...subtask, id: subtask.id || crypto.randomUUID(), createdAt: subtaskCreatedAt, raisedDate: subtaskRaisedDate, completedAt: subtaskCompletedAt, completedDate: subtaskCompletedAt ? subtaskCompletedAt.slice(0, 10) : "", movementHistory: subtaskHistory };
+    });
     return putRecord(database2, stores.workItems, {
       ...workItem,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      createdAt,
+      raisedDate,
+      updatedAt: now,
+      completedAt,
+      completedDate,
+      movementHistory: history,
+      subtasks
     });
   }
   async function deleteWorkItem(database2, id) {
@@ -1087,6 +1186,13 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
   async function saveEodRecord(database2, record) {
     return putRecord(database2, stores.eodRecords, { ...record, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
   }
+  async function getHuddleItems(database2, huddleDate = null) {
+    const records = await getAll(database2, stores.huddleItems);
+    return huddleDate ? records.filter((item) => item.huddleDate === huddleDate) : records;
+  }
+  async function saveHuddleItem(database2, item) {
+    return putRecord(database2, stores.huddleItems, { ...item, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
+  }
   async function getBackupSnapshots(database2) {
     return (await getAll(database2, stores.backupSnapshots)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
@@ -1134,6 +1240,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     "l10Meetings",
     "meetingSchedules",
     "eodRecords",
+    "huddleItems",
     "onboardingState"
   ];
   var datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -1202,6 +1309,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       l10Meetings: data.l10Meetings || [],
       meetingSchedules: data.meetingSchedules || [],
       eodRecords: data.eodRecords || [],
+      huddleItems: data.huddleItems || [],
       appMeta: data.onboardingState || []
     };
   }
@@ -1385,6 +1493,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     const l10Settings = await read(stores.l10Settings);
     const meetingSchedules = await read(stores.meetingSchedules);
     const eodRecords = await read(stores.eodRecords);
+    const huddleItems = await read(stores.huddleItems);
     const appMeta = await read(stores.appMeta);
     return {
       settings: await read(stores.settings),
@@ -1410,6 +1519,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       l10Meetings: await read(stores.l10Meetings),
       meetingSchedules,
       eodRecords,
+      huddleItems,
       onboardingState: appMeta.filter((item) => item.key === "onboarding")
     };
   }
@@ -1575,6 +1685,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       currentPlan = await getDailyPlan(database);
       currentPriorities = await getPriorities(database, currentPlan.date);
       currentWorkItems = await getWorkItems(database);
+      const todayReferences = (await getHuddleItems(database)).filter((ref) => ref.targetView === "Today" && ref.targetDate === currentPlan.date && ref.status !== "removed");
       currentJourneyState = await getJourneyState(database);
       currentMeetingSchedules = await getMeetingSchedules(database);
       await importPreparedPlanIfNeeded();
@@ -1583,7 +1694,8 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       document.querySelector("#view-root").innerHTML = createTodayView(
         currentPlan,
         currentPriorities,
-        currentWorkItems
+        currentWorkItems,
+        todayReferences
       );
       document.querySelector("#view-root").insertAdjacentHTML("afterbegin", `${createMeetingScheduleCard(currentMeetingSchedules)}<section class="journey-today-card" aria-labelledby="journey-today-title"><div><p class="eyebrow">Your journey</p><h2 id="journey-today-title">Continue your first 90 days</h2><p class="secondary-text">Your next leadership milestone is ready.</p></div><a class="secondary-action" href="#journey">Open journey <span aria-hidden="true">\u2192</span></a></section>${createMeetingScheduleDialog(currentMeetingSchedules)}`);
       document.title = "Today \u2014 TalentisOS";
@@ -1592,14 +1704,21 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       app.innerHTML = createAppShell(route);
       document.querySelector("#view-root").innerHTML = createJourneyView(currentJourneyState, selectedJourneyMilestoneId) + createMeetingBuilderDialog(currentJourneyState);
       document.title = "Journey \u2014 TalentisOS";
+    } else if (route.key === "huddle") {
+      const huddleDate = dateOnly();
+      const huddleItems = await getHuddleItems(database, huddleDate);
+      currentWorkItems = await getWorkItems(database);
+      app.innerHTML = createAppShell(route);
+      document.querySelector("#view-root").innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems);
+      document.title = "Morning Huddle \u2014 TalentisOS";
     } else if (route.key === "eod") {
       const eodDate = dateOnly();
       const existingEod = await getEodRecord(database, eodDate);
-      const eod = existingEod || { id: `eod-${eodDate}`, date: eodDate, status: "not-started", step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "" };
+      const eod = existingEod || { id: `eod-${eodDate}`, date: eodDate, status: "not-started", step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "", createdAt: (/* @__PURE__ */ new Date()).toISOString() };
       const eodHistory = await getEodRecords(database);
       currentWorkItems = await getWorkItems(database);
       app.innerHTML = createAppShell(route);
-      document.querySelector("#view-root").innerHTML = createEodView({ eod, date: eodDate, workItems: currentWorkItems, history: eodHistory.filter((item) => item.date !== eodDate), filter: currentEodFilter });
+      document.querySelector("#view-root").innerHTML = createEodView({ eod, date: eodDate, workItems: currentWorkItems, history: eodHistory, filter: currentEodFilter });
       document.title = "End of Day \u2014 TalentisOS";
     } else if (route.key === "work") {
       currentWorkItems = await getWorkItems(database);
@@ -1909,6 +2028,9 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       required: values.required?.trim() || "",
       reviewDate: values.reviewDate || "",
       escalationRequired: checkbox?.checked || false,
+      blocked: form.elements.blocked?.checked || false,
+      blockerNote: values.blockerNote?.trim() || "",
+      waitingOn: values.waitingOn?.trim() || "",
       decisionRequired: values.decisionRequired?.trim() || "",
       whyMatters: values.whyMatters?.trim() || "",
       options: values.options?.trim() || "",
@@ -1919,6 +2041,19 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       why: values.why?.trim() || "",
       result: values.result?.trim() || ""
     };
+  }
+  async function addTasksToHuddle(items, huddleDate, sourceView = "EOD") {
+    const existingRefs = await getHuddleItems(database, huddleDate);
+    const existingKeys = new Set(existingRefs.filter((ref) => ref.status !== "removed").map((ref) => `${ref.itemType}:${ref.itemId}`));
+    let added = 0;
+    for (const task of items.filter((item) => item && item.status !== "complete")) {
+      if (existingKeys.has(`task:${task.id}`)) continue;
+      const now = (/* @__PURE__ */ new Date()).toISOString();
+      await saveHuddleItem(database, { id: `huddle-${huddleDate}-task-${task.id}`, itemId: task.id, itemType: "task", sourceView, targetView: "Morning Huddle", targetDate: huddleDate, huddleDate, createdAt: now, addedAt: now, status: "active" });
+      await saveWorkItem(database, { ...task, movementHistory: [...task.movementHistory || [], { id: crypto.randomUUID(), timestamp: now, date: dateOnly(), action: sourceView === "EOD" ? "Carried Forward" : "Added to Huddle", from: sourceView, to: "Morning Huddle", targetDate: huddleDate }] });
+      added += 1;
+    }
+    return added;
   }
   async function persistWorkForm(form) {
     const item = workItemFromForm(form);
@@ -2174,7 +2309,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       event.preventDefault();
       const values = formValues(eodTaskForm);
       const eodDate = dateOnly();
-      const eod = await getEodRecord(database, eodDate) || { id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "" };
+      const eod = await getEodRecord(database, eodDate) || { id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "", createdAt: (/* @__PURE__ */ new Date()).toISOString() };
       const task = await saveWorkItem(database, { id: crypto.randomUUID(), type: "action", group: eod.step === 0 ? "now" : "next", title: values.title.trim(), dueDate: values.dueDate || "", priority: values.priority || "Normal", status: eod.step === 0 ? "complete" : "not-started", source: "eod", completedAt: eod.step === 0 ? (/* @__PURE__ */ new Date()).toISOString() : "", subtasks: [] });
       await saveEodRecord(database, { ...eod, status: "in-progress", completedTaskIds: eod.step === 0 ? [.../* @__PURE__ */ new Set([...eod.completedTaskIds || [], task.id])] : eod.completedTaskIds, outstandingTaskIds: eod.step === 1 ? [.../* @__PURE__ */ new Set([...eod.outstandingTaskIds || [], task.id])] : eod.outstandingTaskIds });
       showToast("Task saved locally.");
@@ -2186,11 +2321,56 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       event.preventDefault();
       const values = formValues(eodRiskForm);
       const eodDate = dateOnly();
-      const eod = await getEodRecord(database, eodDate) || { id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: 2, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "" };
+      const eod = await getEodRecord(database, eodDate) || { id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: 2, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "", createdAt: (/* @__PURE__ */ new Date()).toISOString() };
       const risk = await saveWorkItem(database, { id: crypto.randomUUID(), type: "risk", group: "now", title: values.title.trim(), impact: values.impact, riskLevel: values.riskLevel, nextAction: values.nextAction || "", status: "not-started", source: "eod", createdAt: (/* @__PURE__ */ new Date()).toISOString() });
       await saveEodRecord(database, { ...eod, riskIds: [.../* @__PURE__ */ new Set([...eod.riskIds || [], risk.id])] });
       showToast("Risk captured locally.");
       await render();
+      return;
+    }
+    const huddlePickerForm = event.target.closest("[data-huddle-picker-form]");
+    if (huddlePickerForm) {
+      event.preventDefault();
+      const values = formValues(huddlePickerForm);
+      const item = currentWorkItems.find((workItem) => workItem.id === values.itemId) || (await getWorkItems(database)).find((workItem) => workItem.id === values.itemId);
+      if (!item || item.status === "complete") return;
+      const added = await addTasksToHuddle([item], values.huddleDate, item.source || "Work");
+      if (!added) {
+        showToast(`Already in the ${values.huddleDate} Huddle.`);
+        huddlePickerForm.closest("dialog")?.close();
+        return;
+      }
+      huddlePickerForm.closest("dialog")?.close();
+      showToast(`Added to the ${values.huddleDate} Huddle.`);
+      await render();
+      return;
+    }
+    const eodCarryReviewForm = event.target.closest("[data-eod-carry-review-form]");
+    if (eodCarryReviewForm) {
+      event.preventDefault();
+      const values = formValues(eodCarryReviewForm);
+      const ids = new FormData(eodCarryReviewForm).getAll("itemId");
+      const selected = currentWorkItems.filter((item) => ids.includes(item.id));
+      const added = await addTasksToHuddle(selected, values.huddleDate, "EOD");
+      const eodDate = dateOnly();
+      const eod = await getEodRecord(database, eodDate);
+      if (eod) await saveEodRecord(database, { ...eod, carriedForwardIds: [.../* @__PURE__ */ new Set([...eod.carriedForwardIds || [], ...selected.map((item) => item.id)])], nextHuddleDate: values.huddleDate });
+      eodCarryReviewForm.closest("dialog")?.close();
+      showToast(added ? `${added} item${added === 1 ? "" : "s"} added to the ${values.huddleDate} Huddle.` : "Selected items are already in that Huddle.");
+      await render();
+      return;
+    }
+    const eodHistoryEdit = event.target.closest("[data-eod-history-edit]");
+    if (eodHistoryEdit) {
+      event.preventDefault();
+      const values = formValues(eodHistoryEdit);
+      const record = (await getEodRecords(database)).find((item) => item.id === values.id);
+      if (record) {
+        await saveEodRecord(database, { ...record, tomorrowNote: values.tomorrowNote || "", handoverNote: values.handoverNote || "" });
+        eodHistoryEdit.closest("dialog")?.close();
+        showToast("EOD changes saved locally.");
+        await render();
+      }
       return;
     }
     const meetingForm = event.target.closest("[data-meeting-builder-form]");
@@ -2470,6 +2650,83 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     form.querySelector('select[name="status"]').innerHTML = workStatusOptions(workType.value, "");
   });
   document.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-eod-add-all-huddle]")) {
+      const huddleDate = getNextWorkday();
+      const tasks = currentWorkItems.filter((item) => ["action", "priority"].includes(item.type) && item.status !== "complete");
+      const added = await addTasksToHuddle(tasks, huddleDate, "EOD");
+      const eodDate = dateOnly();
+      const eod = await getEodRecord(database, eodDate);
+      if (eod) await saveEodRecord(database, { ...eod, carriedForwardIds: [.../* @__PURE__ */ new Set([...eod.carriedForwardIds || [], ...tasks.map((task) => task.id)])], nextHuddleDate: huddleDate });
+      showToast(added ? `Added ${added} item${added === 1 ? "" : "s"} to the ${huddleDate} Huddle.` : `Outstanding work is already in the ${huddleDate} Huddle.`);
+      await render();
+      return;
+    }
+    if (event.target.closest("[data-eod-review-items]")) {
+      const tasks = currentWorkItems.filter((item) => ["action", "priority"].includes(item.type) && item.status !== "complete");
+      document.body.insertAdjacentHTML("beforeend", createEodCarryReviewDialog(tasks, getNextWorkday()));
+      document.querySelector("#eod-carry-review-dialog")?.showModal();
+      return;
+    }
+    if (event.target.closest("[data-eod-not-now]")) {
+      showToast("Outstanding work remains open for later review.");
+      return;
+    }
+    const huddleAddToday = event.target.closest("[data-huddle-add-today]");
+    if (huddleAddToday) {
+      const item = currentWorkItems.find((workItem) => workItem.id === huddleAddToday.dataset.huddleAddToday);
+      if (!item) return;
+      const existing = (await getHuddleItems(database)).find((ref) => ref.itemId === item.id && ref.targetView === "Today" && ref.status !== "removed");
+      if (!existing) {
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        await saveHuddleItem(database, { id: `today-${item.id}`, itemId: item.id, itemType: "task", sourceView: "Morning Huddle", targetView: "Today", targetDate: dateOnly(), createdAt: now, status: "active" });
+        await saveWorkItem(database, { ...item, movementHistory: [...item.movementHistory || [], { id: crypto.randomUUID(), timestamp: now, date: dateOnly(), action: "Added to Today", from: "Morning Huddle", to: "Today", targetDate: dateOnly() }] });
+        showToast("Added to Today\u2019s Work.");
+      } else showToast("Already added to Today\u2019s Work.");
+      return;
+    }
+    const huddleBlock = event.target.closest("[data-huddle-block]");
+    if (huddleBlock) {
+      const item = currentWorkItems.find((workItem) => workItem.id === huddleBlock.dataset.huddleBlock);
+      if (!item) return;
+      if (item.blocked) {
+        await saveWorkItem(database, { ...item, blocked: false, blockerNote: "", movementHistory: [...item.movementHistory || [], { id: crypto.randomUUID(), timestamp: (/* @__PURE__ */ new Date()).toISOString(), date: dateOnly(), action: "Unblocked", from: "Blocked", to: item.status }] });
+        showToast("Work item unblocked.");
+      } else {
+        const blockerNote = window.prompt("What\u2019s blocking this?", item.blockerNote || "")?.trim();
+        if (!blockerNote) return;
+        await saveWorkItem(database, { ...item, blocked: true, blockerNote, movementHistory: [...item.movementHistory || [], { id: crypto.randomUUID(), timestamp: (/* @__PURE__ */ new Date()).toISOString(), date: dateOnly(), action: "Marked Blocked", from: item.status, to: "blocked", note: blockerNote }] });
+        showToast("Work item marked blocked.");
+      }
+      await render();
+      return;
+    }
+    const huddleMove = event.target.closest("[data-huddle-move]");
+    if (huddleMove) {
+      const item = currentWorkItems.find((workItem) => workItem.id === huddleMove.dataset.huddleMove);
+      if (!item) return;
+      const targetDate = window.prompt("Move to Huddle date (YYYY-MM-DD)", getNextWorkday())?.trim();
+      if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) return;
+      const added = await addTasksToHuddle([item], targetDate, "Morning Huddle");
+      const currentRefs = await getHuddleItems(database, dateOnly());
+      for (const ref of currentRefs.filter((entry) => entry.itemId === item.id && entry.status === "active")) await saveHuddleItem(database, { ...ref, status: "moved", movedToDate: targetDate });
+      showToast(added ? `Moved to the ${targetDate} Huddle.` : `Already in the ${targetDate} Huddle.`);
+      await render();
+      return;
+    }
+    const addToHuddle = event.target.closest("[data-add-to-huddle]");
+    if (addToHuddle) {
+      const item = currentWorkItems.find((workItem) => workItem.id === addToHuddle.dataset.addToHuddle);
+      if (!item) return;
+      document.querySelector("#huddle-picker-dialog")?.remove();
+      document.body.insertAdjacentHTML("beforeend", createHuddlePickerDialog(item, getNextWorkday()));
+      document.querySelector("#huddle-picker-dialog")?.showModal();
+      return;
+    }
+    if (event.target.closest("[data-huddle-next-workday]")) {
+      const input = event.target.closest("dialog")?.querySelector('input[name="huddleDate"]');
+      if (input) input.value = getNextWorkday();
+      return;
+    }
     if (event.target.closest("[data-eod-enter]")) {
       const eodDate = dateOnly();
       const existing = await getEodRecord(database, eodDate);
@@ -2477,8 +2734,17 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
         showToast("Today\u2019s EOD is already closed.");
         return;
       }
-      await saveEodRecord(database, { ...existing || {}, id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: existing?.step || 0, completedTaskIds: existing?.completedTaskIds || [], outstandingTaskIds: existing?.outstandingTaskIds || [], riskIds: existing?.riskIds || [], tomorrowPriorityIds: existing?.tomorrowPriorityIds || [], tomorrowNote: existing?.tomorrowNote || "", handoverNote: existing?.handoverNote || "" });
+      await saveEodRecord(database, { ...existing || {}, id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: existing?.step || 0, completedTaskIds: existing?.completedTaskIds || [], outstandingTaskIds: existing?.outstandingTaskIds || [], riskIds: existing?.riskIds || [], tomorrowPriorityIds: existing?.tomorrowPriorityIds || [], tomorrowNote: existing?.tomorrowNote || "", handoverNote: existing?.handoverNote || "", createdAt: existing?.createdAt || (/* @__PURE__ */ new Date()).toISOString() });
       await render();
+      return;
+    }
+    if (event.target.closest("[data-eod-edit-current]")) {
+      const eodDate = dateOnly();
+      const eod = await getEodRecord(database, eodDate);
+      if (eod) {
+        await saveEodRecord(database, { ...eod, status: "in-progress", step: 4 });
+        await render();
+      }
       return;
     }
     if (event.target.closest("[data-eod-next], [data-eod-back]")) {
@@ -2508,6 +2774,11 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       await render();
       return;
     }
+    if (event.target.closest("[data-eod-clear-filter]")) {
+      currentEodFilter = "all";
+      await render();
+      return;
+    }
     const eodCompleteTask = event.target.closest("[data-eod-complete-task]");
     if (eodCompleteTask) {
       const task = currentWorkItems.find((item) => item.id === eodCompleteTask.dataset.eodCompleteTask);
@@ -2519,7 +2790,18 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     }
     if (event.target.closest("[data-eod-history]")) {
       currentEodFilter = "all";
-      document.querySelector(".eod-history")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const history = document.querySelector(".eod-history");
+      if (history) history.scrollIntoView({ behavior: "smooth", block: "start" });
+      else showToast("No previous EOD records yet.");
+      return;
+    }
+    const eodHistoryButton = event.target.closest("[data-eod-history-id]");
+    if (eodHistoryButton) {
+      const record = (await getEodRecords(database)).find((item) => item.id === eodHistoryButton.dataset.eodHistoryId);
+      if (record) {
+        document.body.insertAdjacentHTML("beforeend", createEodHistoryDialog(record));
+        openDialog(document.querySelector("#eod-history-dialog"));
+      }
       return;
     }
     const themeButton = event.target.closest("[data-theme-choice]");

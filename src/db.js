@@ -1,5 +1,5 @@
 const DB_NAME = 'talentisos';
-const DB_VERSION = 10;
+const DB_VERSION = 11;
 
 const stores = {
   settings: 'settings',
@@ -21,6 +21,7 @@ const stores = {
   l10Meetings: 'l10Meetings',
   meetingSchedules: 'meetingSchedules',
   eodRecords: 'eodRecords',
+  huddleItems: 'huddleItems',
   backupSnapshots: 'backupSnapshots',
   appMeta: 'appMeta',
 };
@@ -110,6 +111,11 @@ export function openDatabase() {
         const eodRecords = database.createObjectStore(stores.eodRecords, { keyPath: 'id' });
         eodRecords.createIndex('date', 'date');
         eodRecords.createIndex('status', 'status');
+      }
+      if (!database.objectStoreNames.contains(stores.huddleItems)) {
+        const huddleItems = database.createObjectStore(stores.huddleItems, { keyPath: 'id' });
+        huddleItems.createIndex('huddleDate', 'huddleDate');
+        huddleItems.createIndex('itemId', 'itemId');
       }
       if (!database.objectStoreNames.contains(stores.appMeta)) {
         database.createObjectStore(stores.appMeta, { keyPath: 'key' });
@@ -202,9 +208,15 @@ export async function getPriorities(database, planDate = todayKey()) {
 }
 
 export async function savePriority(database, priority) {
+  const now = new Date().toISOString();
+  const completedAt = priority.status === 'done' ? (priority.completedAt || now) : '';
   return putRecord(database, stores.priorities, {
     ...priority,
-    updatedAt: new Date().toISOString(),
+    raisedDate: priority.raisedDate || priority.createdAt?.slice(0, 10) || todayKey(),
+    createdAt: priority.createdAt || new Date().toISOString(),
+    completedAt,
+    completedDate: completedAt ? completedAt.slice(0, 10) : '',
+    updatedAt: now,
   });
 }
 
@@ -217,9 +229,45 @@ export async function getAllPriorities(database) {
 }
 
 export async function saveWorkItem(database, workItem) {
+  const existing = await getRecord(database, stores.workItems, workItem.id);
+  const now = new Date().toISOString();
+  const createdAt = workItem.createdAt || existing?.createdAt || now;
+  const raisedDate = workItem.raisedDate || existing?.raisedDate || createdAt.slice(0, 10);
+  const history = [...(existing?.movementHistory || workItem.movementHistory || [])];
+  const addHistory = (action, from = '', to = '', note = '') => history.push({ id: crypto.randomUUID(), timestamp: now, date: now.slice(0, 10), action, from, to, note });
+  if (!existing) addHistory(workItem.type === 'risk' ? 'Risk Raised' : 'Created', workItem.source || 'Work', workItem.source || 'Work');
+  if (existing && existing.status !== 'complete' && workItem.status === 'complete') addHistory('Completed', existing.status, 'complete');
+  if (existing && existing.status === 'complete' && workItem.status !== 'complete') addHistory('Reopened', 'complete', workItem.status || 'in-progress');
+  let completedAt = workItem.completedAt ?? existing?.completedAt ?? '';
+  let completedDate = workItem.completedDate ?? existing?.completedDate ?? '';
+  if (workItem.status === 'complete' && !completedAt) {
+    completedAt = now;
+    completedDate = now.slice(0, 10);
+  }
+  if (existing?.status === 'complete' && workItem.status !== 'complete') {
+    completedAt = '';
+    completedDate = '';
+  }
+  const subtasks = (workItem.subtasks || existing?.subtasks || []).map((subtask) => {
+    const previous = (existing?.subtasks || []).find((item) => item.id === subtask.id || item.title === subtask.title);
+    const subtaskCreatedAt = subtask.createdAt || previous?.createdAt || now;
+    const subtaskRaisedDate = subtask.raisedDate || previous?.raisedDate || subtaskCreatedAt.slice(0, 10);
+    const subtaskHistory = [...(previous?.movementHistory || subtask.movementHistory || [])];
+    if (!previous) subtaskHistory.push({ id: crypto.randomUUID(), timestamp: now, date: now.slice(0, 10), action: 'Created', from: 'Work', to: 'Work' });
+    if (previous && !previous.completed && subtask.completed) subtaskHistory.push({ id: crypto.randomUUID(), timestamp: now, date: now.slice(0, 10), action: 'Completed', from: 'open', to: 'complete' });
+    if (previous?.completed && !subtask.completed) subtaskHistory.push({ id: crypto.randomUUID(), timestamp: now, date: now.slice(0, 10), action: 'Reopened', from: 'complete', to: 'open' });
+    const subtaskCompletedAt = subtask.completed ? (subtask.completedAt || previous?.completedAt || now) : '';
+    return { ...subtask, id: subtask.id || crypto.randomUUID(), createdAt: subtaskCreatedAt, raisedDate: subtaskRaisedDate, completedAt: subtaskCompletedAt, completedDate: subtaskCompletedAt ? subtaskCompletedAt.slice(0, 10) : '', movementHistory: subtaskHistory };
+  });
   return putRecord(database, stores.workItems, {
     ...workItem,
-    updatedAt: new Date().toISOString(),
+    createdAt,
+    raisedDate,
+    updatedAt: now,
+    completedAt,
+    completedDate,
+    movementHistory: history,
+    subtasks,
   });
 }
 
@@ -374,6 +422,11 @@ export async function deleteMeetingSchedule(database, id) { return deleteRecord(
 export async function getEodRecord(database, date) { return (await getRecord(database, stores.eodRecords, `eod-${date}`)) || null; }
 export async function getEodRecords(database) { return (await getAll(database, stores.eodRecords)).sort((a, b) => b.date.localeCompare(a.date)); }
 export async function saveEodRecord(database, record) { return putRecord(database, stores.eodRecords, { ...record, updatedAt: new Date().toISOString() }); }
+export async function getHuddleItems(database, huddleDate = null) {
+  const records = await getAll(database, stores.huddleItems);
+  return huddleDate ? records.filter((item) => item.huddleDate === huddleDate) : records;
+}
+export async function saveHuddleItem(database, item) { return putRecord(database, stores.huddleItems, { ...item, updatedAt: new Date().toISOString() }); }
 
 export async function getBackupSnapshots(database) {
   return (await getAll(database, stores.backupSnapshots)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));

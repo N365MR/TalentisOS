@@ -5,6 +5,7 @@ import {
   createToast,
   createTodayView,
   createEodView,
+  createEodHistoryDialog,
   createJourneyView,
   createMeetingBuilderDialog,
   createMeetingScheduleCard,
@@ -27,6 +28,9 @@ import {
   createResetOnboardingDialog,
   createDeleteAllDataDialog,
   createWorkDetailSheet,
+  createHuddlePickerDialog,
+  createEodCarryReviewDialog,
+  createHuddleView,
   createWorkView,
   getRoute,
   renderView,
@@ -56,6 +60,7 @@ import {
   getMeetingSchedules,
   getEodRecord,
   getEodRecords,
+  getHuddleItems,
   saveEodRecord,
   savePlaybookState,
   saveJourneyState,
@@ -72,6 +77,7 @@ import {
   saveDayClosure,
   saveTomorrowPlan,
   saveWorkItem,
+  saveHuddleItem,
   deleteWorkItem,
   getAll,
   getBackupSnapshots,
@@ -93,7 +99,7 @@ import {
 } from './backup.js';
 import { getJourneyProgress } from './journey.js';
 import { L10_AGENDA, l10WeekStart, l10WeekEnd, l10RemainingSeconds, scorecardStatus, defaultL10Meeting } from './l10.js';
-import { dateOnly } from './meetings.js';
+import { dateOnly, getNextWorkday } from './meetings.js';
 
 const app = document.querySelector('#app');
 const toastRegion = document.querySelector('#toast-region');
@@ -202,6 +208,7 @@ async function collectBackupData() {
   const l10Settings = await read(stores.l10Settings);
   const meetingSchedules = await read(stores.meetingSchedules);
   const eodRecords = await read(stores.eodRecords);
+  const huddleItems = await read(stores.huddleItems);
   const appMeta = await read(stores.appMeta);
   return {
     settings: await read(stores.settings),
@@ -227,6 +234,7 @@ async function collectBackupData() {
     l10Meetings: await read(stores.l10Meetings),
     meetingSchedules,
     eodRecords,
+    huddleItems,
     onboardingState: appMeta.filter((item) => item.key === 'onboarding'),
   };
 }
@@ -409,6 +417,7 @@ async function render() {
     currentPlan = await getDailyPlan(database);
     currentPriorities = await getPriorities(database, currentPlan.date);
     currentWorkItems = await getWorkItems(database);
+    const todayReferences = (await getHuddleItems(database)).filter((ref) => ref.targetView === 'Today' && ref.targetDate === currentPlan.date && ref.status !== 'removed');
     currentJourneyState = await getJourneyState(database);
     currentMeetingSchedules = await getMeetingSchedules(database);
     await importPreparedPlanIfNeeded();
@@ -418,6 +427,7 @@ async function render() {
       currentPlan,
       currentPriorities,
       currentWorkItems,
+      todayReferences,
     );
     document.querySelector('#view-root').insertAdjacentHTML('afterbegin', `${createMeetingScheduleCard(currentMeetingSchedules)}<section class="journey-today-card" aria-labelledby="journey-today-title"><div><p class="eyebrow">Your journey</p><h2 id="journey-today-title">Continue your first 90 days</h2><p class="secondary-text">Your next leadership milestone is ready.</p></div><a class="secondary-action" href="#journey">Open journey <span aria-hidden="true">→</span></a></section>${createMeetingScheduleDialog(currentMeetingSchedules)}`);
     document.title = 'Today — TalentisOS';
@@ -426,14 +436,21 @@ async function render() {
     app.innerHTML = createAppShell(route);
     document.querySelector('#view-root').innerHTML = createJourneyView(currentJourneyState, selectedJourneyMilestoneId) + createMeetingBuilderDialog(currentJourneyState);
     document.title = 'Journey — TalentisOS';
+  } else if (route.key === 'huddle') {
+    const huddleDate = dateOnly();
+    const huddleItems = await getHuddleItems(database, huddleDate);
+    currentWorkItems = await getWorkItems(database);
+    app.innerHTML = createAppShell(route);
+    document.querySelector('#view-root').innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems);
+    document.title = 'Morning Huddle — TalentisOS';
   } else if (route.key === 'eod') {
     const eodDate = dateOnly();
     const existingEod = await getEodRecord(database, eodDate);
-    const eod = existingEod || { id: `eod-${eodDate}`, date: eodDate, status: 'not-started', step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '' };
+    const eod = existingEod || { id: `eod-${eodDate}`, date: eodDate, status: 'not-started', step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '', createdAt: new Date().toISOString() };
     const eodHistory = await getEodRecords(database);
     currentWorkItems = await getWorkItems(database);
     app.innerHTML = createAppShell(route);
-    document.querySelector('#view-root').innerHTML = createEodView({ eod, date: eodDate, workItems: currentWorkItems, history: eodHistory.filter((item) => item.date !== eodDate), filter: currentEodFilter });
+    document.querySelector('#view-root').innerHTML = createEodView({ eod, date: eodDate, workItems: currentWorkItems, history: eodHistory, filter: currentEodFilter });
     document.title = 'End of Day — TalentisOS';
   } else if (route.key === 'work') {
     currentWorkItems = await getWorkItems(database);
@@ -772,6 +789,9 @@ function workItemFromForm(form) {
     required: values.required?.trim() || '',
     reviewDate: values.reviewDate || '',
     escalationRequired: checkbox?.checked || false,
+    blocked: form.elements.blocked?.checked || false,
+    blockerNote: values.blockerNote?.trim() || '',
+    waitingOn: values.waitingOn?.trim() || '',
     decisionRequired: values.decisionRequired?.trim() || '',
     whyMatters: values.whyMatters?.trim() || '',
     options: values.options?.trim() || '',
@@ -782,6 +802,20 @@ function workItemFromForm(form) {
     why: values.why?.trim() || '',
     result: values.result?.trim() || '',
   };
+}
+
+async function addTasksToHuddle(items, huddleDate, sourceView = 'EOD') {
+  const existingRefs = await getHuddleItems(database, huddleDate);
+  const existingKeys = new Set(existingRefs.filter((ref) => ref.status !== 'removed').map((ref) => `${ref.itemType}:${ref.itemId}`));
+  let added = 0;
+  for (const task of items.filter((item) => item && item.status !== 'complete')) {
+    if (existingKeys.has(`task:${task.id}`)) continue;
+    const now = new Date().toISOString();
+    await saveHuddleItem(database, { id: `huddle-${huddleDate}-task-${task.id}`, itemId: task.id, itemType: 'task', sourceView, targetView: 'Morning Huddle', targetDate: huddleDate, huddleDate, createdAt: now, addedAt: now, status: 'active' });
+    await saveWorkItem(database, { ...task, movementHistory: [...(task.movementHistory || []), { id: crypto.randomUUID(), timestamp: now, date: dateOnly(), action: sourceView === 'EOD' ? 'Carried Forward' : 'Added to Huddle', from: sourceView, to: 'Morning Huddle', targetDate: huddleDate }] });
+    added += 1;
+  }
+  return added;
 }
 
 async function persistWorkForm(form) {
@@ -1066,7 +1100,7 @@ document.addEventListener('submit', async (event) => {
     event.preventDefault();
     const values = formValues(eodTaskForm);
     const eodDate = dateOnly();
-    const eod = (await getEodRecord(database, eodDate)) || { id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '' };
+    const eod = (await getEodRecord(database, eodDate)) || { id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '', createdAt: new Date().toISOString() };
     const task = await saveWorkItem(database, { id: crypto.randomUUID(), type: 'action', group: eod.step === 0 ? 'now' : 'next', title: values.title.trim(), dueDate: values.dueDate || '', priority: values.priority || 'Normal', status: eod.step === 0 ? 'complete' : 'not-started', source: 'eod', completedAt: eod.step === 0 ? new Date().toISOString() : '' , subtasks: [] });
     await saveEodRecord(database, { ...eod, status: 'in-progress', completedTaskIds: eod.step === 0 ? [...new Set([...(eod.completedTaskIds || []), task.id])] : eod.completedTaskIds, outstandingTaskIds: eod.step === 1 ? [...new Set([...(eod.outstandingTaskIds || []), task.id])] : eod.outstandingTaskIds });
     showToast('Task saved locally.');
@@ -1078,11 +1112,56 @@ document.addEventListener('submit', async (event) => {
     event.preventDefault();
     const values = formValues(eodRiskForm);
     const eodDate = dateOnly();
-    const eod = (await getEodRecord(database, eodDate)) || { id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: 2, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '' };
+    const eod = (await getEodRecord(database, eodDate)) || { id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: 2, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '', createdAt: new Date().toISOString() };
     const risk = await saveWorkItem(database, { id: crypto.randomUUID(), type: 'risk', group: 'now', title: values.title.trim(), impact: values.impact, riskLevel: values.riskLevel, nextAction: values.nextAction || '', status: 'not-started', source: 'eod', createdAt: new Date().toISOString() });
     await saveEodRecord(database, { ...eod, riskIds: [...new Set([...(eod.riskIds || []), risk.id])] });
     showToast('Risk captured locally.');
     await render();
+    return;
+  }
+  const huddlePickerForm = event.target.closest('[data-huddle-picker-form]');
+  if (huddlePickerForm) {
+    event.preventDefault();
+    const values = formValues(huddlePickerForm);
+    const item = currentWorkItems.find((workItem) => workItem.id === values.itemId) || (await getWorkItems(database)).find((workItem) => workItem.id === values.itemId);
+    if (!item || item.status === 'complete') return;
+    const added = await addTasksToHuddle([item], values.huddleDate, item.source || 'Work');
+    if (!added) {
+      showToast(`Already in the ${values.huddleDate} Huddle.`);
+      huddlePickerForm.closest('dialog')?.close();
+      return;
+    }
+    huddlePickerForm.closest('dialog')?.close();
+    showToast(`Added to the ${values.huddleDate} Huddle.`);
+    await render();
+    return;
+  }
+  const eodCarryReviewForm = event.target.closest('[data-eod-carry-review-form]');
+  if (eodCarryReviewForm) {
+    event.preventDefault();
+    const values = formValues(eodCarryReviewForm);
+    const ids = new FormData(eodCarryReviewForm).getAll('itemId');
+    const selected = currentWorkItems.filter((item) => ids.includes(item.id));
+    const added = await addTasksToHuddle(selected, values.huddleDate, 'EOD');
+    const eodDate = dateOnly();
+    const eod = await getEodRecord(database, eodDate);
+    if (eod) await saveEodRecord(database, { ...eod, carriedForwardIds: [...new Set([...(eod.carriedForwardIds || []), ...selected.map((item) => item.id)])], nextHuddleDate: values.huddleDate });
+    eodCarryReviewForm.closest('dialog')?.close();
+    showToast(added ? `${added} item${added === 1 ? '' : 's'} added to the ${values.huddleDate} Huddle.` : 'Selected items are already in that Huddle.');
+    await render();
+    return;
+  }
+  const eodHistoryEdit = event.target.closest('[data-eod-history-edit]');
+  if (eodHistoryEdit) {
+    event.preventDefault();
+    const values = formValues(eodHistoryEdit);
+    const record = (await getEodRecords(database)).find((item) => item.id === values.id);
+    if (record) {
+      await saveEodRecord(database, { ...record, tomorrowNote: values.tomorrowNote || '', handoverNote: values.handoverNote || '' });
+      eodHistoryEdit.closest('dialog')?.close();
+      showToast('EOD changes saved locally.');
+      await render();
+    }
     return;
   }
   const meetingForm = event.target.closest('[data-meeting-builder-form]');
@@ -1366,6 +1445,91 @@ document.addEventListener('change', (event) => {
 });
 
 document.addEventListener('click', async (event) => {
+  if (event.target.closest('[data-eod-add-all-huddle]')) {
+    const huddleDate = getNextWorkday();
+    const tasks = currentWorkItems.filter((item) => ['action', 'priority'].includes(item.type) && item.status !== 'complete');
+    const added = await addTasksToHuddle(tasks, huddleDate, 'EOD');
+    const eodDate = dateOnly();
+    const eod = await getEodRecord(database, eodDate);
+    if (eod) await saveEodRecord(database, { ...eod, carriedForwardIds: [...new Set([...(eod.carriedForwardIds || []), ...tasks.map((task) => task.id)])], nextHuddleDate: huddleDate });
+    showToast(added ? `Added ${added} item${added === 1 ? '' : 's'} to the ${huddleDate} Huddle.` : `Outstanding work is already in the ${huddleDate} Huddle.`);
+    await render();
+    return;
+  }
+
+  if (event.target.closest('[data-eod-review-items]')) {
+    const tasks = currentWorkItems.filter((item) => ['action', 'priority'].includes(item.type) && item.status !== 'complete');
+    document.body.insertAdjacentHTML('beforeend', createEodCarryReviewDialog(tasks, getNextWorkday()));
+    document.querySelector('#eod-carry-review-dialog')?.showModal();
+    return;
+  }
+
+  if (event.target.closest('[data-eod-not-now]')) {
+    showToast('Outstanding work remains open for later review.');
+    return;
+  }
+
+  const huddleAddToday = event.target.closest('[data-huddle-add-today]');
+  if (huddleAddToday) {
+    const item = currentWorkItems.find((workItem) => workItem.id === huddleAddToday.dataset.huddleAddToday);
+    if (!item) return;
+    const existing = (await getHuddleItems(database)).find((ref) => ref.itemId === item.id && ref.targetView === 'Today' && ref.status !== 'removed');
+    if (!existing) {
+      const now = new Date().toISOString();
+      await saveHuddleItem(database, { id: `today-${item.id}`, itemId: item.id, itemType: 'task', sourceView: 'Morning Huddle', targetView: 'Today', targetDate: dateOnly(), createdAt: now, status: 'active' });
+      await saveWorkItem(database, { ...item, movementHistory: [...(item.movementHistory || []), { id: crypto.randomUUID(), timestamp: now, date: dateOnly(), action: 'Added to Today', from: 'Morning Huddle', to: 'Today', targetDate: dateOnly() }] });
+      showToast('Added to Today’s Work.');
+    } else showToast('Already added to Today’s Work.');
+    return;
+  }
+
+  const huddleBlock = event.target.closest('[data-huddle-block]');
+  if (huddleBlock) {
+    const item = currentWorkItems.find((workItem) => workItem.id === huddleBlock.dataset.huddleBlock);
+    if (!item) return;
+    if (item.blocked) {
+      await saveWorkItem(database, { ...item, blocked: false, blockerNote: '', movementHistory: [...(item.movementHistory || []), { id: crypto.randomUUID(), timestamp: new Date().toISOString(), date: dateOnly(), action: 'Unblocked', from: 'Blocked', to: item.status }] });
+      showToast('Work item unblocked.');
+    } else {
+      const blockerNote = window.prompt('What’s blocking this?', item.blockerNote || '')?.trim();
+      if (!blockerNote) return;
+      await saveWorkItem(database, { ...item, blocked: true, blockerNote, movementHistory: [...(item.movementHistory || []), { id: crypto.randomUUID(), timestamp: new Date().toISOString(), date: dateOnly(), action: 'Marked Blocked', from: item.status, to: 'blocked', note: blockerNote }] });
+      showToast('Work item marked blocked.');
+    }
+    await render();
+    return;
+  }
+
+  const huddleMove = event.target.closest('[data-huddle-move]');
+  if (huddleMove) {
+    const item = currentWorkItems.find((workItem) => workItem.id === huddleMove.dataset.huddleMove);
+    if (!item) return;
+    const targetDate = window.prompt('Move to Huddle date (YYYY-MM-DD)', getNextWorkday())?.trim();
+    if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) return;
+    const added = await addTasksToHuddle([item], targetDate, 'Morning Huddle');
+    const currentRefs = await getHuddleItems(database, dateOnly());
+    for (const ref of currentRefs.filter((entry) => entry.itemId === item.id && entry.status === 'active')) await saveHuddleItem(database, { ...ref, status: 'moved', movedToDate: targetDate });
+    showToast(added ? `Moved to the ${targetDate} Huddle.` : `Already in the ${targetDate} Huddle.`);
+    await render();
+    return;
+  }
+
+  const addToHuddle = event.target.closest('[data-add-to-huddle]');
+  if (addToHuddle) {
+    const item = currentWorkItems.find((workItem) => workItem.id === addToHuddle.dataset.addToHuddle);
+    if (!item) return;
+    document.querySelector('#huddle-picker-dialog')?.remove();
+    document.body.insertAdjacentHTML('beforeend', createHuddlePickerDialog(item, getNextWorkday()));
+    document.querySelector('#huddle-picker-dialog')?.showModal();
+    return;
+  }
+
+  if (event.target.closest('[data-huddle-next-workday]')) {
+    const input = event.target.closest('dialog')?.querySelector('input[name="huddleDate"]');
+    if (input) input.value = getNextWorkday();
+    return;
+  }
+
   if (event.target.closest('[data-eod-enter]')) {
     const eodDate = dateOnly();
     const existing = await getEodRecord(database, eodDate);
@@ -1373,8 +1537,18 @@ document.addEventListener('click', async (event) => {
       showToast('Today’s EOD is already closed.');
       return;
     }
-    await saveEodRecord(database, { ...(existing || {}), id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: existing?.step || 0, completedTaskIds: existing?.completedTaskIds || [], outstandingTaskIds: existing?.outstandingTaskIds || [], riskIds: existing?.riskIds || [], tomorrowPriorityIds: existing?.tomorrowPriorityIds || [], tomorrowNote: existing?.tomorrowNote || '', handoverNote: existing?.handoverNote || '' });
+    await saveEodRecord(database, { ...(existing || {}), id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: existing?.step || 0, completedTaskIds: existing?.completedTaskIds || [], outstandingTaskIds: existing?.outstandingTaskIds || [], riskIds: existing?.riskIds || [], tomorrowPriorityIds: existing?.tomorrowPriorityIds || [], tomorrowNote: existing?.tomorrowNote || '', handoverNote: existing?.handoverNote || '', createdAt: existing?.createdAt || new Date().toISOString() });
     await render();
+    return;
+  }
+
+  if (event.target.closest('[data-eod-edit-current]')) {
+    const eodDate = dateOnly();
+    const eod = await getEodRecord(database, eodDate);
+    if (eod) {
+      await saveEodRecord(database, { ...eod, status: 'in-progress', step: 4 });
+      await render();
+    }
     return;
   }
 
@@ -1408,6 +1582,12 @@ document.addEventListener('click', async (event) => {
     return;
   }
 
+  if (event.target.closest('[data-eod-clear-filter]')) {
+    currentEodFilter = 'all';
+    await render();
+    return;
+  }
+
   const eodCompleteTask = event.target.closest('[data-eod-complete-task]');
   if (eodCompleteTask) {
     const task = currentWorkItems.find((item) => item.id === eodCompleteTask.dataset.eodCompleteTask);
@@ -1420,7 +1600,19 @@ document.addEventListener('click', async (event) => {
 
   if (event.target.closest('[data-eod-history]')) {
     currentEodFilter = 'all';
-    document.querySelector('.eod-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const history = document.querySelector('.eod-history');
+    if (history) history.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else showToast('No previous EOD records yet.');
+    return;
+  }
+
+  const eodHistoryButton = event.target.closest('[data-eod-history-id]');
+  if (eodHistoryButton) {
+    const record = (await getEodRecords(database)).find((item) => item.id === eodHistoryButton.dataset.eodHistoryId);
+    if (record) {
+      document.body.insertAdjacentHTML('beforeend', createEodHistoryDialog(record));
+      openDialog(document.querySelector('#eod-history-dialog'));
+    }
     return;
   }
 

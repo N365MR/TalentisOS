@@ -1095,9 +1095,43 @@ dialog:focus-visible {
 .eod-summary-tile { display: grid; min-height: 8.5rem; align-content: center; gap: .25rem; padding: 1.25rem; border: 1px solid var(--color-divider); border-radius: 1.15rem; background: var(--color-surface); color: var(--color-text); cursor: pointer; text-align: left; transition: transform var(--motion-fast), border-color var(--motion-fast), background var(--motion-fast); }
 .eod-summary-tile:hover, .eod-summary-tile:focus-visible { border-color: var(--color-accent); background: var(--color-surface-subtle); transform: translateY(-1px); }
 .eod-summary-tile strong { font-size: 2.25rem; letter-spacing: -.05em; }
+.eod-summary-tile--outstanding strong { color: var(--color-warning); }
+.eod-summary-tile--risks strong { color: var(--color-critical); }
+.eod-summary-tile--tomorrow strong { color: var(--color-information); }
+.eod-summary-tile--completed strong { color: var(--color-success); }
+.eod-carry-forward { display: flex; align-items: center; justify-content: space-between; gap: 1rem; max-width: 54rem; padding: 1.25rem; border: 1px solid color-mix(in srgb, var(--color-accent) 55%, var(--color-divider)); border-radius: 1.15rem; background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface)); }
+.eod-carry-forward h2 { margin: .2rem 0; }
+.eod-carry-forward p { margin: 0; }
+.eod-carry-forward__actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; justify-content: flex-end; }
+.carry-review-list { display: grid; gap: .55rem; max-height: 20rem; overflow: auto; }
+.carry-review-item { display: flex; align-items: center; gap: .7rem; padding: .8rem; border: 1px solid var(--color-divider); border-radius: .75rem; background: var(--color-surface-subtle); }
+.carry-review-item span { display: grid; gap: .2rem; }
+.carry-review-item small { color: var(--color-text-secondary); }
+.eod-task-actions { display: inline-flex; align-items: center; gap: .6rem; flex-wrap: wrap; justify-content: flex-end; }
+.work-age--warning { color: var(--color-warning); }
+.work-age--attention { color: var(--color-critical); }
+.work-history { margin-top: .5rem; border-top: 1px solid var(--color-divider); padding-top: .8rem; }
+.work-history summary { cursor: pointer; font-weight: 700; }
+.work-history__timeline { display: grid; gap: .7rem; margin-top: .8rem; border-left: 2px solid var(--color-divider); padding-left: 1rem; }
+.work-history__timeline div { position: relative; }
+.work-history__timeline div::before { content: ''; position: absolute; left: -1.4rem; top: .35rem; width: .55rem; height: .55rem; border-radius: 50%; background: var(--color-accent); }
+.work-history__timeline time { color: var(--color-text-secondary); font-size: var(--text-xs); }
+.work-history__timeline p { margin: .15rem 0 0; }
+.work-detail-meta { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0; }
+.work-detail-meta div { display: grid; gap: .2rem; }
+.work-detail-meta dt { color: var(--color-text-secondary); font-size: var(--text-xs); }
+.work-detail-meta dd { margin: 0; font-weight: 700; }
 .eod-summary-tile span { font-weight: 700; }
 .eod-summary-tile small { color: var(--color-text-secondary); font-size: var(--text-xs); }
 .eod-wizard, .eod-closed-state, .eod-history { display: grid; gap: 1.25rem; max-width: 54rem; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--color-divider); border-radius: 1.25rem; background: var(--color-surface); }
+.eod-filter-panel { display: grid; gap: 1rem; max-width: 54rem; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--color-accent); border-radius: 1.25rem; background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface)); }
+.eod-filter-panel .section-heading { margin: 0; }
+.eod-filter-list { display: grid; gap: .65rem; }
+.eod-filter-item { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--color-divider); border-radius: .85rem; background: var(--color-surface-subtle); }
+.eod-filter-item h3 { margin: 0 0 .25rem; }
+.eod-filter-item p { margin: 0; color: var(--color-text-secondary); font-size: var(--text-sm); }
+.eod-filter-item ul { margin: .55rem 0 0; padding-left: 1.2rem; color: var(--color-text-secondary); font-size: var(--text-sm); }
+.eod-filter-item > strong { display: inline-grid; width: 2rem; height: 2rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--color-accent); color: var(--color-background); }
 .eod-wizard__top { align-items: center; }
 .eod-wizard__top h2 { margin: .2rem 0; }
 .eod-progress-track, .eod-progress { height: .4rem; overflow: hidden; border-radius: var(--radius-pill); background: var(--color-surface-strong); }
@@ -1111,6 +1145,8 @@ dialog:focus-visible {
 .eod-inline-form, .eod-risk-form { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: .65rem; align-items: end; }
 .eod-risk-form { grid-template-columns: 1.4fr 1fr 1fr; }
 .eod-inline-form input, .eod-inline-form select, .eod-risk-form input, .eod-risk-form select, .eod-risk-form textarea, .eod-handover-field textarea { width: 100%; min-height: 3rem; box-sizing: border-box; padding: .7rem .8rem; border: 1px solid var(--color-divider); border-radius: .5rem; background: var(--color-surface); color: var(--color-text); font: inherit; }
+.eod-inline-form select,
+.eod-risk-form select { height: 3rem; min-height: 3rem; box-sizing: border-box; }
 .eod-risk-form textarea { grid-column: 1 / -1; }
 .eod-task-select { display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; color: var(--color-text-secondary); font-size: var(--text-sm); }
 .eod-tomorrow-selected { display: grid; gap: .5rem; }
@@ -1123,6 +1159,7 @@ dialog:focus-visible {
 .eod-close-summary div { display: grid; gap: .15rem; padding: .75rem; border-radius: .75rem; background: var(--color-surface-subtle); }
 .eod-close-summary strong { font-size: 1.75rem; }
 .eod-close-summary span { color: var(--color-text-secondary); font-size: var(--text-xs); }
+.eod-closed-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
 .eod-high-risk-warning { display: grid; gap: .25rem; padding: 1rem; border: 1px solid color-mix(in srgb, var(--color-warning) 45%, var(--color-divider)); border-radius: .75rem; background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface)); }
 .eod-high-risk-warning span { color: var(--color-text-secondary); font-size: var(--text-sm); }
 .eod-tomorrow-list { display: grid; gap: .5rem; margin: 0; padding-left: 1.5rem; }
@@ -1130,6 +1167,9 @@ dialog:focus-visible {
 .eod-history-list article { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 0; border-top: 1px solid var(--color-divider); }
 .eod-history-list article div { display: grid; gap: .2rem; }
 .eod-history-list article span { color: var(--color-text-secondary); font-size: var(--text-sm); }
+.eod-history-dialog { width: min(100% - var(--space-8), 42rem); }
+.app-layout--eod .page-header { display: none; }
+.app-layout--eod .content-area { padding-top: clamp(2rem, 5vw, 4rem); }
 .task-progress-panel { display: grid; gap: .65rem; padding: 1rem; border: 1px solid var(--color-divider); border-radius: .9rem; background: var(--color-surface-subtle); }
 .task-progress-panel h3 { margin: .2rem 0; }
 .task-progress-panel .section-heading { margin: 0; }

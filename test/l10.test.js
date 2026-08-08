@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBackup, validateBackup, BACKUP_COLLECTIONS } from '../src/backup.js';
 import { L10_AGENDA, defaultL10Meeting, l10WeekStart, scorecardStatus } from '../src/l10.js';
-import { advanceMeetingDate, daysUntil, nextMeetingDate } from '../src/meetings.js';
+import { advanceMeetingDate, daysUntil, nextMeetingDate, getNextWorkday } from '../src/meetings.js';
 
 test('L10 uses the fixed seven-part 90-minute agenda', () => {
   assert.deepEqual(L10_AGENDA.map((item) => item.id), ['segue', 'scorecard', 'rocks', 'headlines', 'todos', 'ids', 'conclude']);
@@ -39,4 +39,12 @@ test('EOD records are included in local backup collections', () => {
   const restored = validateBackup(backup);
   assert.equal(restored.data.eodRecords[0].status, 'closed');
   assert.ok(BACKUP_COLLECTIONS.includes('eodRecords'));
+});
+
+test('next workday skips weekends and Huddle references are backed up', () => {
+  assert.equal(getNextWorkday('2026-08-07'), '2026-08-10');
+  assert.equal(getNextWorkday('2026-08-08'), '2026-08-10');
+  const backup = createBackup({ huddleItems: [{ id: 'h-1', huddleDate: '2026-08-10', itemType: 'task', itemId: 'task-1' }] });
+  assert.equal(validateBackup(backup).data.huddleItems.length, 1);
+  assert.ok(BACKUP_COLLECTIONS.includes('huddleItems'));
 });

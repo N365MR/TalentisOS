@@ -27,3 +27,11 @@ export function daysUntil(date, today = dateOnly()) {
   const end = new Date(`${date}T12:00:00`);
   return Math.max(0, Math.round((end - start) / 86400000));
 }
+
+export function getNextWorkday(value = new Date()) {
+  const date = new Date(`${dateOnly(value)}T12:00:00`);
+  const day = date.getDay();
+  const offset = day === 5 ? 3 : day === 6 ? 2 : day === 0 ? 1 : 1;
+  date.setDate(date.getDate() + offset);
+  return dateOnly(date);
+}

@@ -25,6 +25,7 @@ export const BACKUP_COLLECTIONS = [
   'l10Meetings',
   'meetingSchedules',
   'eodRecords',
+  'huddleItems',
   'onboardingState',
 ];
 
@@ -103,6 +104,7 @@ export function restoreCollections(backup) {
     l10Meetings: data.l10Meetings || [],
     meetingSchedules: data.meetingSchedules || [],
     eodRecords: data.eodRecords || [],
+    huddleItems: data.huddleItems || [],
     appMeta: data.onboardingState || [],
   };
 }
