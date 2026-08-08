@@ -1104,6 +1104,15 @@ dialog:focus-visible {
 .eod-carry-forward p { margin: 0; }
 .eod-carry-forward__actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; justify-content: flex-end; }
 .huddle-date-switcher { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+.morning-huddle-dialog { width: min(100% - 2rem, 48rem); }
+.huddle-dialog-intro { padding: 1rem; border: 1px solid var(--color-divider); border-radius: .85rem; background: var(--color-surface-subtle); }
+.huddle-dialog-intro p { margin: 0; color: var(--color-text-secondary); }
+.huddle-dialog-section { display: grid; gap: .8rem; }
+.huddle-dialog-list { display: grid; gap: .6rem; }
+.huddle-dialog-item { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .9rem; border: 1px solid var(--color-divider); border-radius: .8rem; background: var(--color-surface); }
+.huddle-dialog-item > div:first-child { display: grid; gap: .2rem; }
+.huddle-dialog-item small { color: var(--color-text-secondary); }
+.huddle-dialog-item__actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
 .carry-review-list { display: grid; gap: .55rem; max-height: 20rem; overflow: auto; }
 .carry-review-item { display: flex; align-items: center; gap: .7rem; padding: .8rem; border: 1px solid var(--color-divider); border-radius: .75rem; background: var(--color-surface-subtle); }
 .carry-review-item span { display: grid; gap: .2rem; }

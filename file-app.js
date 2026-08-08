@@ -542,6 +542,13 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       return `<article class="work-card ${item.status === "complete" ? "work-card--complete" : ""}"><div class="work-card__top"><div><span class="work-type">${escapeHtml(item.priority || item.type || "Action")}</span><h3>${escapeHtml(item.title || item.outcome)}</h3></div><span class="status-chip status-chip--${item.status === "complete" ? "success" : item.blocked ? "warning" : "neutral"}">${item.status === "complete" ? "Completed" : item.blocked ? "Blocked" : item.status === "waiting" ? "Waiting" : "Open"}</span></div><div class="work-card__meta"><span>Raised ${escapeHtml(workDateLabel(item.raisedDate || item.createdAt?.slice(0, 10)))}</span><span>Open ${escapeHtml(workAge(item.raisedDate || item.createdAt?.slice(0, 10)).replace("Open ", ""))}</span>${item.dueDate ? `<span>Due ${escapeHtml(workDateLabel(item.dueDate))}</span>` : ""}${carryCount > 1 ? `<span>Carried forward ${carryCount} times</span>` : ""}</div>${incomplete.length ? `<p class="work-card__outcome">${incomplete.length} incomplete subtask${incomplete.length === 1 ? "" : "s"}: ${escapeHtml(incomplete.map((subtask) => subtask.title).join(" \xB7 "))}</p>` : ""}<div class="work-card__actions">${item.status === "complete" ? "" : `<button type="button" class="text-button" data-complete-work="${escapeHtml(item.id)}">Complete</button><button type="button" class="text-button" data-huddle-add-today="${escapeHtml(item.id)}">Add to Today</button><button type="button" class="text-button" data-huddle-block="${escapeHtml(item.id)}">${item.blocked ? "Unblock" : "Block"}</button><button type="button" class="text-button" data-huddle-move="${escapeHtml(item.id)}">Move</button>`}<button type="button" class="text-button" data-edit-work="${escapeHtml(item.id)}">Open details</button></div></article>`;
     }).join("")}</div>` : '<div class="section-empty"><p>No carried-forward work for this Huddle.</p><small>Add an outstanding item from Work or End of Day.</small></div>'}</section></section>${createWorkDetailSheet()}`;
   }
+  function createHuddleMeetingDialog(date, workItems, huddleItems) {
+    const items = huddleItems.map((ref) => workItems.find((item) => item.id === ref.itemId)).filter((item) => item && item.status !== "complete");
+    return `<dialog id="morning-huddle-dialog" class="modal morning-huddle-dialog" aria-labelledby="morning-huddle-title"><div class="modal__header"><div><p class="eyebrow">Today \xB7 Prepare \xB7 Align</p><h2 id="morning-huddle-title">Morning Huddle</h2><p class="secondary-text">${escapeHtml(workDateLabel(date))} \xB7 ${items.length} carried-over item${items.length === 1 ? "" : "s"}</p></div><button class="icon-button" type="button" data-close-dialog aria-label="Close Morning Huddle">\xD7</button></div><div class="modal__body"><section class="huddle-dialog-intro"><p>Decide what needs attention today. Complete it, add it to Today, block it, or move it forward.</p></section><section class="huddle-dialog-section" aria-labelledby="huddle-dialog-carried-title"><div class="section-heading"><div><p class="eyebrow">Continuity</p><h3 id="huddle-dialog-carried-title">Carried forward</h3></div><span class="section-count">${items.length}</span></div>${items.length ? `<div class="huddle-dialog-list">${items.map((item) => {
+      const incomplete = (item.subtasks || []).filter((subtask) => !subtask.completed);
+      return `<article class="huddle-dialog-item"><div><strong>${escapeHtml(item.title || item.outcome)}</strong><small>Raised ${escapeHtml(workDateLabel(item.raisedDate || item.createdAt?.slice(0, 10)))}${item.dueDate ? ` \xB7 Due ${escapeHtml(workDateLabel(item.dueDate))}` : ""}${item.blocked ? " \xB7 Blocked" : ""}</small>${incomplete.length ? `<small>${incomplete.length} incomplete subtask${incomplete.length === 1 ? "" : "s"}</small>` : ""}</div><div class="huddle-dialog-item__actions"><button type="button" class="text-button" data-complete-work="${escapeHtml(item.id)}">Complete</button><button type="button" class="text-button" data-huddle-add-today="${escapeHtml(item.id)}">Add to Today</button></div></article>`;
+    }).join("")}</div>` : '<div class="section-empty"><p>No carried-over items.</p><small>Add a new work item to start the day.</small></div>'}</section><div class="modal__actions"><button type="button" class="primary-action" data-huddle-dialog-add>\uFF0B Add work item</button><button type="button" class="secondary-action" data-close-dialog>Continue to Huddle</button></div></div></dialog>`;
+  }
   var reviewActions = [
     ["carry-forward", "Carry forward"],
     ["complete", "Complete"],
@@ -1416,6 +1423,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
   var currentEodFilter = "all";
   var currentHuddleDate = "";
   var addNewItemToHuddle = false;
+  var huddleDialogShownDate = "";
   var currentImprovements = [];
   var currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
   var currentJourneyState = { id: "primary", completedMilestoneIds: [], meetingPreparation: {} };
@@ -1718,6 +1726,12 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       currentWorkItems = prepared.workItems;
       app.innerHTML = createAppShell(route);
       document.querySelector("#view-root").innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems, availableDates);
+      const openItems = huddleItems.filter((ref) => currentWorkItems.some((item) => item.id === ref.itemId && item.status !== "complete"));
+      if (huddleDate === today && openItems.length && huddleDialogShownDate !== today) {
+        document.body.insertAdjacentHTML("beforeend", createHuddleMeetingDialog(huddleDate, currentWorkItems, huddleItems));
+        document.querySelector("#morning-huddle-dialog")?.showModal();
+        huddleDialogShownDate = today;
+      }
       document.title = "Morning Huddle \u2014 TalentisOS";
     } else if (route.key === "eod") {
       const eodDate = dateOnly();
@@ -2674,6 +2688,12 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     form.querySelector('select[name="status"]').innerHTML = workStatusOptions(workType.value, "");
   });
   document.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-huddle-dialog-add]")) {
+      document.querySelector("#morning-huddle-dialog")?.close();
+      addNewItemToHuddle = true;
+      openWorkEditor(null, "action");
+      return;
+    }
     if (event.target.closest("[data-huddle-add-new]")) {
       addNewItemToHuddle = true;
       openWorkEditor(null, "action");
@@ -3501,7 +3521,10 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     }
   });
   window.addEventListener("hashchange", () => {
-    if (getRoute().key !== "huddle" || !document.querySelector(".huddle-command")) currentHuddleDate = "";
+    if (getRoute().key !== "huddle" || !document.querySelector(".huddle-command")) {
+      currentHuddleDate = "";
+      huddleDialogShownDate = "";
+    }
     render();
   });
   themeQuery.addEventListener("change", () => {

@@ -31,6 +31,7 @@ import {
   createHuddlePickerDialog,
   createEodCarryReviewDialog,
   createHuddleView,
+  createHuddleMeetingDialog,
   createWorkView,
   getRoute,
   renderView,
@@ -123,6 +124,7 @@ let currentMeetingSchedules = [];
 let currentEodFilter = 'all';
 let currentHuddleDate = '';
 let addNewItemToHuddle = false;
+let huddleDialogShownDate = '';
 let currentImprovements = [];
 let currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
 let currentJourneyState = { id: 'primary', completedMilestoneIds: [], meetingPreparation: {} };
@@ -449,6 +451,12 @@ async function render() {
     currentWorkItems = prepared.workItems;
     app.innerHTML = createAppShell(route);
     document.querySelector('#view-root').innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems, availableDates);
+    const openItems = huddleItems.filter((ref) => currentWorkItems.some((item) => item.id === ref.itemId && item.status !== 'complete'));
+    if (huddleDate === today && openItems.length && huddleDialogShownDate !== today) {
+      document.body.insertAdjacentHTML('beforeend', createHuddleMeetingDialog(huddleDate, currentWorkItems, huddleItems));
+      document.querySelector('#morning-huddle-dialog')?.showModal();
+      huddleDialogShownDate = today;
+    }
     document.title = 'Morning Huddle — TalentisOS';
   } else if (route.key === 'eod') {
     const eodDate = dateOnly();
@@ -1472,6 +1480,13 @@ document.addEventListener('change', (event) => {
 });
 
 document.addEventListener('click', async (event) => {
+  if (event.target.closest('[data-huddle-dialog-add]')) {
+    document.querySelector('#morning-huddle-dialog')?.close();
+    addNewItemToHuddle = true;
+    openWorkEditor(null, 'action');
+    return;
+  }
+
   if (event.target.closest('[data-huddle-add-new]')) {
     addNewItemToHuddle = true;
     openWorkEditor(null, 'action');
@@ -2399,7 +2414,10 @@ document.addEventListener('click', async (event) => {
 });
 
 window.addEventListener('hashchange', () => {
-  if (getRoute().key !== 'huddle' || !document.querySelector('.huddle-command')) currentHuddleDate = '';
+  if (getRoute().key !== 'huddle' || !document.querySelector('.huddle-command')) {
+    currentHuddleDate = '';
+    huddleDialogShownDate = '';
+  }
   render();
 });
 themeQuery.addEventListener('change', () => {
