@@ -535,7 +535,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       if (!groups[key]) groups[key] = { ref, item };
       return groups;
     }, {});
-    const dateSwitcher = availableDates.length ? `<div class="huddle-date-switcher" role="group" aria-label="Huddle dates">${availableDates.map((availableDate) => `<button type="button" class="text-button ${availableDate === date ? "text-button--selected" : ""}" data-huddle-date="${escapeHtml(availableDate)}">${escapeHtml(workDateLabel(availableDate))}</button>`).join("")}</div>` : "";
+    const dateSwitcher = `<button type="button" class="primary-action" data-huddle-add-new>Add work item <span aria-hidden="true">\uFF0B</span></button>${availableDates.length ? `<div class="huddle-date-switcher" role="group" aria-label="Huddle dates">${availableDates.map((availableDate) => `<button type="button" class="text-button ${availableDate === date ? "text-button--selected" : ""}" data-huddle-date="${escapeHtml(availableDate)}">${escapeHtml(workDateLabel(availableDate))}</button>`).join("")}</div>` : ""}`;
     return `<section class="huddle-command" aria-labelledby="huddle-title"><div class="review-intro"><div><p class="eyebrow">Prepare \xB7 Align</p><h2 id="huddle-title">Morning Huddle</h2><p class="secondary-text">${escapeHtml(workDateLabel(date))} \xB7 Carried work stays connected to the original item.</p></div>${dateSwitcher}</div><section class="today-section" aria-labelledby="carried-forward-title"><div class="section-heading"><div><p class="eyebrow">Continuity</p><h2 id="carried-forward-title">Carried forward</h2></div><span class="section-count">${Object.keys(grouped).length}</span></div>${Object.keys(grouped).length ? `<div class="work-list">${Object.values(grouped).map(({ item }) => {
       const incomplete = (item.subtasks || []).filter((subtask) => !subtask.completed);
       const carryCount = (item.movementHistory || []).filter((event) => ["Copied to Huddle", "Carried Forward", "Moved to Huddle"].includes(event.action)).length;
@@ -1415,6 +1415,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
   var currentMeetingSchedules = [];
   var currentEodFilter = "all";
   var currentHuddleDate = "";
+  var addNewItemToHuddle = false;
   var currentImprovements = [];
   var currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
   var currentJourneyState = { id: "primary", completedMilestoneIds: [], meetingPreparation: {} };
@@ -1708,12 +1709,13 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       document.title = "Journey \u2014 TalentisOS";
     } else if (route.key === "huddle") {
       const today = dateOnly();
-      const allHuddleItems = await getHuddleItems(database);
+      const prepared = await prepareTodayHuddle(today);
+      const allHuddleItems = prepared.allRefs;
       const availableDates = [...new Set(allHuddleItems.filter((item) => item.status !== "removed" && item.huddleDate).map((item) => item.huddleDate))].sort();
-      const huddleDate = currentHuddleDate || (availableDates.includes(today) ? today : availableDates.find((date) => date >= today) || today);
+      const huddleDate = currentHuddleDate || today;
       currentHuddleDate = huddleDate;
       const huddleItems = allHuddleItems.filter((item) => item.huddleDate === huddleDate && item.status !== "removed");
-      currentWorkItems = await getWorkItems(database);
+      currentWorkItems = prepared.workItems;
       app.innerHTML = createAppShell(route);
       document.querySelector("#view-root").innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems, availableDates);
       document.title = "Morning Huddle \u2014 TalentisOS";
@@ -2048,7 +2050,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       result: values.result?.trim() || ""
     };
   }
-  async function addTasksToHuddle(items, huddleDate, sourceView = "EOD") {
+  async function addTasksToHuddle(items, huddleDate, sourceView = "EOD", action = sourceView === "EOD" ? "Carried Forward" : "Added to Huddle") {
     const existingRefs = await getHuddleItems(database, huddleDate);
     const existingKeys = new Set(existingRefs.filter((ref) => ref.status !== "removed").map((ref) => `${ref.itemType}:${ref.itemId}`));
     let added = 0;
@@ -2056,10 +2058,22 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       if (existingKeys.has(`task:${task.id}`)) continue;
       const now = (/* @__PURE__ */ new Date()).toISOString();
       await saveHuddleItem(database, { id: `huddle-${huddleDate}-task-${task.id}`, itemId: task.id, itemType: "task", sourceView, targetView: "Morning Huddle", targetDate: huddleDate, huddleDate, createdAt: now, addedAt: now, status: "active" });
-      await saveWorkItem(database, { ...task, movementHistory: [...task.movementHistory || [], { id: crypto.randomUUID(), timestamp: now, date: dateOnly(), action: sourceView === "EOD" ? "Carried Forward" : "Added to Huddle", from: sourceView, to: "Morning Huddle", targetDate: huddleDate }] });
+      await saveWorkItem(database, { ...task, movementHistory: [...task.movementHistory || [], { id: crypto.randomUUID(), timestamp: now, date: dateOnly(), action, from: sourceView, to: "Morning Huddle", targetDate: huddleDate }] });
       added += 1;
     }
     return added;
+  }
+  async function prepareTodayHuddle(date) {
+    const allRefs = await getHuddleItems(database);
+    const todayIds = new Set(allRefs.filter((ref) => ref.huddleDate === date && ref.status !== "removed").map((ref) => ref.itemId));
+    const workItems = await getWorkItems(database);
+    const outstanding = allRefs.filter((ref) => ref.huddleDate < date && ref.status === "active" && ref.itemType === "task" && !todayIds.has(ref.itemId)).map((ref) => workItems.find((item) => item.id === ref.itemId)).filter((item, index, list) => item && item.status !== "complete" && list.findIndex((candidate) => candidate.id === item.id) === index);
+    if (!outstanding.length) return { allRefs, workItems };
+    await addTasksToHuddle(outstanding, date, "Morning Huddle", "Carried Forward");
+    for (const ref of allRefs.filter((item) => item.huddleDate < date && item.status === "active" && outstanding.some((task) => task.id === item.itemId))) {
+      await saveHuddleItem(database, { ...ref, status: "carried-forward", carriedToDate: date });
+    }
+    return { allRefs: await getHuddleItems(database), workItems: await getWorkItems(database) };
   }
   async function persistWorkForm(form) {
     const item = workItemFromForm(form);
@@ -2074,6 +2088,10 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     if (!form.elements.id.value) form.elements.id.value = item.id;
     await saveWorkItem(database, item);
     currentWorkItems = [...currentWorkItems.filter((existing) => existing.id !== item.id), item];
+    if (addNewItemToHuddle && item.status !== "complete") {
+      await addTasksToHuddle([item], currentHuddleDate || dateOnly(), "Morning Huddle", "Added to Huddle");
+      addNewItemToHuddle = false;
+    }
     form.querySelector("[data-autosave-note]").textContent = "Saved automatically.";
     window.setTimeout(() => {
       form.querySelector("[data-autosave-note]")?.replaceChildren(document.createTextNode("Changes save automatically."));
@@ -2656,6 +2674,11 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     form.querySelector('select[name="status"]').innerHTML = workStatusOptions(workType.value, "");
   });
   document.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-huddle-add-new]")) {
+      addNewItemToHuddle = true;
+      openWorkEditor(null, "action");
+      return;
+    }
     const huddleDateButton = event.target.closest("[data-huddle-date]");
     if (huddleDateButton) {
       currentHuddleDate = huddleDateButton.dataset.huddleDate;
@@ -3310,6 +3333,11 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       openWorkEditor(null, "action");
       return;
     }
+    if (event.target.closest("[data-primary-action]") && getRoute().key === "huddle") {
+      currentHuddleDate = dateOnly();
+      await render();
+      return;
+    }
     if (event.target.closest("[data-primary-action]") && getRoute().key === "review") {
       if (currentReview.closed) {
         window.location.hash = "#today";
@@ -3472,7 +3500,10 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       }
     }
   });
-  window.addEventListener("hashchange", () => render());
+  window.addEventListener("hashchange", () => {
+    if (getRoute().key !== "huddle" || !document.querySelector(".huddle-command")) currentHuddleDate = "";
+    render();
+  });
   themeQuery.addEventListener("change", () => {
     if (document.documentElement.dataset.theme === "system") applyTheme("system");
   });

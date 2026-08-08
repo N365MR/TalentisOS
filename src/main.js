@@ -122,6 +122,7 @@ let currentL10Meeting;
 let currentMeetingSchedules = [];
 let currentEodFilter = 'all';
 let currentHuddleDate = '';
+let addNewItemToHuddle = false;
 let currentImprovements = [];
 let currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
 let currentJourneyState = { id: 'primary', completedMilestoneIds: [], meetingPreparation: {} };
@@ -439,12 +440,13 @@ async function render() {
     document.title = 'Journey — TalentisOS';
   } else if (route.key === 'huddle') {
     const today = dateOnly();
-    const allHuddleItems = await getHuddleItems(database);
+    const prepared = await prepareTodayHuddle(today);
+    const allHuddleItems = prepared.allRefs;
     const availableDates = [...new Set(allHuddleItems.filter((item) => item.status !== 'removed' && item.huddleDate).map((item) => item.huddleDate))].sort();
-    const huddleDate = currentHuddleDate || (availableDates.includes(today) ? today : availableDates.find((date) => date >= today) || today);
+    const huddleDate = currentHuddleDate || today;
     currentHuddleDate = huddleDate;
     const huddleItems = allHuddleItems.filter((item) => item.huddleDate === huddleDate && item.status !== 'removed');
-    currentWorkItems = await getWorkItems(database);
+    currentWorkItems = prepared.workItems;
     app.innerHTML = createAppShell(route);
     document.querySelector('#view-root').innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems, availableDates);
     document.title = 'Morning Huddle — TalentisOS';
@@ -809,7 +811,7 @@ function workItemFromForm(form) {
   };
 }
 
-async function addTasksToHuddle(items, huddleDate, sourceView = 'EOD') {
+async function addTasksToHuddle(items, huddleDate, sourceView = 'EOD', action = sourceView === 'EOD' ? 'Carried Forward' : 'Added to Huddle') {
   const existingRefs = await getHuddleItems(database, huddleDate);
   const existingKeys = new Set(existingRefs.filter((ref) => ref.status !== 'removed').map((ref) => `${ref.itemType}:${ref.itemId}`));
   let added = 0;
@@ -817,10 +819,26 @@ async function addTasksToHuddle(items, huddleDate, sourceView = 'EOD') {
     if (existingKeys.has(`task:${task.id}`)) continue;
     const now = new Date().toISOString();
     await saveHuddleItem(database, { id: `huddle-${huddleDate}-task-${task.id}`, itemId: task.id, itemType: 'task', sourceView, targetView: 'Morning Huddle', targetDate: huddleDate, huddleDate, createdAt: now, addedAt: now, status: 'active' });
-    await saveWorkItem(database, { ...task, movementHistory: [...(task.movementHistory || []), { id: crypto.randomUUID(), timestamp: now, date: dateOnly(), action: sourceView === 'EOD' ? 'Carried Forward' : 'Added to Huddle', from: sourceView, to: 'Morning Huddle', targetDate: huddleDate }] });
+    await saveWorkItem(database, { ...task, movementHistory: [...(task.movementHistory || []), { id: crypto.randomUUID(), timestamp: now, date: dateOnly(), action, from: sourceView, to: 'Morning Huddle', targetDate: huddleDate }] });
     added += 1;
   }
   return added;
+}
+
+async function prepareTodayHuddle(date) {
+  const allRefs = await getHuddleItems(database);
+  const todayIds = new Set(allRefs.filter((ref) => ref.huddleDate === date && ref.status !== 'removed').map((ref) => ref.itemId));
+  const workItems = await getWorkItems(database);
+  const outstanding = allRefs
+    .filter((ref) => ref.huddleDate < date && ref.status === 'active' && ref.itemType === 'task' && !todayIds.has(ref.itemId))
+    .map((ref) => workItems.find((item) => item.id === ref.itemId))
+    .filter((item, index, list) => item && item.status !== 'complete' && list.findIndex((candidate) => candidate.id === item.id) === index);
+  if (!outstanding.length) return { allRefs, workItems };
+  await addTasksToHuddle(outstanding, date, 'Morning Huddle', 'Carried Forward');
+  for (const ref of allRefs.filter((item) => item.huddleDate < date && item.status === 'active' && outstanding.some((task) => task.id === item.itemId))) {
+    await saveHuddleItem(database, { ...ref, status: 'carried-forward', carriedToDate: date });
+  }
+  return { allRefs: await getHuddleItems(database), workItems: await getWorkItems(database) };
 }
 
 async function persistWorkForm(form) {
@@ -837,6 +855,10 @@ async function persistWorkForm(form) {
   if (!form.elements.id.value) form.elements.id.value = item.id;
   await saveWorkItem(database, item);
   currentWorkItems = [...currentWorkItems.filter((existing) => existing.id !== item.id), item];
+  if (addNewItemToHuddle && item.status !== 'complete') {
+    await addTasksToHuddle([item], currentHuddleDate || dateOnly(), 'Morning Huddle', 'Added to Huddle');
+    addNewItemToHuddle = false;
+  }
   form.querySelector('[data-autosave-note]').textContent = 'Saved automatically.';
   window.setTimeout(() => {
     form
@@ -1450,6 +1472,12 @@ document.addEventListener('change', (event) => {
 });
 
 document.addEventListener('click', async (event) => {
+  if (event.target.closest('[data-huddle-add-new]')) {
+    addNewItemToHuddle = true;
+    openWorkEditor(null, 'action');
+    return;
+  }
+
   const huddleDateButton = event.target.closest('[data-huddle-date]');
   if (huddleDateButton) {
     currentHuddleDate = huddleDateButton.dataset.huddleDate;
@@ -2182,6 +2210,12 @@ document.addEventListener('click', async (event) => {
     return;
   }
 
+  if (event.target.closest('[data-primary-action]') && getRoute().key === 'huddle') {
+    currentHuddleDate = dateOnly();
+    await render();
+    return;
+  }
+
   if (event.target.closest('[data-primary-action]') && getRoute().key === 'review') {
     if (currentReview.closed) {
       window.location.hash = '#today';
@@ -2364,7 +2398,10 @@ document.addEventListener('click', async (event) => {
   }
 });
 
-window.addEventListener('hashchange', () => render());
+window.addEventListener('hashchange', () => {
+  if (getRoute().key !== 'huddle' || !document.querySelector('.huddle-command')) currentHuddleDate = '';
+  render();
+});
 themeQuery.addEventListener('change', () => {
   if (document.documentElement.dataset.theme === 'system') applyTheme('system');
 });
