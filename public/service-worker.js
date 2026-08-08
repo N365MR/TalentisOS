@@ -1,12 +1,13 @@
 const CACHE_NAME = 'talentisos-shell-v4';
+const BASE_PATH = new URL('./', self.registration.scope).pathname;
 const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/offline.html',
-  '/manifest.webmanifest',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
-  '/icons/apple-touch-icon.svg',
+  BASE_PATH,
+  `${BASE_PATH}index.html`,
+  `${BASE_PATH}offline.html`,
+  `${BASE_PATH}manifest.webmanifest`,
+  `${BASE_PATH}icons/icon-192.svg`,
+  `${BASE_PATH}icons/icon-512.svg`,
+  `${BASE_PATH}icons/apple-touch-icon.svg`,
 ];
 
 self.addEventListener('install', (event) => {
@@ -39,7 +40,7 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
             return response;
           })
-          .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/offline.html')))
+          .catch(() => caches.match(event.request).then((cached) => cached || caches.match(`${BASE_PATH}offline.html`)))
       : caches.match(event.request).then((cached) => {
           const network = fetch(event.request)
             .then((response) => {

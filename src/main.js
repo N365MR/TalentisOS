@@ -4,9 +4,18 @@ import {
   createOnboarding,
   createToast,
   createTodayView,
+  createEodView,
+  createJourneyView,
+  createMeetingBuilderDialog,
+  createMeetingScheduleCard,
+  createMeetingScheduleDialog,
   createHistoryDialog,
   createReviewView,
   createWeeklyReviewView,
+  createL10View,
+  createL10IssueDialog,
+  createL10SettingsDialog,
+  createL10MeetingDetailDialog,
   createImproveView,
   createImprovementSheet,
   createPlaybookView,
@@ -14,6 +23,9 @@ import {
   playbookTopics,
   escapeHtml,
   createDataDialog,
+  createSnapshotDeleteDialog,
+  createResetOnboardingDialog,
+  createDeleteAllDataDialog,
   createWorkDetailSheet,
   createWorkView,
   getRoute,
@@ -36,7 +48,21 @@ import {
   saveImprovement,
   deleteImprovement,
   getPlaybookState,
+  getJourneyState,
+  getL10Settings,
+  getL10Meeting,
+  getL10Meetings,
+  getL10Collection,
+  getMeetingSchedules,
+  getEodRecord,
+  getEodRecords,
+  saveEodRecord,
   savePlaybookState,
+  saveJourneyState,
+  saveL10Record,
+  deleteRecord,
+  saveMeetingSchedule,
+  deleteMeetingSchedule,
   openDatabase,
   putRecord,
   saveOnboardingState,
@@ -65,6 +91,9 @@ import {
   csvTemplate,
   restoreCollections,
 } from './backup.js';
+import { getJourneyProgress } from './journey.js';
+import { L10_AGENDA, l10WeekStart, l10WeekEnd, l10RemainingSeconds, scorecardStatus, defaultL10Meeting } from './l10.js';
+import { dateOnly } from './meetings.js';
 
 const app = document.querySelector('#app');
 const toastRegion = document.querySelector('#toast-region');
@@ -83,8 +112,13 @@ let currentTomorrowPlan;
 let currentHistory = [];
 let currentReviewSuggestions = [];
 let currentWeeklyReview;
+let currentL10Meeting;
+let currentMeetingSchedules = [];
+let currentEodFilter = 'all';
 let currentImprovements = [];
 let currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
+let currentJourneyState = { id: 'primary', completedMilestoneIds: [], meetingPreparation: {} };
+let selectedJourneyMilestoneId = '';
 let currentPlaybookQuery = '';
 let currentPlaybookGroup = 'All topics';
 let currentSnapshots = [];
@@ -93,6 +127,8 @@ let pendingCsvImport = null;
 let updateRequested = false;
 let autosaveTimer;
 let lastUndo;
+let l10TimerInterval;
+let journeyTouchStartX = null;
 
 function showToast(message) {
   toastRegion.replaceChildren();
@@ -151,9 +187,9 @@ function applyTheme(theme, announce = false) {
 
 function savedTheme() {
   try {
-    return localStorage.getItem('talentisos-theme') || 'system';
+    return localStorage.getItem('talentisos-theme') || 'dark';
   } catch {
-    return 'system';
+    return 'dark';
   }
 }
 
@@ -162,6 +198,10 @@ async function collectBackupData() {
   const dailyPlans = await read(stores.dailyPlans);
   const workItems = await read(stores.workItems);
   const playbookState = await read(stores.playbookState);
+  const journeyState = await read(stores.journeyState);
+  const l10Settings = await read(stores.l10Settings);
+  const meetingSchedules = await read(stores.meetingSchedules);
+  const eodRecords = await read(stores.eodRecords);
   const appMeta = await read(stores.appMeta);
   return {
     settings: await read(stores.settings),
@@ -177,6 +217,16 @@ async function collectBackupData() {
     weeklyReviews: await read(stores.weeklyReviews),
     improvements: await read(stores.improvements),
     savedPlaybookTopics: playbookState[0]?.savedTopicIds || [],
+    completedPlaybookTopics: playbookState[0]?.completedTopicIds || [],
+    journeyState,
+    l10Settings,
+    l10ScorecardMetrics: await read(stores.l10ScorecardMetrics),
+    l10ScorecardEntries: await read(stores.l10ScorecardEntries),
+    l10Rocks: await read(stores.l10Rocks),
+    l10Issues: await read(stores.l10Issues),
+    l10Meetings: await read(stores.l10Meetings),
+    meetingSchedules,
+    eodRecords,
     onboardingState: appMeta.filter((item) => item.key === 'onboarding'),
   };
 }
@@ -203,6 +253,12 @@ async function exportBackup() {
   const backup = createBackup(await collectBackupData());
   downloadFile(JSON.stringify(backup, null, 2), `TalentisOS_Backup_${dateStamp()}.json`, 'application/json');
   showToast('Backup exported locally.');
+}
+
+function exportSnapshot(snapshot) {
+  if (!snapshot?.backup) return;
+  downloadFile(JSON.stringify(snapshot.backup, null, 2), `TalentisOS_Snapshot_${dateStamp()}.json`, 'application/json');
+  showToast('Snapshot exported locally.');
 }
 
 async function saveAutomaticSnapshot(snapshotType) {
@@ -247,6 +303,8 @@ async function applyRestore(backup, mode = 'replace') {
 function csvRows(type, data) {
   if (type === 'dailySummaries') return data.dailyReviews.map((item) => ({ date: item.date, summary: item.summary || item.improvement || '', closed: item.closed ? 'Yes' : 'No' }));
   if (type === 'weeklySummaries') return data.weeklyReviews.map((item) => ({ weekStart: item.weekStart, achieved: item.answers?.achieved || '', incomplete: item.answers?.incomplete || '', nextPriorities: (item.nextPriorities || []).join(' | '), operatingImprovement: item.operatingImprovement || '', leadershipFocus: item.leadershipFocus || '' }));
+  if (type === 'l10Todos') return data.l10Meetings.flatMap((meeting) => (meeting.todos || []).map((todo) => ({ ...todo, meetingId: meeting.id })));
+  if (type === 'l10Meetings') return data.l10Meetings.map((meeting) => ({ id: meeting.id, weekStart: meeting.weekStart, weekEnd: meeting.weekEnd || '', meetingAt: meeting.meetingAt, rating: meeting.rating || '', completedAt: meeting.completedAt || '', meetingImprovement: meeting.meetingImprovement || '' }));
   return data[type] || [];
 }
 
@@ -351,6 +409,8 @@ async function render() {
     currentPlan = await getDailyPlan(database);
     currentPriorities = await getPriorities(database, currentPlan.date);
     currentWorkItems = await getWorkItems(database);
+    currentJourneyState = await getJourneyState(database);
+    currentMeetingSchedules = await getMeetingSchedules(database);
     await importPreparedPlanIfNeeded();
     const action = currentPriorities.length < 3 ? 'Add a priority' : 'Review priorities';
     app.innerHTML = createAppShell({ ...route, action });
@@ -359,7 +419,22 @@ async function render() {
       currentPriorities,
       currentWorkItems,
     );
+    document.querySelector('#view-root').insertAdjacentHTML('afterbegin', `${createMeetingScheduleCard(currentMeetingSchedules)}<section class="journey-today-card" aria-labelledby="journey-today-title"><div><p class="eyebrow">Your journey</p><h2 id="journey-today-title">Continue your first 90 days</h2><p class="secondary-text">Your next leadership milestone is ready.</p></div><a class="secondary-action" href="#journey">Open journey <span aria-hidden="true">→</span></a></section>${createMeetingScheduleDialog(currentMeetingSchedules)}`);
     document.title = 'Today — TalentisOS';
+  } else if (route.key === 'journey') {
+    currentJourneyState = await getJourneyState(database);
+    app.innerHTML = createAppShell(route);
+    document.querySelector('#view-root').innerHTML = createJourneyView(currentJourneyState, selectedJourneyMilestoneId) + createMeetingBuilderDialog(currentJourneyState);
+    document.title = 'Journey — TalentisOS';
+  } else if (route.key === 'eod') {
+    const eodDate = dateOnly();
+    const existingEod = await getEodRecord(database, eodDate);
+    const eod = existingEod || { id: `eod-${eodDate}`, date: eodDate, status: 'not-started', step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '' };
+    const eodHistory = await getEodRecords(database);
+    currentWorkItems = await getWorkItems(database);
+    app.innerHTML = createAppShell(route);
+    document.querySelector('#view-root').innerHTML = createEodView({ eod, date: eodDate, workItems: currentWorkItems, history: eodHistory.filter((item) => item.date !== eodDate), filter: currentEodFilter });
+    document.title = 'End of Day — TalentisOS';
   } else if (route.key === 'work') {
     currentWorkItems = await getWorkItems(database);
     app.innerHTML = createAppShell(route);
@@ -389,9 +464,34 @@ async function render() {
       ...route,
       action: currentReview.closed ? 'Finish Day' : 'Finish Day',
     });
-    if (route.subroute === 'weekly') {
+    if (route.subroute === 'l10') {
+      const weekStart = l10WeekStart(new Date());
+      const l10Settings = await getL10Settings(database);
+      currentL10Meeting = await getL10Meeting(database, weekStart) || defaultL10Meeting(weekStart);
+      const l10Data = {
+        settings: l10Settings,
+        meeting: currentL10Meeting,
+        metrics: await getL10Collection(database, 'l10ScorecardMetrics'),
+        entries: await getL10Collection(database, 'l10ScorecardEntries'),
+        rocks: await getL10Collection(database, 'l10Rocks'),
+        issues: await getL10Collection(database, 'l10Issues'),
+        history: await getL10Meetings(database),
+        weekStart,
+      };
+      app.innerHTML = createAppShell({ ...route, label: 'Review', action: 'Finish Day' });
+      document.querySelector('#view-root').innerHTML = createL10View(l10Data) + l10Data.history.map((item) => createL10MeetingDetailDialog(item)).join('') + createL10IssueDialog() + createL10SettingsDialog(l10Settings) + createImprovementSheet();
+      document.querySelector('#view-root').insertAdjacentHTML('afterbegin', '<button type="button" class="secondary-action l10-settings-trigger" data-open-l10-settings>Meeting setup</button>');
+      const activeSection = document.querySelector('.l10-active-section');
+      document.querySelector('.l10-intro')?.insertAdjacentHTML('beforeend', `<form class="l10-week-form" data-l10-week-form><label>Week ending<input type="date" name="weekEnd" value="${escapeHtml(currentL10Meeting.weekEnd || l10WeekEnd(weekStart))}" required></label><button class="secondary-action" type="submit">Save date</button></form>`);
+      const timerSeconds = l10RemainingSeconds(currentL10Meeting, currentL10Meeting.currentSection);
+      activeSection?.querySelector('h2')?.insertAdjacentHTML('afterend', `<div class="l10-timer" aria-live="polite"><strong data-l10-timer>${String(Math.floor(timerSeconds / 60)).padStart(2, '0')}:${String(timerSeconds % 60).padStart(2, '0')}</strong><button type="button" class="secondary-action" data-l10-timer-toggle>${currentL10Meeting.timer?.startedAt ? 'Pause timer' : currentL10Meeting.timer?.paused ? 'Resume timer' : 'Start timer'}</button></div>`);
+      window.clearInterval(l10TimerInterval);
+      if (currentL10Meeting.timer?.startedAt) l10TimerInterval = window.setInterval(() => { const seconds = l10RemainingSeconds(currentL10Meeting, currentL10Meeting.currentSection); const timer = document.querySelector('[data-l10-timer]'); if (timer) timer.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; }, 1000);
+      document.title = 'L10 Meeting — TalentisOS';
+    } else if (route.subroute === 'weekly') {
       const weekStart = startOfWeek(new Date());
       currentWeeklyReview = await getWeeklyReview(database, weekStart);
+      const l10MeetingForWeek = await getL10Meeting(database, weekStart);
       currentImprovements = await getImprovements(database);
       const closures = currentHistory.filter((closure) => closure.date >= weekStart && closure.date <= addDays(weekStart, 6));
       const weekPriorities = (await getAllPriorities(database)).filter((item) => item.planDate >= weekStart && item.planDate <= addDays(weekStart, 6));
@@ -406,6 +506,7 @@ async function render() {
         weekStart,
         weekEnd: addDays(weekStart, 6),
       }) + createImprovementSheet();
+      if (l10MeetingForWeek) document.querySelector('#view-root').insertAdjacentHTML('afterbegin', `<section class="l10-weekly-link"><div><p class="eyebrow">L10 meeting connection</p><h2>${l10MeetingForWeek.completedAt ? 'L10 completed' : 'L10 in progress'}</h2><p class="secondary-text">${l10MeetingForWeek.todos?.filter((todo) => todo.status === 'done').length || 0} To-Dos complete · ${l10MeetingForWeek.issueIds?.length || 0} linked Issues · Rating ${escapeHtml(l10MeetingForWeek.rating || 'Not rated')}</p></div><a class="secondary-action" href="#review/l10">Open L10 meeting <span aria-hidden="true">→</span></a></section>`);
     } else {
       document.querySelector('#view-root').innerHTML = createReviewView({
         review: currentReview,
@@ -587,7 +688,7 @@ async function openPlaybookTopic(id) {
   await savePlaybookState(database, currentPlaybookState);
   const existing = document.querySelector('#playbook-detail');
   existing?.remove();
-  app.insertAdjacentHTML('beforeend', createPlaybookDialog(topic, currentPlaybookState.savedTopicIds?.includes(topic.id)));
+  app.insertAdjacentHTML('beforeend', createPlaybookDialog(topic, currentPlaybookState.savedTopicIds?.includes(topic.id), currentPlaybookState.completedTopicIds?.includes(topic.id)));
   openDialog(document.querySelector('#playbook-detail'));
 }
 
@@ -642,6 +743,11 @@ function workItemFromForm(form) {
   const values = formValues(form);
   const existing = currentWorkItems.find((item) => item.id === values.id);
   const checkbox = form.elements.escalationRequired;
+  const subtaskTitles = values.subtasksText == null ? null : values.subtasksText.split('\n').map((title) => title.trim()).filter(Boolean);
+  const subtasks = subtaskTitles == null ? (existing?.subtasks || []) : subtaskTitles.map((title) => {
+    const previous = (existing?.subtasks || []).find((subtask) => subtask.title === title);
+    return previous || { id: crypto.randomUUID(), title, completed: false, createdAt: new Date().toISOString() };
+  });
   return {
     ...(existing || {}),
     id: values.id || crypto.randomUUID(),
@@ -659,6 +765,7 @@ function workItemFromForm(form) {
       .split(',')
       .map((id) => id.trim())
       .filter(Boolean),
+    ...(subtaskTitles == null ? {} : { subtasks }),
     whatAtRisk: values.whatAtRisk?.trim() || '',
     impact: values.impact?.trim() || '',
     immediateAction: values.immediateAction?.trim() || '',
@@ -728,11 +835,14 @@ async function completeWorkItem(id) {
 async function completeOnboarding(answers) {
   await putRecord(database, stores.settings, {
     id: 'primary',
-    teamFunction: answers.functionType,
-    outcomes: [answers.outcome0, answers.outcome1, answers.outcome2].filter(Boolean),
+    leadershipSituation: answers.leadershipSituation,
+    teamFunction: answers.workType,
+    guidanceLevel: answers.guidanceLevel,
     workdayStart: answers.startTime,
-    morningHuddle: answers.morningHuddle === 'yes',
     reviewTime: answers.reviewTime,
+    leaderRole: answers.leaderRole,
+    reportingRoles: (answers.reportingRoles || '').split('\n').map((role) => role.trim()).filter(Boolean),
+    teamStructure: answers.teamStructure,
     updatedAt: new Date().toISOString(),
   });
 }
@@ -897,6 +1007,31 @@ async function reorderTomorrow(id, direction) {
   await render();
 }
 
+document.addEventListener('touchstart', (event) => {
+  if (getRoute().key === 'journey' && event.touches.length === 1) journeyTouchStartX = event.touches[0].clientX;
+}, { passive: true });
+
+document.addEventListener('touchend', async (event) => {
+  if (getRoute().key !== 'journey' || journeyTouchStartX === null) return;
+  const distance = event.changedTouches[0].clientX - journeyTouchStartX;
+  journeyTouchStartX = null;
+  if (Math.abs(distance) < 60) return;
+  const progress = getJourneyProgress(currentJourneyState);
+  const currentIndex = progress.milestones.findIndex((milestone) => milestone.id === (selectedJourneyMilestoneId || progress.current.id));
+  const nextIndex = Math.max(0, Math.min(progress.milestones.length - 1, currentIndex + (distance < 0 ? 1 : -1)));
+  if (nextIndex !== currentIndex) {
+    selectedJourneyMilestoneId = progress.milestones[nextIndex].id;
+    await render();
+  }
+}, { passive: true });
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !document.body.classList.contains('mobile-menu-open')) return;
+  document.body.classList.remove('mobile-menu-open');
+  document.querySelector('[data-mobile-menu-toggle]')?.setAttribute('aria-expanded', 'false');
+  document.querySelector('#mobile-menu')?.setAttribute('aria-hidden', 'true');
+});
+
 document.addEventListener('submit', async (event) => {
   const submittedForm = event.target;
   if (submittedForm.dataset.submitting === 'true') {
@@ -918,11 +1053,172 @@ document.addEventListener('submit', async (event) => {
       ...onboardingState,
       step: Number(onboardingForm.dataset.step) + 1,
       answers: { ...onboardingState.answers, ...values },
-      completed: Number(onboardingForm.dataset.step) === 4,
+      completed: Number(onboardingForm.dataset.step) === 5,
       completionSeen: onboardingState.completionSeen || false,
     });
     if (onboardingState.completed) await completeOnboarding(onboardingState.answers);
     showToast(onboardingState.completed ? 'Your playbook is ready.' : 'Saved.');
+    await render();
+    return;
+  }
+  const eodTaskForm = event.target.closest('[data-eod-task-form]');
+  if (eodTaskForm) {
+    event.preventDefault();
+    const values = formValues(eodTaskForm);
+    const eodDate = dateOnly();
+    const eod = (await getEodRecord(database, eodDate)) || { id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '' };
+    const task = await saveWorkItem(database, { id: crypto.randomUUID(), type: 'action', group: eod.step === 0 ? 'now' : 'next', title: values.title.trim(), dueDate: values.dueDate || '', priority: values.priority || 'Normal', status: eod.step === 0 ? 'complete' : 'not-started', source: 'eod', completedAt: eod.step === 0 ? new Date().toISOString() : '' , subtasks: [] });
+    await saveEodRecord(database, { ...eod, status: 'in-progress', completedTaskIds: eod.step === 0 ? [...new Set([...(eod.completedTaskIds || []), task.id])] : eod.completedTaskIds, outstandingTaskIds: eod.step === 1 ? [...new Set([...(eod.outstandingTaskIds || []), task.id])] : eod.outstandingTaskIds });
+    showToast('Task saved locally.');
+    await render();
+    return;
+  }
+  const eodRiskForm = event.target.closest('[data-eod-risk-form]');
+  if (eodRiskForm) {
+    event.preventDefault();
+    const values = formValues(eodRiskForm);
+    const eodDate = dateOnly();
+    const eod = (await getEodRecord(database, eodDate)) || { id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: 2, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: '', handoverNote: '' };
+    const risk = await saveWorkItem(database, { id: crypto.randomUUID(), type: 'risk', group: 'now', title: values.title.trim(), impact: values.impact, riskLevel: values.riskLevel, nextAction: values.nextAction || '', status: 'not-started', source: 'eod', createdAt: new Date().toISOString() });
+    await saveEodRecord(database, { ...eod, riskIds: [...new Set([...(eod.riskIds || []), risk.id])] });
+    showToast('Risk captured locally.');
+    await render();
+    return;
+  }
+  const meetingForm = event.target.closest('[data-meeting-builder-form]');
+  if (meetingForm) {
+    event.preventDefault();
+    const values = formValues(meetingForm);
+    currentJourneyState = await saveJourneyState(database, { ...currentJourneyState, meetingPreparation: { purpose: values.purpose, introduction: values.introduction, questions: new FormData(meetingForm).getAll('questions'), expectations: values.expectations, close: values.close } });
+    meetingForm.closest('dialog')?.close();
+    showToast('Meeting plan saved locally.');
+    await render();
+    return;
+  }
+  const l10SegueForm = event.target.closest('[data-l10-segue-form]');
+  if (l10SegueForm) {
+    event.preventDefault();
+    const values = formValues(l10SegueForm);
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, segue: values, sectionStatus: { ...currentL10Meeting.sectionStatus, segue: true } });
+    showToast('Segue saved locally.');
+    await render();
+    return;
+  }
+  const l10ScorecardForm = event.target.closest('[data-l10-scorecard-entry-form]');
+  if (l10ScorecardForm) {
+    event.preventDefault();
+    const values = formValues(l10ScorecardForm);
+    const metric = (await getL10Collection(database, 'l10ScorecardMetrics')).find((item) => item.id === values.metricId);
+    await saveL10Record(database, 'l10ScorecardEntries', { id: `entry-${values.metricId}-${currentL10Meeting.weekStart}`, metricId: values.metricId, weekStart: currentL10Meeting.weekStart, goal: Number(values.goal), actual: Number(values.actual), status: scorecardStatus(values.goal, values.actual, metric?.direction), note: values.note || '', addedToIssues: false });
+    showToast('Scorecard number saved.');
+    await render();
+    return;
+  }
+  const l10MetricForm = event.target.closest('[data-l10-metric-form]');
+  if (l10MetricForm) {
+    event.preventDefault();
+    const values = formValues(l10MetricForm);
+    const metricId = l10MetricForm.dataset.editMetric || crypto.randomUUID();
+    const existing = l10MetricForm.dataset.editMetric ? (await getL10Collection(database, 'l10ScorecardMetrics')).find((item) => item.id === metricId) : {};
+    await saveL10Record(database, 'l10ScorecardMetrics', { ...existing, id: metricId, name: values.name, area: values.area, direction: values.direction, weeklyGoal: Number(values.weeklyGoal), active: true, order: existing.order || Date.now() });
+    showToast(l10MetricForm.dataset.editMetric ? 'Scorecard metric updated.' : 'Scorecard metric added.');
+    await render();
+    return;
+  }
+  const l10WeekForm = event.target.closest('[data-l10-week-form]');
+  if (l10WeekForm) {
+    event.preventDefault();
+    const values = formValues(l10WeekForm);
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, weekEnd: values.weekEnd });
+    showToast('Week ending date saved.');
+    await render();
+    return;
+  }
+  const l10SettingsForm = event.target.closest('[data-l10-settings-form]');
+  if (l10SettingsForm) {
+    event.preventDefault();
+    const values = formValues(l10SettingsForm);
+    await saveL10Record(database, 'l10Settings', { id: 'primary', meetingDay: Number(values.meetingDay), meetingTime: values.meetingTime, durationMinutes: 90, teamAreas: values.teamAreas.split(',').map((item) => item.trim()).filter(Boolean), facilitatorArea: values.facilitatorArea, scribeArea: values.scribeArea, ratingTarget: Number(values.ratingTarget) || 8 });
+    l10SettingsForm.closest('dialog')?.close();
+    showToast('L10 setup saved locally.');
+    await render();
+    return;
+  }
+  const meetingScheduleForm = event.target.closest('[data-meeting-schedule-form]');
+  if (meetingScheduleForm) {
+    event.preventDefault();
+    const values = formValues(meetingScheduleForm);
+    const scheduleId = meetingScheduleForm.dataset.editSchedule;
+    const existing = scheduleId ? currentMeetingSchedules.find((schedule) => schedule.id === scheduleId) : null;
+    const updatedSchedule = { ...(existing || {}), id: scheduleId || crypto.randomUUID(), name: values.name.trim(), cadence: values.cadence, meetingTime: values.meetingTime, nextDate: values.nextDate, agenda: values.agenda || '', active: existing?.active !== false };
+    await saveMeetingSchedule(database, updatedSchedule);
+    showToast(scheduleId ? 'Recurring meeting updated locally.' : 'Recurring meeting added locally.');
+    if (scheduleId) {
+      currentMeetingSchedules = currentMeetingSchedules.map((schedule) => (schedule.id === scheduleId ? updatedSchedule : schedule));
+      meetingScheduleForm.dataset.originalSchedule = JSON.stringify({ name: updatedSchedule.name, cadence: updatedSchedule.cadence, meetingTime: updatedSchedule.meetingTime, nextDate: updatedSchedule.nextDate, agenda: updatedSchedule.agenda });
+      meetingScheduleForm.querySelector('.meeting-schedule-submit').disabled = true;
+      return;
+    }
+    await render();
+    return;
+  }
+  const l10RockForm = event.target.closest('[data-l10-rock-form]');
+  if (l10RockForm) {
+    event.preventDefault();
+    const values = formValues(l10RockForm);
+    await saveL10Record(database, 'l10Rocks', { id: crypto.randomUUID(), outcome: values.outcome, area: values.area, dueDate: values.dueDate, status: 'on-track', addedToIssues: false });
+    showToast('Rock added locally.');
+    await render();
+    return;
+  }
+  const l10HeadlineForm = event.target.closest('[data-l10-headline-form]');
+  if (l10HeadlineForm) {
+    event.preventDefault();
+    const values = formValues(l10HeadlineForm);
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, headlines: [...(currentL10Meeting.headlines || []), { id: crypto.randomUUID(), type: values.type, area: values.area, text: values.text, concern: values.concern === 'on' }] });
+    showToast('Headline saved locally.');
+    await render();
+    return;
+  }
+  const l10TodoForm = event.target.closest('[data-l10-todo-form]');
+  if (l10TodoForm) {
+    event.preventDefault();
+    const values = formValues(l10TodoForm);
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, todos: [...(currentL10Meeting.todos || []), { id: crypto.randomUUID(), title: values.title, area: values.area, dueDate: values.dueDate, status: 'not-done' }] });
+    showToast('To-Do added locally.');
+    await render();
+    return;
+  }
+  const l10IssueForm = event.target.closest('[data-l10-issue-form]');
+  if (l10IssueForm) {
+    event.preventDefault();
+    const values = formValues(l10IssueForm);
+    await saveL10Record(database, 'l10Issues', { id: crypto.randomUUID(), title: values.title, area: values.area, source: 'manual', priorityOrder: Date.now(), status: 'open', identify: '', discuss: '', solve: '', createdAt: new Date().toISOString() });
+    showToast('Issue added to IDS.');
+    await render();
+    return;
+  }
+  const l10IdsForm = event.target.closest('[data-l10-ids-form]');
+  if (l10IdsForm) {
+    event.preventDefault();
+    const values = formValues(l10IdsForm);
+    const issue = (await getL10Collection(database, 'l10Issues')).find((item) => item.id === values.id);
+    const savedIssue = await saveL10Record(database, 'l10Issues', { ...issue, title: values.title, identify: values.identify, discuss: values.discuss, solve: values.solve, status: values.status, solvedAt: values.status === 'solved' ? new Date().toISOString() : issue?.solvedAt });
+    if (values.conversion === 'decision') await saveWorkItem(database, { id: crypto.randomUUID(), type: 'decision', group: 'next', title: savedIssue.solve || savedIssue.title, status: 'required', sourceL10IssueId: savedIssue.id });
+    if (values.conversion === 'follow-up') await saveWorkItem(database, { id: crypto.randomUUID(), type: 'follow-up', group: 'next', title: savedIssue.solve || savedIssue.title, status: 'not-started', sourceL10IssueId: savedIssue.id });
+    if (values.conversion === 'improvement') await saveImprovement(database, { id: crypto.randomUUID(), notWorking: savedIssue.title, change: savedIssue.solve, why: savedIssue.discuss, nextStep: savedIssue.solve, category: 'workflow', status: 'captured', sourceL10IssueId: savedIssue.id, createdAt: new Date().toISOString() });
+    if (values.conversion === 'message') currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, cascadingMessages: [...(currentL10Meeting.cascadingMessages || []), savedIssue.solve || savedIssue.title] });
+    l10IdsForm.closest('dialog')?.close();
+    showToast('IDS outcome saved.');
+    await render();
+    return;
+  }
+  const l10ConcludeForm = event.target.closest('[data-l10-conclude-form]');
+  if (l10ConcludeForm) {
+    event.preventDefault();
+    const values = formValues(l10ConcludeForm);
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, rating: Number(values.rating), meetingImprovement: values.meetingImprovement, cascadingMessages: values.cascadingMessage ? [...(currentL10Meeting.cascadingMessages || []), values.cascadingMessage] : currentL10Meeting.cascadingMessages, completedAt: new Date().toISOString(), sectionStatus: { ...currentL10Meeting.sectionStatus, conclude: true } });
+    showToast('L10 meeting completed locally.');
     await render();
     return;
   }
@@ -964,6 +1260,12 @@ document.addEventListener('submit', async (event) => {
 });
 
 document.addEventListener('input', (event) => {
+  const meetingScheduleForm = event.target.closest('[data-meeting-schedule-form]');
+  if (meetingScheduleForm?.dataset.editSchedule) {
+    const current = JSON.stringify({ name: meetingScheduleForm.elements.name.value, cadence: meetingScheduleForm.elements.cadence.value, meetingTime: meetingScheduleForm.elements.meetingTime.value, nextDate: meetingScheduleForm.elements.nextDate.value, agenda: meetingScheduleForm.elements.agenda.value });
+    const saveButton = meetingScheduleForm.querySelector('.meeting-schedule-submit');
+    if (saveButton) saveButton.disabled = current === meetingScheduleForm.dataset.originalSchedule;
+  }
   const draftForm = event.target.closest('[data-priority-form], [data-improvement-form]');
   if (draftForm && !draftForm.elements.id?.value) saveDraft(draftForm);
   const playbookSearch = event.target.closest('[data-playbook-search]');
@@ -1021,7 +1323,30 @@ document.addEventListener('input', (event) => {
   autosaveTimer = window.setTimeout(() => persistWorkForm(workForm), 600);
 });
 
+document.addEventListener('focusin', (event) => {
+  const outcomeInput = event.target.closest('[data-onboarding-form] input[name^="outcome"]');
+  if (outcomeInput) outcomeInput.form.dataset.activeOutcome = outcomeInput.name;
+});
+
 document.addEventListener('change', (event) => {
+  const tomorrowTask = event.target.closest('[data-eod-tomorrow-task]');
+  if (tomorrowTask) {
+    const eodDate = dateOnly();
+    getEodRecord(database, eodDate).then(async (eod) => {
+      if (!eod) return;
+      const selected = new Set(eod.tomorrowPriorityIds || []);
+      if (tomorrowTask.checked && selected.size >= 3) {
+        tomorrowTask.checked = false;
+        showToast('Choose up to three priorities for tomorrow.');
+        return;
+      }
+      if (tomorrowTask.checked) selected.add(tomorrowTask.dataset.eodTomorrowTask);
+      else selected.delete(tomorrowTask.dataset.eodTomorrowTask);
+      await saveEodRecord(database, { ...eod, tomorrowPriorityIds: [...selected] });
+      await render();
+    });
+    return;
+  }
   const restoreFile = event.target.closest('[data-restore-file]');
   if (restoreFile) {
     handleRestoreFile(restoreFile.files?.[0]);
@@ -1041,6 +1366,64 @@ document.addEventListener('change', (event) => {
 });
 
 document.addEventListener('click', async (event) => {
+  if (event.target.closest('[data-eod-enter]')) {
+    const eodDate = dateOnly();
+    const existing = await getEodRecord(database, eodDate);
+    if (existing?.status === 'closed') {
+      showToast('Today’s EOD is already closed.');
+      return;
+    }
+    await saveEodRecord(database, { ...(existing || {}), id: `eod-${eodDate}`, date: eodDate, status: 'in-progress', step: existing?.step || 0, completedTaskIds: existing?.completedTaskIds || [], outstandingTaskIds: existing?.outstandingTaskIds || [], riskIds: existing?.riskIds || [], tomorrowPriorityIds: existing?.tomorrowPriorityIds || [], tomorrowNote: existing?.tomorrowNote || '', handoverNote: existing?.handoverNote || '' });
+    await render();
+    return;
+  }
+
+  if (event.target.closest('[data-eod-next], [data-eod-back]')) {
+    const eodDate = dateOnly();
+    const eod = await getEodRecord(database, eodDate);
+    if (!eod) return;
+    const tomorrowNote = document.querySelector('[data-eod-tomorrow-note]')?.value;
+    const handoverNote = document.querySelector('[data-eod-handover-note]')?.value;
+    const direction = event.target.closest('[data-eod-back]') ? -1 : 1;
+    await saveEodRecord(database, { ...eod, step: Math.max(0, Math.min(4, eod.step + direction)), tomorrowNote: tomorrowNote ?? eod.tomorrowNote, handoverNote: handoverNote ?? eod.handoverNote });
+    await render();
+    return;
+  }
+
+  if (event.target.closest('[data-eod-close]')) {
+    const eodDate = dateOnly();
+    const eod = await getEodRecord(database, eodDate);
+    if (!eod) return;
+    const risks = currentWorkItems.filter((item) => item.type === 'risk' && item.status !== 'complete');
+    await saveEodRecord(database, { ...eod, status: 'closed', completedAt: new Date().toISOString(), handoverNote: document.querySelector('[data-eod-handover-note]')?.value || eod.handoverNote, riskIds: risks.map((risk) => risk.id) });
+    showToast('Day closed. Tomorrow is clearer.');
+    await render();
+    return;
+  }
+
+  const eodFilter = event.target.closest('[data-eod-filter]');
+  if (eodFilter) {
+    currentEodFilter = eodFilter.dataset.eodFilter;
+    await render();
+    return;
+  }
+
+  const eodCompleteTask = event.target.closest('[data-eod-complete-task]');
+  if (eodCompleteTask) {
+    const task = currentWorkItems.find((item) => item.id === eodCompleteTask.dataset.eodCompleteTask);
+    if (task) {
+      await saveWorkItem(database, { ...task, status: task.status === 'complete' ? 'not-started' : 'complete', completedAt: task.status === 'complete' ? '' : new Date().toISOString() });
+      await render();
+    }
+    return;
+  }
+
+  if (event.target.closest('[data-eod-history]')) {
+    currentEodFilter = 'all';
+    document.querySelector('.eod-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
   const themeButton = event.target.closest('[data-theme-choice]');
   if (themeButton) {
     applyTheme(themeButton.dataset.themeChoice, true);
@@ -1057,6 +1440,29 @@ document.addEventListener('click', async (event) => {
     currentSnapshots = await getBackupSnapshots(database);
     document.body.insertAdjacentHTML('beforeend', createDataDialog(currentSnapshots));
     openDialog(document.querySelector('#data-dialog'));
+    return;
+  }
+
+  if (event.target.closest('[data-reset-onboarding]')) {
+    document.body.insertAdjacentHTML('beforeend', createResetOnboardingDialog());
+    openDialog(document.querySelector('#reset-onboarding-dialog'));
+    return;
+  }
+
+  if (event.target.closest('[data-reset-onboarding-confirm]')) {
+    onboardingState = await saveOnboardingState(database, {
+      key: 'onboarding',
+      completed: false,
+      completionSeen: false,
+      welcomeSeen: false,
+      step: 0,
+      answers: {},
+    });
+    await deleteRecord(database, stores.settings, 'primary');
+    document.querySelector('#reset-onboarding-dialog')?.remove();
+    document.querySelector('#settings-dialog')?.close();
+    showToast('Onboarding restarted. Your workspace data is unchanged.');
+    await render();
     return;
   }
 
@@ -1112,16 +1518,76 @@ document.addEventListener('click', async (event) => {
     return;
   }
 
+  const deleteSnapshot = event.target.closest('[data-delete-snapshot]');
+  if (deleteSnapshot) {
+    const snapshot = currentSnapshots.find((item) => item.id === deleteSnapshot.dataset.deleteSnapshot);
+    if (snapshot) {
+      document.body.insertAdjacentHTML('beforeend', createSnapshotDeleteDialog(snapshot));
+      openDialog(document.querySelector('#snapshot-delete-dialog'));
+    }
+    return;
+  }
+
+  const cancelSnapshotDelete = event.target.closest('[data-snapshot-delete-cancel]');
+  if (cancelSnapshotDelete) {
+    cancelSnapshotDelete.closest('dialog')?.close();
+    cancelSnapshotDelete.closest('dialog')?.remove();
+    return;
+  }
+
+  const exportAndDeleteSnapshot = event.target.closest('[data-snapshot-export-delete]');
+  if (exportAndDeleteSnapshot) {
+    const snapshot = currentSnapshots.find((item) => item.id === exportAndDeleteSnapshot.dataset.snapshotExportDelete);
+    if (snapshot) {
+      exportSnapshot(snapshot);
+      await deleteBackupSnapshot(database, snapshot.id);
+      currentSnapshots = await getBackupSnapshots(database);
+      exportAndDeleteSnapshot.closest('dialog')?.close();
+      exportAndDeleteSnapshot.closest('dialog')?.remove();
+      dataDialog()?.remove();
+      document.body.insertAdjacentHTML('beforeend', createDataDialog(currentSnapshots));
+      openDialog(document.querySelector('#data-dialog'));
+      showToast('Snapshot exported and deleted.');
+    }
+    return;
+  }
+
+  const confirmSnapshotDelete = event.target.closest('[data-snapshot-delete-confirm]');
+  if (confirmSnapshotDelete) {
+    const snapshot = currentSnapshots.find((item) => item.id === confirmSnapshotDelete.dataset.snapshotDeleteConfirm);
+    if (snapshot) {
+      await deleteBackupSnapshot(database, snapshot.id);
+      currentSnapshots = await getBackupSnapshots(database);
+      confirmSnapshotDelete.closest('dialog')?.close();
+      confirmSnapshotDelete.closest('dialog')?.remove();
+      dataDialog()?.remove();
+      document.body.insertAdjacentHTML('beforeend', createDataDialog(currentSnapshots));
+      openDialog(document.querySelector('#data-dialog'));
+      showToast('Snapshot permanently deleted.');
+    }
+    return;
+  }
+
   if (event.target.closest('[data-delete-all-data]')) {
-    const confirmed = window.confirm('This will permanently delete all workspace records. Export a backup now?');
-    if (!confirmed) return;
+    document.body.insertAdjacentHTML('beforeend', createDeleteAllDataDialog());
+    openDialog(document.querySelector('#delete-all-data-dialog'));
+    return;
+  }
+
+  if (event.target.closest('[data-delete-all-export]')) {
     await exportBackup();
-    const phrase = window.prompt('Type DELETE ALL DATA to confirm permanent deletion.');
+    return;
+  }
+
+  if (event.target.closest('[data-delete-all-confirm]')) {
+    const phrase = document.querySelector('[data-delete-all-phrase]')?.value.trim();
     if (phrase !== 'DELETE ALL DATA') {
-      showToast('Deletion cancelled.');
+      showToast('Type DELETE ALL DATA exactly to confirm deletion.');
+      document.querySelector('[data-delete-all-phrase]')?.focus();
       return;
     }
-    await clearWorkspaceData(database);
+    await clearWorkspaceData(database, true);
+    document.querySelector('#delete-all-data-dialog')?.remove();
     document.querySelector('#data-dialog')?.remove();
     onboardingState = await getOnboardingState(database);
     showToast('All workspace data was deleted.');
@@ -1160,8 +1626,45 @@ document.addEventListener('click', async (event) => {
     return;
   }
 
+  const playbookComplete = event.target.closest('[data-playbook-complete]');
+  if (playbookComplete) {
+    const topicId = playbookComplete.dataset.playbookComplete;
+    const completed = new Set(currentPlaybookState.completedTopicIds || []);
+    if (completed.has(topicId)) {
+      completed.delete(topicId);
+      showToast('Skill marked incomplete.');
+    } else {
+      completed.add(topicId);
+      showToast('Skill marked complete locally.');
+    }
+    currentPlaybookState.completedTopicIds = [...completed];
+    await savePlaybookState(database, currentPlaybookState);
+    const dialog = playbookComplete.closest('dialog');
+    if (dialog) {
+      playbookComplete.setAttribute('aria-pressed', String(completed.has(topicId)));
+      playbookComplete.innerHTML = completed.has(topicId) ? '✓ Completed' : 'Mark complete';
+    } else {
+      renderPlaybookResults();
+    }
+    return;
+  }
+
   const closeButton = event.target.closest('[data-close-dialog]');
   if (closeButton) closeButton.closest('dialog')?.close();
+
+  const mobileMenuToggle = event.target.closest('[data-mobile-menu-toggle]');
+  if (mobileMenuToggle) {
+    const open = document.body.classList.toggle('mobile-menu-open');
+    mobileMenuToggle.setAttribute('aria-expanded', String(open));
+    document.querySelector('#mobile-menu')?.setAttribute('aria-hidden', String(!open));
+    return;
+  }
+
+  if (event.target.closest('[data-close-mobile-menu]') || event.target.closest('[data-mobile-menu-link]')) {
+    document.body.classList.remove('mobile-menu-open');
+    document.querySelector('[data-mobile-menu-toggle]')?.setAttribute('aria-expanded', 'false');
+    document.querySelector('#mobile-menu')?.setAttribute('aria-hidden', 'true');
+  }
 
   const collapseButton = event.target.closest('[data-toggle-sidebar]');
   if (collapseButton) {
@@ -1174,6 +1677,152 @@ document.addEventListener('click', async (event) => {
   const reviewAction = event.target.closest('[data-review-action]');
   if (reviewAction) {
     await applyReviewAction(reviewAction.dataset.reviewKey, reviewAction.dataset.reviewAction);
+    return;
+  }
+
+  if (event.target.closest('[data-open-l10-settings]')) {
+    document.querySelector('#l10-settings-dialog')?.showModal();
+    return;
+  }
+
+  if (event.target.closest('[data-open-meeting-schedules]')) {
+    document.querySelector('#meeting-schedules-dialog')?.showModal();
+    return;
+  }
+
+  const editMeeting = event.target.closest('[data-edit-meeting-schedule]');
+  if (editMeeting) {
+    const schedule = currentMeetingSchedules.find((item) => item.id === editMeeting.dataset.editMeetingSchedule);
+    const form = document.querySelector('[data-meeting-schedule-form]');
+    if (schedule && form) {
+      form.dataset.editSchedule = schedule.id;
+      form.dataset.originalSchedule = JSON.stringify({ name: schedule.name || '', cadence: schedule.cadence || '', meetingTime: schedule.meetingTime || '', nextDate: schedule.nextDate || '', agenda: schedule.agenda || '' });
+      form.elements.name.value = schedule.name || '';
+      form.elements.cadence.value = schedule.cadence || 'weekly';
+      form.elements.meetingTime.value = schedule.meetingTime || '09:00';
+      form.elements.nextDate.value = schedule.nextDate || dateOnly();
+      form.elements.agenda.value = schedule.agenda || '';
+      const saveButton = form.querySelector('.meeting-schedule-submit');
+      saveButton.disabled = true;
+      saveButton.classList.add('meeting-schedule-save');
+      saveButton.setAttribute('aria-label', 'Save meeting changes');
+      saveButton.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path></svg><span>Save changes</span>';
+      form.elements.name.focus();
+    }
+    return;
+  }
+
+  const deleteMeeting = event.target.closest('[data-delete-meeting-schedule]');
+  if (deleteMeeting) {
+    if (window.confirm('Delete this recurring meeting schedule?')) {
+      await deleteMeetingSchedule(database, deleteMeeting.dataset.deleteMeetingSchedule);
+      showToast('Recurring meeting deleted.');
+      await render();
+    }
+    return;
+  }
+
+  const l10HistoryButton = event.target.closest('[data-l10-history-id]');
+  if (l10HistoryButton) {
+    document.getElementById(`l10-history-${l10HistoryButton.dataset.l10HistoryId}`)?.showModal();
+    return;
+  }
+
+  const printL10History = event.target.closest('[data-print-l10-history]');
+  if (printL10History) {
+    document.body.classList.add('print-l10-detail');
+    window.addEventListener('afterprint', () => document.body.classList.remove('print-l10-detail'), { once: true });
+    window.print();
+    return;
+  }
+
+  const l10Section = event.target.closest('[data-l10-section]');
+  if (l10Section) {
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, currentSection: l10Section.dataset.l10Section });
+    await render();
+    return;
+  }
+
+  if (event.target.closest('[data-l10-timer-toggle]')) {
+    const current = currentL10Meeting.timer?.sectionId === currentL10Meeting.currentSection ? currentL10Meeting.timer : { sectionId: currentL10Meeting.currentSection, elapsedSeconds: 0, paused: false };
+    const elapsed = current.elapsedSeconds + (current.startedAt ? Math.floor((Date.now() - Date.parse(current.startedAt)) / 1000) : 0);
+    const paused = Boolean(current.startedAt);
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, timer: { sectionId: currentL10Meeting.currentSection, elapsedSeconds: elapsed, startedAt: paused ? null : new Date().toISOString(), paused } });
+    await render();
+    return;
+  }
+
+  if (event.target.closest('[data-l10-next]')) {
+    const index = Math.max(0, L10_AGENDA.findIndex((item) => item.id === currentL10Meeting.currentSection));
+    const next = L10_AGENDA[Math.min(L10_AGENDA.length - 1, index + 1)];
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, currentSection: next.id, sectionStatus: { ...currentL10Meeting.sectionStatus, [L10_AGENDA[index].id]: true } });
+    await render();
+    return;
+  }
+
+  const editMetric = event.target.closest('[data-l10-edit-metric]');
+  if (editMetric) {
+    const metric = (await getL10Collection(database, 'l10ScorecardMetrics')).find((item) => item.id === editMetric.dataset.l10EditMetric);
+    const form = document.querySelector('[data-l10-metric-form]');
+    if (metric && form) {
+      form.dataset.editMetric = metric.id;
+      form.elements.name.value = metric.name || '';
+      form.elements.area.value = metric.area || '';
+      form.elements.direction.value = metric.direction || 'at-least';
+      form.elements.weeklyGoal.value = metric.weeklyGoal ?? '';
+      form.querySelector('button[type="submit"]').textContent = 'Update metric';
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      form.elements.name.focus();
+    }
+    return;
+  }
+
+  const deleteMetric = event.target.closest('[data-l10-delete-metric]');
+  if (deleteMetric) {
+    const metric = (await getL10Collection(database, 'l10ScorecardMetrics')).find((item) => item.id === deleteMetric.dataset.l10DeleteMetric);
+    if (metric && window.confirm(`Delete the scorecard metric “${metric.name}”?`)) {
+      await deleteRecord(database, stores.l10ScorecardMetrics, metric.id);
+      showToast('Scorecard metric deleted.');
+      await render();
+    }
+    return;
+  }
+
+  const metricIssue = event.target.closest('[data-l10-metric-issue]');
+  if (metricIssue) {
+    const metric = (await getL10Collection(database, 'l10ScorecardMetrics')).find((item) => item.id === metricIssue.dataset.l10MetricIssue);
+    const entry = (await getL10Collection(database, 'l10ScorecardEntries')).find((item) => item.metricId === metric.id && item.weekStart === currentL10Meeting.weekStart);
+    await saveL10Record(database, 'l10Issues', { id: crypto.randomUUID(), title: `${metric.name} is off track`, area: metric.area, source: 'scorecard', priorityOrder: Date.now(), status: 'open', identify: entry?.note || '', discuss: '', solve: '', createdAt: new Date().toISOString() });
+    showToast('Scorecard item added to Issues.');
+    await render();
+    return;
+  }
+
+  const rockIssue = event.target.closest('[data-l10-rock-issue]');
+  if (rockIssue) {
+    const rock = (await getL10Collection(database, 'l10Rocks')).find((item) => item.id === rockIssue.dataset.l10RockIssue);
+    await saveL10Record(database, 'l10Issues', { id: crypto.randomUUID(), title: `${rock.outcome} needs attention`, area: rock.area, source: 'rock', priorityOrder: Date.now(), status: 'open', identify: '', discuss: '', solve: '', createdAt: new Date().toISOString() });
+    showToast('Rock added to Issues.');
+    await render();
+    return;
+  }
+
+  const openL10Issue = event.target.closest('[data-l10-open-issue]');
+  if (openL10Issue) {
+    const issue = (await getL10Collection(database, 'l10Issues')).find((item) => item.id === openL10Issue.dataset.l10OpenIssue);
+    const dialog = document.querySelector('#l10-issue-dialog');
+    if (issue && dialog) {
+      dialog.querySelector('[name="id"]').value = issue.id;
+      ['title', 'identify', 'discuss', 'solve', 'status'].forEach((name) => { if (dialog.elements[name]) dialog.elements[name].value = issue[name] || ''; });
+      dialog.showModal();
+    }
+    return;
+  }
+
+  const todoToggle = event.target.closest('[data-l10-todo-toggle]');
+  if (todoToggle) {
+    currentL10Meeting = await saveL10Record(database, 'l10Meetings', { ...currentL10Meeting, todos: (currentL10Meeting.todos || []).map((todo) => todo.id === todoToggle.dataset.l10TodoToggle ? { ...todo, status: todo.status === 'done' ? 'not-done' : 'done' } : todo) });
+    await render();
     return;
   }
 
@@ -1378,6 +2027,59 @@ document.addEventListener('click', async (event) => {
     return;
   }
 
+  if (event.target.closest('[data-begin-journey], [data-explore-talentis]')) {
+    onboardingState = await saveOnboardingState(database, { ...onboardingState, welcomeSeen: true, step: 0 });
+    await render();
+    return;
+  }
+
+  const completeMilestone = event.target.closest('[data-complete-milestone]');
+  if (completeMilestone) {
+    const id = completeMilestone.dataset.completeMilestone;
+    if (!currentJourneyState.completedMilestoneIds.includes(id)) {
+      currentJourneyState = await saveJourneyState(database, { ...currentJourneyState, completedMilestoneIds: [...currentJourneyState.completedMilestoneIds, id], completedAt: { ...(currentJourneyState.completedAt || {}), [id]: new Date().toISOString() } });
+      selectedJourneyMilestoneId = '';
+      showToast('Milestone complete. Keep the next step small.');
+      await render();
+    }
+    return;
+  }
+
+  const reopenMilestone = event.target.closest('[data-reopen-milestone]');
+  if (reopenMilestone) {
+    const id = reopenMilestone.dataset.reopenMilestone;
+    currentJourneyState = await saveJourneyState(database, {
+      ...currentJourneyState,
+      completedMilestoneIds: currentJourneyState.completedMilestoneIds.filter((milestoneId) => milestoneId !== id),
+      completedAt: Object.fromEntries(Object.entries(currentJourneyState.completedAt || {}).filter(([milestoneId]) => milestoneId !== id)),
+    });
+    selectedJourneyMilestoneId = id;
+    showToast('Milestone added back to your journey.');
+    await render();
+    return;
+  }
+
+  const selectMilestone = event.target.closest('[data-select-milestone]');
+  if (selectMilestone) {
+    selectedJourneyMilestoneId = selectMilestone.dataset.selectMilestone;
+    await render();
+    return;
+  }
+
+  if (event.target.closest('[data-print-milestone]')) {
+    document.body.classList.add('print-journey-milestone');
+    window.addEventListener('afterprint', () => document.body.classList.remove('print-journey-milestone'), { once: true });
+    window.print();
+    return;
+  }
+
+  if (event.target.closest('[data-open-meeting-builder]')) {
+    const dialog = document.querySelector('#meeting-builder');
+    if (dialog && !dialog.open) dialog.showModal();
+    dialog?.querySelector('textarea')?.focus();
+    return;
+  }
+
   if (event.target.closest('[data-onboarding-back]')) {
     onboardingState = await saveOnboardingState(database, {
       ...onboardingState,
@@ -1389,10 +2091,21 @@ document.addEventListener('click', async (event) => {
 
   const suggestion = event.target.closest('[data-fill-outcome]');
   if (suggestion) {
-    const firstEmpty = [...document.querySelectorAll('[name^="outcome"]')].find(
-      (input) => !input.value,
-    );
-    if (firstEmpty) firstEmpty.value = suggestion.dataset.fillOutcome;
+    const form = suggestion.closest('[data-onboarding-form]');
+    const outcomeInputs = [...(form?.querySelectorAll('input[name^="outcome"]') || [])];
+    const activeOutcome = form?.elements[form.dataset.activeOutcome];
+    const target = activeOutcome || outcomeInputs.find((input) => !input.value);
+    if (!target) {
+      showToast('All three outcomes are filled. Select an outcome field to replace it.');
+      return;
+    }
+    target.value = suggestion.dataset.fillOutcome;
+    target.focus();
+    form?.querySelectorAll('[data-fill-outcome]').forEach((button) => {
+      const selected = outcomeInputs.some((input) => input.value === button.dataset.fillOutcome);
+      button.classList.toggle('suggestion-chip--selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
     return;
   }
 
@@ -1482,7 +2195,9 @@ initialize();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      const registration = await navigator.serviceWorker.register(
+        new URL('./service-worker.js', document.baseURI),
+      );
       const announceWaiting = () => {
         if (registration.waiting && navigator.serviceWorker.controller) showUpdateToast(registration);
       };

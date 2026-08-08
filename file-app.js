@@ -1,6 +1,127 @@
 (() => {
+  // src/journey.js
+  var journeyStages = [
+    { id: "first-7", label: "First 7 Days", objective: "Listen, observe and establish clarity", milestones: [
+      { id: "prepare-team-meeting", title: "Prepare to Meet Your Team", summary: "Create a calm first conversation that builds trust and makes the next 90 days visible.", checklist: ["Set the purpose and tone", "Prepare three to five listening questions", "Share expectations and close with next steps"] },
+      { id: "meet-team", title: "Meet the team", summary: "Listen for strengths, friction and what the team needs from you.", checklist: ["Ask what is working", "Ask what gets in the way", "Capture themes without promising instant fixes"] },
+      { id: "observe-work", title: "Observe the work", summary: "Understand the real workflow before changing it.", checklist: ["Follow one piece of work end to end", "Notice handovers and waiting points", "Record questions to revisit"] },
+      { id: "set-first-expectations", title: "Set first expectations", summary: "Make communication, ownership and escalation expectations clear.", checklist: ["Name what the team can expect from you", "Name what you need from the team", "Agree how issues will be raised"] },
+      { id: "choose-first-focus", title: "Choose the first focus", summary: "Select one useful outcome for the first month.", checklist: ["Describe the outcome", "Explain why it matters", "Share how progress will be checked"] }
+    ] },
+    { id: "first-30", label: "First 30 Days", objective: "Understand the operation and establish a reliable leadership rhythm", milestones: [
+      { id: "map-work", title: "Map the work", summary: "Make key responsibilities, customers and handovers visible.", checklist: ["List recurring work", "Clarify responsible areas", "Identify the most important handovers"] },
+      { id: "build-rhythm", title: "Build the operating rhythm", summary: "Use preparation, huddles, follow-up and review consistently.", checklist: ["Prepare the day", "Run a focused huddle", "Close the day with a next step"] },
+      { id: "clarify-priorities", title: "Clarify priorities", summary: "Turn activity into a small set of visible outcomes.", checklist: ["Define up to three outcomes", "Make trade-offs explicit", "Review progress regularly"] },
+      { id: "surface-risks", title: "Surface risks early", summary: "Create a safe, practical way to raise risk and blockers.", checklist: ["State impact", "Name immediate action", "Escalate before options narrow"] },
+      { id: "review-first-month", title: "Review the first month", summary: "Use evidence and team feedback to choose what to keep and change.", checklist: ["Review outcomes", "Ask what should continue", "Choose one improvement to test"] }
+    ] },
+    { id: "days-31-60", label: "Days 31\u201360", objective: "Strengthen execution, accountability and operational flow", milestones: [
+      { id: "delegate-outcomes", title: "Delegate outcomes", summary: "Create ownership with clear authority and check-in points.", checklist: ["Name the outcome", "Confirm decision boundaries", "Agree the follow-up point"] },
+      { id: "remove-repeat-blocker", title: "Remove a repeated blocker", summary: "Address one constraint that repeatedly slows useful work.", checklist: ["Describe the pattern", "Find the smallest unlock", "Check whether movement improves"] },
+      { id: "strengthen-handover", title: "Strengthen a handover", summary: "Make the information and ownership needed for a clean handover explicit.", checklist: ["Define the handover point", "Confirm required information", "Test it with the receiving area"] },
+      { id: "develop-team-rhythm", title: "Develop the team rhythm", summary: "Adjust meetings and communication to support the work.", checklist: ["Keep what helps", "Remove unnecessary meeting time", "Make decisions and actions visible"] },
+      { id: "review-day-60", title: "Review day 60", summary: "Check whether the leadership system is helping the team deliver.", checklist: ["Review repeated risks", "Review delayed decisions", "Choose the next leadership focus"] }
+    ] },
+    { id: "days-61-90", label: "Days 61\u201390", objective: "Build a sustainable operating system and establish continuous improvement", milestones: [
+      { id: "set-team-standards", title: "Set team standards", summary: "Make the expected way of working clear and usable.", checklist: ["Describe quality and response expectations", "Agree how exceptions are handled", "Review standards with the team"] },
+      { id: "build-decision-rhythm", title: "Build a decision rhythm", summary: "Prevent important decisions from waiting without a next review date.", checklist: ["Record decisions", "Name the decision owner", "Set review dates when deferring"] },
+      { id: "test-improvement", title: "Test an improvement", summary: "Run one small improvement through a clear test and review.", checklist: ["State what is not working", "Try a small change", "Capture what happened"] },
+      { id: "prepare-next-quarter", title: "Prepare the next quarter", summary: "Translate learning into a manageable forward focus.", checklist: ["Name the strongest outcomes", "Carry forward useful lessons", "Choose three priorities"] },
+      { id: "complete-90-day-review", title: "Complete the 90-day review", summary: "Reflect on trust, clarity, execution and the next leadership chapter.", checklist: ["Review progress", "Ask the team what changed", "Set the next leadership focus"] }
+    ] }
+  ];
+  function getJourneyProgress(state = {}) {
+    const completed = new Set(state.completedMilestoneIds || []);
+    const milestones = journeyStages.flatMap((stage) => stage.milestones.map((milestone) => ({ ...milestone, stage })));
+    const current = milestones.find((milestone) => !completed.has(milestone.id)) || milestones[milestones.length - 1];
+    return { completed, milestones, current, completedCount: milestones.filter((milestone) => completed.has(milestone.id)).length, total: milestones.length };
+  }
+
+  // src/l10.js
+  var L10_AGENDA = [
+    { id: "segue", label: "Segue", minutes: 5 },
+    { id: "scorecard", label: "Scorecard", minutes: 5 },
+    { id: "rocks", label: "Rock review", minutes: 5 },
+    { id: "headlines", label: "Headlines", minutes: 5 },
+    { id: "todos", label: "To-Dos", minutes: 5 },
+    { id: "ids", label: "IDS", minutes: 60 },
+    { id: "conclude", label: "Conclude", minutes: 5 }
+  ];
+  function l10WeekStart(date = /* @__PURE__ */ new Date()) {
+    const value = new Date(date);
+    const day = value.getDay() || 7;
+    value.setDate(value.getDate() - day + 1);
+    return value.toISOString().slice(0, 10);
+  }
+  function l10WeekEnd(weekStart) {
+    const value = /* @__PURE__ */ new Date(`${weekStart}T12:00:00`);
+    value.setDate(value.getDate() + 6);
+    return value.toISOString().slice(0, 10);
+  }
+  function scorecardStatus(goal, actual, direction = "at-least") {
+    if (goal === "" || goal == null || actual === "" || actual == null) return "not-entered";
+    const target = Number(goal);
+    const value = Number(actual);
+    if (!Number.isFinite(target) || !Number.isFinite(value)) return "not-entered";
+    return direction === "at-most" ? value <= target ? "on-track" : "off-track" : value >= target ? "on-track" : "off-track";
+  }
+  function l10RemainingSeconds(meeting, sectionId) {
+    const section = L10_AGENDA.find((item) => item.id === sectionId);
+    const timer = meeting?.timer?.sectionId === sectionId ? meeting.timer : {};
+    const elapsed = (timer.elapsedSeconds || 0) + (timer.startedAt ? Math.floor((Date.now() - Date.parse(timer.startedAt)) / 1e3) : 0);
+    return Math.max(0, (section?.minutes || 5) * 60 - elapsed);
+  }
+  function defaultL10Meeting(weekStart = l10WeekStart()) {
+    return {
+      id: `l10-${weekStart}`,
+      weekStart,
+      weekEnd: l10WeekEnd(weekStart),
+      meetingAt: `${weekStart}T09:00`,
+      currentSection: "segue",
+      sectionStatus: {},
+      timer: { sectionId: "segue", startedAt: null, elapsedSeconds: 0, paused: false },
+      segue: { leadershipBest: "", businessBest: "", reflection: "" },
+      headlines: [],
+      todos: [],
+      issueIds: [],
+      cascadingMessages: [],
+      rating: "",
+      meetingImprovement: "",
+      completedAt: null,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+
+  // src/meetings.js
+  var meetingCadences = [
+    ["weekly", "Weekly"],
+    ["fortnightly", "Fortnightly"],
+    ["monthly", "Monthly"]
+  ];
+  function dateOnly(date = /* @__PURE__ */ new Date()) {
+    const value = new Date(date);
+    return value.toISOString().slice(0, 10);
+  }
+  function advanceMeetingDate(date, cadence) {
+    const value = /* @__PURE__ */ new Date(`${date}T12:00:00`);
+    if (cadence === "monthly") value.setMonth(value.getMonth() + 1);
+    else value.setDate(value.getDate() + (cadence === "fortnightly" ? 14 : 7));
+    return dateOnly(value);
+  }
+  function nextMeetingDate(schedule, today = dateOnly()) {
+    let nextDate = schedule.nextDate;
+    while (nextDate && nextDate < today) nextDate = advanceMeetingDate(nextDate, schedule.cadence);
+    return nextDate || today;
+  }
+  function daysUntil(date, today = dateOnly()) {
+    const start = /* @__PURE__ */ new Date(`${today}T12:00:00`);
+    const end = /* @__PURE__ */ new Date(`${date}T12:00:00`);
+    return Math.max(0, Math.round((end - start) / 864e5));
+  }
+
   // src/components.js
   var routes = {
+    journey: { label: "Journey", eyebrow: "Your first 90 days", title: "Build the leadership rhythm.", description: "A practical path for listening, clarity, execution and improvement.", action: "Continue journey" },
     today: {
       label: "Today",
       eyebrow: "Your operating view",
@@ -33,6 +154,14 @@
       prompt: "The end-of-day review flow will be introduced in a later phase.",
       action: "Begin review"
     },
+    eod: {
+      label: "End of Day",
+      eyebrow: "Review \xB7 Prepare",
+      title: "Close today. Prepare tomorrow.",
+      description: "A calm close-out assistant for completed work, open loops, risk, and tomorrow\u2019s focus.",
+      prompt: "Capture what matters before you leave the day.",
+      action: "Enter End of Day"
+    },
     improve: {
       label: "Improve",
       eyebrow: "Learn and refine",
@@ -52,11 +181,11 @@
   };
   var navigation = [
     ["today", "Today", "\u25F7"],
+    ["journey", "Journey", "\u25CC"],
     ["huddle", "Huddle", "\uFF0B"],
     ["work", "Work", "\u25A1"],
     ["review", "Review", "\u2713"],
-    ["improve", "Improve", "\u2197"],
-    ["playbook", "Playbook", "?"]
+    ["eod", "End of Day", "\u25D2"]
   ];
   var playbookTopics = [
     ["new-leader", "Starting as a new leader", "Start well", "Set expectations, learn the work, and make the first commitments visible.", "When you are new to a team or role.", "Listen first. Name what you are learning. Agree the few outcomes that matter now.", "I am here to understand the work, support the team, and make our priorities clear.", "Avoid changing everything before you understand the system.", "People know what matters, what to expect from you, and how to raise concerns."],
@@ -75,44 +204,40 @@
     ["weekly-review", "Running a weekly review", "Learn from the rhythm", "Use the week to identify patterns and choose the next three priorities.", "At the end of the week or start of the next one.", "Review achievements, carryover, repeated risks, delayed decisions, wasted time, and one change to test.", "What did the week teach us, and what will we do differently next week?", "Avoid turning the review into a large report.", "Next week has three priorities, one operating improvement, and one leadership focus."],
     ["capture-improvement", "Capturing improvements", "Make one change testable", "Turn a practical observation into a small next step.", "When a workflow, handover, meeting, or customer outcome is not working well.", "Describe what is not working, what should change, why it helps, and the next step. Choose one category and status.", "The small change we will test is ____. We expect it to help by ____.", "Avoid capturing an improvement without a next step.", "The change is small enough to test and has a clear owner or next action."]
   ].map(([id, title, group, summary, when, what, say, avoid, success]) => ({ id, title, group, summary, when, what, say, avoid, success }));
+  playbookTopics.push(
+    { id: "first-7-days", title: "Leading the first 7 days", group: "First 90 days", summary: "Listen, observe and establish clarity before making large changes.", when: "When you are starting in a new leadership role.", what: "Meet the team, observe the work, set first expectations and choose one useful focus.", say: "I will listen first, make the work visible and share what I learn.", avoid: "Avoid promising fixes before understanding the system.", success: "The team knows what to expect and the first focus is visible." },
+    { id: "first-30-days", title: "Leading the first 30 days", group: "First 90 days", summary: "Build a reliable operating rhythm and make responsibilities clear.", when: "At the end of your first month.", what: "Map the work, clarify priorities, surface risks and review what to keep or change.", say: "What is helping us deliver, and where is the rhythm creating friction?", avoid: "Avoid treating the first month as a performance report.", success: "The team has a useful rhythm and one improvement to test." },
+    { id: "first-90-days", title: "Completing the first 90 days", group: "First 90 days", summary: "Turn the first three months of learning into a sustainable leadership focus.", when: "At the end of the first 90 days.", what: "Review trust, clarity, execution and improvement; then choose the next three priorities.", say: "What changed because of how we led, and what should happen next?", avoid: "Avoid adding a large plan when three priorities will do.", success: "The next leadership chapter has a clear focus and operating rhythm." }
+  );
   var onboardingSteps = [
     {
-      title: "What type of team or function do you lead?",
-      explanation: "This helps shape the language of your daily playbook."
+      title: "What is your leadership situation?",
+      explanation: "This helps tailor the first 90 days to where you are starting."
     },
     {
-      title: "What are the three primary outcomes you are responsible for?",
-      explanation: "Name the outcomes, not every task. You can refine them later."
+      title: "What kind of work does your team do?",
+      explanation: "We use this to keep guidance close to the work you lead."
+    },
+    {
+      title: "How should guidance be structured?",
+      explanation: "Choose the amount of structure that will help you act."
     },
     {
       title: "What time does your workday normally begin?",
       explanation: "We use this only to frame your daily rhythm."
     },
     {
-      title: "Do you run a morning huddle?",
-      explanation: "This keeps your morning setup aligned to how you already lead."
-    },
-    {
       title: "What time should the end-of-day review be suggested?",
       explanation: "Choose a calm moment to close the loop and prepare tomorrow."
+    },
+    {
+      title: "Set up the team you lead",
+      explanation: "Use role and team-area labels to make your leadership context visible. Do not add names or personal details."
     }
   ];
-  var functionOptions = [
-    "Operations",
-    "Customer success",
-    "Product or technology",
-    "Sales or partnerships",
-    "Marketing or creative",
-    "Other function"
-  ];
-  var outcomeOptions = [
-    "A reliable operation",
-    "Customer or community value",
-    "Revenue or growth",
-    "A strong team rhythm",
-    "A clear strategic result",
-    "Quality and consistency"
-  ];
+  var leadershipSituationOptions = ["First-time leader", "Experienced leader", "New team", "Changed role", "Building a better system"];
+  var workTypeOptions = ["Operations or service", "Office or administration", "Projects or professional services", "Sales or customer experience", "Technical or digital", "Other"];
+  var guidanceOptions = ["Step-by-step", "Key milestones", "Independent"];
   var promptLibrary = [
     "Define the outcome, not only the activity.",
     "Communicate risk early.",
@@ -130,8 +255,9 @@
     return escapeHtml(state.answers?.[key] || "");
   }
   function createOnboarding(state) {
+    if (!state.welcomeSeen) return `<main class="onboarding-screen welcome-screen" aria-labelledby="welcome-title"><div class="onboarding-brand">TalentisOS</div><p class="eyebrow">Your first 90 days</p><h1 id="welcome-title">Welcome to leadership.</h1><p>Build a clear, practical rhythm for the first 90 days of leading your team.</p><div class="onboarding-actions"><button class="primary-action" type="button" data-begin-journey>Build My First 90 Days <span aria-hidden="true">\u2192</span></button><button class="text-button" type="button" data-explore-talentis>Explore TalentisOS</button></div></main>`;
     if (state.completed && !state.completionSeen) {
-      return `<main class="onboarding-screen onboarding-complete" aria-labelledby="onboarding-complete-title"><div class="completion-mark" aria-hidden="true">\u2713</div><p class="eyebrow">Your playbook</p><h1 id="onboarding-complete-title">TalentisOS is ready.</h1><p>Your daily leadership playbook is now set up.</p><button class="primary-action" type="button" data-start-today>Start Today <span aria-hidden="true">\u2192</span></button></main>`;
+      return `<main class="onboarding-screen onboarding-complete" aria-labelledby="onboarding-complete-title"><div class="completion-mark" aria-hidden="true">\u2713</div><p class="eyebrow">Your first 90 days</p><h1 id="onboarding-complete-title">Your leadership journey is ready.</h1><p>Start with the foundations and build the rhythm one useful step at a time.</p><button class="primary-action" type="button" data-start-today>Begin Day 1 <span aria-hidden="true">\u2192</span></button></main>`;
     }
     const step = Math.max(0, Math.min(state.step || 0, onboardingSteps.length - 1));
     const current = onboardingSteps[step];
@@ -139,16 +265,18 @@
   }
   function onboardingFields(step, state) {
     if (step === 0)
-      return `<div class="option-grid">${functionOptions.map((option) => `<label class="select-option"><input type="radio" name="functionType" value="${escapeHtml(option)}" ${state.answers?.functionType === option ? "checked" : ""} required><span>${option}</span></label>`).join("")}</div>`;
+      return `<div class="option-grid">${leadershipSituationOptions.map((option) => `<label class="select-option"><input type="radio" name="leadershipSituation" value="${escapeHtml(option)}" ${state.answers?.leadershipSituation === option ? "checked" : ""} required><span>${option}</span></label>`).join("")}</div>`;
     if (step === 1)
-      return `<div class="outcome-fields">${[0, 1, 2].map((index) => `<label>Outcome ${index + 1}<input name="outcome${index}" value="${onboardingAnswer(state, `outcome${index}`)}" placeholder="For example, a clear strategic result" required></label>`).join("")}</div><div class="suggestion-row" aria-label="Outcome suggestions">${outcomeOptions.slice(0, 4).map(
-        (option) => `<button type="button" class="suggestion-chip" data-fill-outcome="${escapeHtml(option)}">${option}</button>`
-      ).join("")}</div>`;
+      return `<div class="option-grid">${workTypeOptions.map((option) => `<label class="select-option"><input type="radio" name="workType" value="${escapeHtml(option)}" ${state.answers?.workType === option ? "checked" : ""} required><span>${option}</span></label>`).join("")}</div>`;
     if (step === 2)
-      return `<label class="large-field">Workday start time<input type="time" name="startTime" value="${onboardingAnswer(state, "startTime")}" required></label>`;
+      return `<div class="option-grid option-grid--three">${guidanceOptions.map((option) => `<label class="select-option"><input type="radio" name="guidanceLevel" value="${escapeHtml(option)}" ${state.answers?.guidanceLevel === option ? "checked" : ""} required><span>${option}</span></label>`).join("")}</div>`;
     if (step === 3)
-      return `<div class="option-grid option-grid--two"><label class="select-option"><input type="radio" name="morningHuddle" value="yes" ${state.answers?.morningHuddle === "yes" ? "checked" : ""} required><span>Yes, most days</span></label><label class="select-option"><input type="radio" name="morningHuddle" value="no" ${state.answers?.morningHuddle === "no" ? "checked" : ""} required><span>Not usually</span></label></div>`;
-    return `<label class="large-field">Suggested review time<input type="time" name="reviewTime" value="${onboardingAnswer(state, "reviewTime")}" required></label>`;
+      return `<label class="large-field">Workday start time<input type="time" name="startTime" value="${onboardingAnswer(state, "startTime")}" required></label>`;
+    if (step === 4)
+      return `<label class="large-field">Suggested review time<input type="time" name="reviewTime" value="${onboardingAnswer(state, "reviewTime")}" required></label>`;
+    return `<div class="onboarding-team-setup"><label class="large-field">Your leadership role<input name="leaderRole" value="${onboardingAnswer(state, "leaderRole")}" placeholder="e.g. Operations lead" required></label><label class="large-field">Roles or team areas reporting to you<small>Use one role or area per line. Names are not needed.</small><textarea name="reportingRoles" rows="4" placeholder="Operations
+Customer experience
+Projects" required>${onboardingAnswer(state, "reportingRoles")}</textarea></label><label class="large-field">How is the team structured?<select name="teamStructure" required><option value="" disabled ${!state.answers?.teamStructure ? "selected" : ""}>Choose a structure</option>${["Functional areas", "Cross-functional team", "Small, cross-functional team", "Distributed or matrix", "Small direct team"].map((option) => `<option value="${escapeHtml(option)}" ${state.answers?.teamStructure === option ? "selected" : ""}>${option}</option>`).join("")}</select></label></div>`;
   }
   function statusLabel(status) {
     return { "not-started": "Not started", "in-progress": "In progress", done: "Complete" }[status] || "Not started";
@@ -159,6 +287,37 @@
     if (priorities.length)
       return `Move ${priorities[0].outcome.toLowerCase()} forward with intention.`;
     return "Choose the one outcome that would make today meaningful.";
+  }
+  function createJourneyView(state = {}, selectedMilestoneId = "") {
+    const progress = getJourneyProgress(state);
+    const stageIndex = journeyStages.findIndex((stage) => stage.id === progress.current.stage.id);
+    const currentIndex = progress.current.stage.milestones.findIndex((item) => item.id === progress.current.id);
+    const visible = progress.current.stage.milestones.slice(currentIndex, currentIndex + 3);
+    const selected = progress.milestones.find((milestone) => milestone.id === selectedMilestoneId) || progress.current;
+    const selectedCompleted = progress.completed.has(selected.id);
+    const completed = progress.milestones.filter((milestone) => progress.completed.has(milestone.id));
+    const completedSection = completed.length ? `<details class="journey-history"><summary>Review completed steps <span>${completed.length}</span></summary><div class="journey-history-list">${completed.map((milestone) => `<article><div class="journey-history-heading"><button class="journey-complete-toggle" type="button" data-reopen-milestone="${milestone.id}" aria-label="Mark ${escapeHtml(milestone.title)} incomplete" title="Mark incomplete">\u2713</button><div><p class="eyebrow">${escapeHtml(milestone.stage.label)}</p><h3>${escapeHtml(milestone.title)}</h3><p>${escapeHtml(milestone.summary)}</p>${state.completedAt?.[milestone.id] ? `<small>Completed ${escapeHtml(new Intl.DateTimeFormat(void 0, { dateStyle: "medium" }).format(new Date(state.completedAt[milestone.id])))}</small>` : ""}</div></div><ul class="journey-checklist">${milestone.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></article>`).join("")}</div></details>` : "";
+    return `<section class="journey-command" aria-labelledby="journey-title"><div class="journey-intro"><p class="eyebrow">First 90 Days Journey</p><h2 id="journey-title">Build the leadership rhythm.</h2><p class="secondary-text">${escapeHtml(progress.current.stage.objective)}. Progress is saved on this device.</p><div class="journey-progress" aria-label="${progress.completedCount} of ${progress.total} milestones complete"><div class="progress-track"><span style="width:${progress.completedCount / progress.total * 100}%"></span></div><span>${progress.completedCount} of ${progress.total} milestones</span></div></div><div class="journey-stage-tabs" role="list">${journeyStages.map((stage, index) => `<div class="journey-stage-tab ${index === stageIndex ? "journey-stage-tab--current" : index < stageIndex ? "journey-stage-tab--done" : ""}" role="listitem"><span>${index + 1}</span><strong>${stage.label}</strong></div>`).join("")}</div><section class="journey-current journey-selected-milestone" aria-labelledby="current-milestone-title"><p class="eyebrow">${selectedCompleted ? "Completed milestone" : selected.id === progress.current.id ? "Current milestone" : "Selected milestone"} \xB7 ${escapeHtml(selected.stage.label)}</p><h2 id="current-milestone-title">${escapeHtml(selected.title)}</h2><p>${escapeHtml(selected.summary)}</p><ul class="journey-checklist">${selected.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul><div class="modal__actions">${selectedCompleted ? '<span class="status-chip status-chip--success">Completed</span>' : `<button class="primary-action" type="button" data-complete-milestone="${selected.id}">Mark milestone complete <span aria-hidden="true">\u2192</span></button>`}<button class="secondary-action" type="button" data-print-milestone>Print milestone</button>${selected.id === "prepare-team-meeting" ? '<button class="secondary-action" type="button" data-open-meeting-builder>Open meeting builder</button>' : ""}</div></section><section class="journey-next" aria-labelledby="journey-next-title"><p class="eyebrow">Keep moving</p><h2 id="journey-next-title">Next milestones</h2><div class="journey-next-list">${visible.slice(1).map((milestone) => `<article><button class="journey-milestone-select" type="button" data-select-milestone="${milestone.id}"><span class="status-chip status-chip--neutral">Next</span><h3>${escapeHtml(milestone.title)}</h3><p>${escapeHtml(milestone.summary)}</p><span class="journey-select-label">View milestone \u2192</span></button></article>`).join("")}</div></section>${completedSection}</section>`;
+  }
+  function createMeetingBuilderDialog(state = {}) {
+    const meeting = state.meetingPreparation || {};
+    return `<dialog id="meeting-builder" class="modal" aria-labelledby="meeting-builder-title"><div class="modal__header"><div><p class="eyebrow">First 7 Days</p><h2 id="meeting-builder-title">Prepare to Meet Your Team</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close meeting builder">\xD7</button></div><form class="modal__body" data-meeting-builder-form><p class="secondary-text">Create a simple first conversation. You can change this later.</p><label>Purpose<textarea name="purpose" rows="2" required>${escapeHtml(meeting.purpose || "Listen, understand the work and agree how we will work together.")}</textarea></label><label>Introduction<textarea name="introduction" rows="2" required>${escapeHtml(meeting.introduction || "I am here to understand the work, support the team and make our priorities clear.")}</textarea></label><fieldset><legend>Questions to ask</legend>${["What is working well?", "What gets in the way?", "What should I understand before changing anything?", "Where do customers or colleagues feel friction?", "What would make the next 90 days useful?"].map((question) => `<label class="check-option"><input type="checkbox" name="questions" value="${escapeHtml(question)}" ${(meeting.questions || []).includes(question) ? "checked" : ""}><span>${question}</span></label>`).join("")}</fieldset><label>Expectations to share<textarea name="expectations" rows="2" required>${escapeHtml(meeting.expectations || "We will be clear about priorities, raise risk early and close the loop on commitments.")}</textarea></label><label>How to close<textarea name="close" rows="2" required>${escapeHtml(meeting.close || "Thank you. I will share what I heard, the next actions and when we will check back in.")}</textarea></label><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button class="primary-action" type="submit">Save meeting plan</button></div></form></dialog>`;
+  }
+  function createMeetingScheduleCard(schedules = []) {
+    const today = dateOnly();
+    const upcoming = schedules.filter((schedule) => schedule.active !== false).map((schedule) => ({ ...schedule, nextDate: nextMeetingDate(schedule, today) })).sort((a, b) => a.nextDate.localeCompare(b.nextDate));
+    const next = upcoming[0];
+    if (!next) return `<section class="meeting-schedule-card meeting-schedule-card--empty" aria-labelledby="meeting-schedule-title"><div><p class="eyebrow">Meeting rhythm</p><h2 id="meeting-schedule-title">Set your next meeting.</h2><p class="secondary-text">Keep recurring leadership meetings visible without adding them to your task list.</p></div><button type="button" class="secondary-action" data-open-meeting-schedules>Set up meetings <span aria-hidden="true">\u2192</span></button></section>`;
+    const days = daysUntil(next.nextDate, today);
+    const countdown = days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
+    const agendaPreview = next.agenda ? `<p class="meeting-agenda-preview"><strong>Agenda</strong> \xB7 ${escapeHtml(next.agenda.split("\n").filter(Boolean).slice(0, 2).join(" \xB7 "))}</p>` : "";
+    return `<section class="meeting-schedule-card" aria-labelledby="meeting-schedule-title"><div><p class="eyebrow">Next meeting</p><h2 id="meeting-schedule-title">${escapeHtml(next.name)}</h2><p class="secondary-text">${escapeHtml(next.cadenceLabel || meetingCadences.find(([value]) => value === next.cadence)?.[1] || "Recurring")} \xB7 ${escapeHtml(next.meetingTime || "Time not set")}</p>${agendaPreview}</div><div class="meeting-countdown"><strong>${countdown}</strong><span>${new Intl.DateTimeFormat(void 0, { weekday: "short", month: "short", day: "numeric" }).format(/* @__PURE__ */ new Date(`${next.nextDate}T12:00:00`))}</span></div><button type="button" class="secondary-action" data-open-meeting-schedules>Manage meetings</button></section>`;
+  }
+  function createMeetingScheduleDialog(schedules = []) {
+    const rows = schedules.map((schedule) => `<li><span><strong>${escapeHtml(schedule.name)}</strong><small>${escapeHtml(meetingCadences.find(([value]) => value === schedule.cadence)?.[1] || schedule.cadence)} \xB7 next ${escapeHtml(schedule.nextDate)}</small>${schedule.agenda ? `<small class="meeting-agenda-line">Agenda: ${escapeHtml(schedule.agenda.split("\n").filter(Boolean).join(" \xB7 "))}</small>` : ""}</span><div class="meeting-schedule-row-actions"><button type="button" class="text-button" data-edit-meeting-schedule="${escapeHtml(schedule.id)}">Edit</button><button type="button" class="icon-button meeting-schedule-delete" data-delete-meeting-schedule="${schedule.id}" aria-label="Delete ${escapeHtml(schedule.name)}" title="Delete meeting"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg></button></div></li>`).join("");
+    return `<dialog id="meeting-schedules-dialog" class="modal" aria-labelledby="meeting-schedules-title"><div class="modal__header"><div><p class="eyebrow">Today \xB7 Meeting rhythm</p><h2 id="meeting-schedules-title">Recurring meetings</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close recurring meetings">\xD7</button></div><div class="modal__body meeting-schedule-dialog-body"><p class="secondary-text">Set the next date for a recurring meeting. Dates and schedules stay on this device.</p><form data-meeting-schedule-form class="work-form meeting-schedule-form"><label>Meeting name<input name="name" placeholder="e.g. Weekly leadership meeting" required></label><div class="form-two-col"><label>Cadence<select name="cadence">${meetingCadences.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>Meeting time<input name="meetingTime" type="time" value="09:00"></label></div><label>Next meeting date<input name="nextDate" type="date" value="${dateOnly()}" required></label><label>Agenda<small>Use one topic per line.</small><textarea name="agenda" rows="3" placeholder="Scorecard
+Priority review
+Decisions and next actions"></textarea></label><button class="primary-action meeting-schedule-submit" type="submit">Add recurring meeting</button></form><section class="meeting-schedule-list"><h3>Saved schedules</h3><ul class="history-list">${rows || '<li class="section-empty"><p>No recurring meetings yet.</p></li>'}</ul></section></div></dialog>`;
   }
   function createTodayView(plan, priorities, workItems = []) {
     const focus = generateDailyFocus(priorities, plan);
@@ -180,6 +339,43 @@
       (item) => `<p class="signal-item"><strong>${escapeHtml(item.title || item.outcome || item.whatNeedsToHappen)}</strong><span>${escapeHtml(item.nextAction || item.impact || item.dueDate || "")}</span></p>`
     ).join("") : empty(emptyMessage);
     return `<section class="today-command" aria-labelledby="today-focus-title"><div class="today-greeting"><p class="eyebrow">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</p><h2 id="today-focus-title">Good morning.</h2><p class="secondary-text">Here is the shape of your leadership day.</p></div><section class="daily-focus"><div><p class="card-kicker">Daily focus</p><h3>${escapeHtml(focus)}</h3></div><span class="focus-card__icon" aria-hidden="true">\u2726</span></section><section class="today-section" aria-labelledby="priorities-title"><div class="section-heading"><div><p class="eyebrow">What matters now?</p><h2 id="priorities-title">Top three priorities</h2></div><button class="secondary-action" type="button" data-add-priority ${priorities.length >= 3 ? "disabled" : ""}>${priorities.length >= 3 ? "Three set" : "Add priority"}</button></div><div class="priority-list">${priorityCards}</div></section><div class="today-grid"><section class="today-section compact-section" aria-labelledby="carryover-title"><div class="section-heading"><h2 id="carryover-title">Carryover</h2><span class="section-count">${plan.carryover?.length || 0}</span></div>${plan.carryover?.length ? plan.carryover.map((item) => `<p>${escapeHtml(item)}</p>`).join("") : empty("Nothing carried over.")}</section><section class="today-section compact-section" aria-labelledby="risk-title"><div class="section-heading"><h2 id="risk-title">At risk</h2><span class="section-count section-count--warning">${criticalRisks.length}</span></div>${signalList(criticalRisks, "No critical risks surfaced.")}</section><section class="today-section compact-section" aria-labelledby="decision-title"><div class="section-heading"><h2 id="decision-title">Decisions</h2><span class="section-count">${dueDecisions.length}</span></div>${signalList(dueDecisions, "No decisions due.")}</section><section class="today-section compact-section" aria-labelledby="follow-up-title"><div class="section-heading"><h2 id="follow-up-title">Follow-ups due</h2><span class="section-count">${overdueFollowUps.length}</span></div>${signalList(overdueFollowUps, "No overdue follow-ups.")}</section></div><section class="today-section meetings-section" aria-labelledby="meetings-title"><div class="section-heading"><h2 id="meetings-title">Meetings</h2><span class="section-count">${plan.meetings?.length || 0}</span></div>${plan.meetings?.length ? plan.meetings.map((item) => `<p>${escapeHtml(item)}</p>`).join("") : empty("No meetings added.")}</section><section class="leadership-prompt" aria-labelledby="prompt-title"><p class="eyebrow">Leadership prompt</p><h2 id="prompt-title">${prompt}</h2></section><section class="end-day-status" aria-labelledby="end-day-title"><div><p class="eyebrow">End-of-day status</p><h2 id="end-day-title">${plan.endOfDayStatus === "complete" ? "Review complete." : "Not reviewed yet."}</h2></div><span class="status-chip status-chip--${plan.endOfDayStatus === "complete" ? "success" : "neutral"}">${plan.endOfDayStatus === "complete" ? "Complete" : "Open"}</span></section></section>${createPrioritySheet()}`;
+  }
+  function eodTaskProgress(task) {
+    const subtasks = task.subtasks || [];
+    const completed = subtasks.filter((item) => item.completed).length;
+    const total = subtasks.length;
+    return { completed, total, remaining: total ? total - completed : task.status === "complete" ? 0 : 1, percent: total ? Math.round(completed / total * 100) : task.status === "complete" ? 100 : 0 };
+  }
+  function eodTaskCard(task, action = "complete", selectedIds = []) {
+    const progress = eodTaskProgress(task);
+    return `<article class="eod-task-card"><div><span class="work-type">${escapeHtml(task.priority || "Normal")}</span><h3>${escapeHtml(task.title || task.outcome || "Untitled task")}</h3><p>${task.dueDate ? `Due ${escapeHtml(task.dueDate)} \xB7 ` : ""}${progress.total ? `${progress.completed} of ${progress.total} subtasks complete` : "No subtasks"}</p><div class="eod-progress"><span style="width:${progress.percent}%"></span></div></div>${action === "complete" ? `<button type="button" class="secondary-action" data-eod-complete-task="${escapeHtml(task.id)}">${task.status === "complete" ? "Completed" : "Complete"}</button>` : `<label class="eod-task-select"><input type="checkbox" data-eod-tomorrow-task="${escapeHtml(task.id)}" ${selectedIds.includes(task.id) ? "checked" : ""}><span>Make priority</span></label>`}</article>`;
+  }
+  function createEodView({ eod, date, workItems = [], history = [], filter = "all" }) {
+    const tasks = workItems.filter((item) => ["action", "priority"].includes(item.type) || item.source === "eod");
+    const outstandingTasks = tasks.filter((item) => item.status !== "complete");
+    const completedTasks = tasks.filter((item) => item.status === "complete" && String(item.completedAt || "").startsWith(date));
+    const outstandingSubtasks = outstandingTasks.reduce((count, task) => count + eodTaskProgress(task).remaining, 0);
+    const risks = workItems.filter((item) => item.type === "risk" && item.status !== "complete");
+    const tomorrowIds = eod.tomorrowPriorityIds || [];
+    const tomorrowTasks = tomorrowIds.map((id) => tasks.find((task) => task.id === id)).filter(Boolean);
+    const visibleTasks = filter === "completed" ? completedTasks : filter === "outstanding" ? outstandingTasks : tasks;
+    const active = eod.status === "in-progress" && eod.step > 0 ? "Continue End of Day" : eod.status === "closed" ? "View Today's EOD" : "Enter End of Day";
+    const tile = (key, value, label, detail) => `<button type="button" class="eod-summary-tile" data-eod-filter="${key}"><strong>${value}</strong><span>${label}</span><small>${detail}</small></button>`;
+    let wizard = "";
+    if (eod.status === "in-progress") {
+      const step = Math.max(0, Math.min(4, eod.step || 0));
+      const titles = ["Review Today", "Outstanding Work", "Risks", "Tomorrow", "Close Day"];
+      let content = "";
+      if (step === 0) content = `<p class="secondary-text">Review today\u2019s work and close anything finished.</p><div class="eod-task-list">${visibleTasks.length ? visibleTasks.map((task) => eodTaskCard(task)).join("") : '<div class="section-empty"><p>Nothing recorded yet. Add a completed task below if you need to.</p></div>'}</div><form class="eod-inline-form" data-eod-task-form><input name="title" placeholder="Task completed today" required><input name="dueDate" type="date" aria-label="Due date"><button class="secondary-action" type="submit">+ Add completed task</button></form>`;
+      if (step === 1) content = `<p class="secondary-text">Keep the open work visible without carrying it in your head.</p><div class="eod-task-list">${outstandingTasks.length ? outstandingTasks.map((task) => eodTaskCard(task)).join("") : '<div class="section-empty"><p>Nothing outstanding.</p><small>You\u2019re clear for tomorrow.</small></div>'}</div><form class="eod-inline-form" data-eod-task-form><input name="title" placeholder="Add a task" required><input name="dueDate" type="date" aria-label="Due date"><select name="priority"><option>Normal</option><option>Low</option><option>High</option><option>Critical</option></select><button class="secondary-action" type="submit">+ Add Task</button></form>`;
+      if (step === 2) content = `<p class="secondary-text">Capture anything that could affect tomorrow.</p><div class="eod-risk-list">${risks.length ? risks.map((risk) => `<article class="eod-risk-card"><div><span class="status-chip status-chip--${risk.riskLevel === "critical" ? "warning" : "neutral"}">${escapeHtml(risk.riskLevel || "medium")}</span><h3>${escapeHtml(risk.title)}</h3><p>${escapeHtml(risk.nextAction || "No next action recorded.")}</p></div></article>`).join("") : '<div class="section-empty"><p>No active risks.</p><small>Nothing currently needs escalation.</small></div>'}</div><form class="eod-risk-form" data-eod-risk-form><input name="title" placeholder="What is at risk?" required><select name="impact"><option>Customer</option><option>People</option><option>Delivery</option><option>Operational</option><option>Financial</option><option>Other</option></select><select name="riskLevel"><option value="at-risk">Medium</option><option value="critical">High</option><option value="monitor">Low</option></select><textarea name="nextAction" rows="2" placeholder="What needs to happen next?"></textarea><button class="secondary-action" type="submit">+ Add Risk</button></form>`;
+      if (step === 3) content = `<p class="secondary-text">Choose up to three things that matter most tomorrow.</p><div class="eod-task-list">${outstandingTasks.length ? outstandingTasks.map((task) => eodTaskCard(task, "tomorrow", tomorrowIds)).join("") : '<div class="section-empty"><p>No priorities selected.</p><small>Choose up to three things that matter most tomorrow.</small></div>'}</div><div class="eod-tomorrow-selected"><h3>Tomorrow\u2019s priorities</h3>${tomorrowTasks.length ? tomorrowTasks.map((task, index) => `<p><strong>${index + 1}</strong>${escapeHtml(task.title || task.outcome)}</p>`).join("") : '<p class="secondary-text">No priorities selected.</p>'}</div><label class="eod-handover-field">Tomorrow note<textarea data-eod-tomorrow-note rows="3" placeholder="Anything you need to remember before tomorrow begins\u2026">${escapeHtml(eod.tomorrowNote || "")}</textarea></label>`;
+      if (step === 4) content = `<div class="eod-close-summary"><div><strong>${completedTasks.length}</strong><span>Completed</span></div><div><strong>${outstandingTasks.length}</strong><span>Outstanding</span></div><div><strong>${outstandingSubtasks}</strong><span>Subtasks</span></div><div><strong>${risks.length}</strong><span>Risks</span></div></div>${risks.some((risk) => risk.riskLevel === "critical") ? '<div class="eod-high-risk-warning"><strong>You have unresolved high-priority risks.</strong><span>You can review them or close anyway.</span></div>' : ""}<h3>Tomorrow</h3><ol class="eod-tomorrow-list">${tomorrowTasks.map((task) => `<li>${escapeHtml(task.title || task.outcome)}</li>`).join("") || "<li>No priorities selected.</li>"}</ol><label class="eod-handover-field">Handover note<textarea data-eod-handover-note rows="4" placeholder="What would someone need to know if you were unavailable tomorrow?">${escapeHtml(eod.handoverNote || "")}</textarea></label>`;
+      wizard = `<section class="eod-wizard" aria-labelledby="eod-wizard-title"><div class="eod-wizard__top"><div><p class="eyebrow">Step ${step + 1} of 5</p><h2 id="eod-wizard-title">${titles[step]}</h2></div><div class="eod-progress-track"><span style="width:${(step + 1) / 5 * 100}%"></span></div></div>${content}<div class="eod-wizard-actions">${step > 0 ? '<button type="button" class="secondary-action" data-eod-back>Back</button>' : "<span></span>"}${step === 4 ? '<button type="button" class="primary-action" data-eod-close>Close My Day</button>' : '<button type="button" class="primary-action" data-eod-next>Continue <span aria-hidden="true">\u2192</span></button>'}</div></section>`;
+    }
+    const historyMarkup = history.length ? `<section class="eod-history"><div class="section-heading"><div><p class="eyebrow">Past close-outs</p><h2>EOD History</h2></div></div><div class="eod-history-list">${history.map((item) => `<article><div><strong>${escapeHtml(item.date)}</strong><span>${item.status === "closed" ? "Closed" : "In progress"} \xB7 ${item.completedTaskIds?.length || 0} completed \xB7 ${item.riskIds?.length || 0} risks</span></div><button type="button" class="text-button" data-eod-history-id="${escapeHtml(item.id)}">View summary</button></article>`).join("")}</div></section>` : "";
+    if (eod.status === "closed") wizard = `<section class="eod-closed-state"><div class="completion-mark" aria-hidden="true">\u2713</div><p class="eyebrow">Today\u2019s close-out</p><h2>Day Closed</h2><p class="secondary-text">Tomorrow is already clearer.</p><div class="eod-close-summary"><div><strong>${completedTasks.length}</strong><span>Completed</span></div><div><strong>${outstandingTasks.length}</strong><span>Outstanding</span></div><div><strong>${risks.length}</strong><span>Risks</span></div><div><strong>${tomorrowTasks.length}</strong><span>Tomorrow</span></div></div><button type="button" class="secondary-action" data-eod-filter="completed">View Summary</button></section>`;
+    return `<section class="eod-command" aria-labelledby="eod-title"><div class="eod-intro"><div><p class="eyebrow">Review \xB7 Prepare</p><h2 id="eod-title">End of Day</h2><p class="secondary-text">Close today. Prepare tomorrow.</p></div><div class="eod-date">${escapeHtml(date)}</div></div><div class="eod-actions"><button type="button" class="primary-action" data-eod-enter>${active} <span aria-hidden="true">\u2192</span></button><button type="button" class="secondary-action" data-eod-history>EOD History</button></div><div class="eod-summary-grid">${tile("outstanding", outstandingTasks.length + outstandingSubtasks, "Outstanding", `${outstandingTasks.length} tasks \xB7 ${outstandingSubtasks} subtasks`)}${tile("risks", risks.length, "Risks", "Active risks and issues")}${tile("tomorrow", tomorrowTasks.length, "Tomorrow\u2019s Priorities", "Selected for tomorrow")}${tile("completed", completedTasks.length, "Completed Today", "Tasks closed today")}</div>${wizard}${historyMarkup}</section>`;
   }
   function createPrioritySheet() {
     return `<dialog id="priority-sheet" class="modal bottom-sheet-dialog" aria-labelledby="priority-sheet-title"><div class="modal__header"><div><p class="eyebrow">One clear commitment</p><h2 id="priority-sheet-title">Add a priority</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close priority editor">\xD7</button></div><form class="modal__body priority-form" data-priority-form><input type="hidden" name="id"><label>Outcome<input name="outcome" maxlength="120" required placeholder="What result matters most?"></label>${createContextualGuidance("set-priorities", "See how to set priorities")}<label>Why it matters<textarea name="why" maxlength="220" rows="3" placeholder="What will this make possible?"></textarea></label><label>Due point<input name="duePoint" maxlength="80" placeholder="For example, before Friday's review"></label><label>Status<select name="status"><option value="not-started">Not started</option><option value="in-progress">In progress</option><option value="done">Complete</option></select></label><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Save priority</button></div></form></dialog>`;
@@ -289,7 +485,10 @@
   }
   function createWorkDetailSheet(item = {}) {
     const type = item.type || "action";
-    return `<dialog id="work-detail" class="modal work-detail-dialog" aria-labelledby="work-detail-title"><div class="modal__header"><div><p class="eyebrow">${item.id ? "Work item" : "Quick add"}</p><h2 id="work-detail-title">${item.id ? "Work item details" : "Add work item"}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close work item">\xD7</button></div><form class="modal__body work-form" data-work-form><input type="hidden" name="id" value="${escapeHtml(item.id || "")}"><div class="form-two-col"><label>Type<select name="type"><option value="action" ${type === "action" ? "selected" : ""}>Action</option><option value="priority" ${type === "priority" ? "selected" : ""}>Priority</option><option value="risk" ${type === "risk" ? "selected" : ""}>Risk</option><option value="decision" ${type === "decision" ? "selected" : ""}>Decision</option><option value="follow-up" ${type === "follow-up" ? "selected" : ""}>Follow-up</option></select></label><label>Group<select name="group"><option value="now" ${item.group === "now" ? "selected" : ""}>Now</option><option value="next" ${!item.group || item.group === "next" ? "selected" : ""}>Next</option><option value="later" ${item.group === "later" ? "selected" : ""}>Later</option><option value="waiting" ${item.group === "waiting" ? "selected" : ""}>Waiting</option></select></label></div><label>Title<input name="title" maxlength="140" value="${escapeHtml(item.title || "")}" required placeholder="What needs your leadership?"></label><label>Outcome<textarea name="outcome" rows="2" placeholder="What will be different when this is done?">${escapeHtml(item.outcome || "")}</textarea></label><div class="form-two-col"><label>Responsible person or area <span class="field-hint">optional plain text</span><input name="responsible" value="${escapeHtml(item.responsible || "")}"></label><label>Due date or time<input type="date" name="dueDate" value="${escapeHtml(item.dueDate || "")}"></label></div><div class="form-two-col"><label>Status<select name="status">${workStatusOptions(type, item.status)}</select></label><label>Risk level<select name="riskLevel"><option value="monitor" ${item.riskLevel === "monitor" ? "selected" : ""}>Monitor</option><option value="at-risk" ${item.riskLevel === "at-risk" ? "selected" : ""}>At risk</option><option value="critical" ${item.riskLevel === "critical" ? "selected" : ""}>Critical</option></select></label></div><label>Next action<textarea name="nextAction" rows="2">${escapeHtml(item.nextAction || "")}</textarea></label><label>Notes<textarea name="notes" rows="3">${escapeHtml(item.notes || "")}</textarea></label><label>Related item IDs <span class="field-hint">optional, comma separated</span><input name="relatedItemIds" value="${escapeHtml((item.relatedItemIds || []).join(", "))}"></label><div data-type-fields>${workTypeFields(type, item)}</div><p class="autosave-note" data-autosave-note>Changes save automatically.</p><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save item</button></div></form></dialog>`;
+    const subtasks = item.subtasks || [];
+    const subtaskProgress = subtasks.length ? Math.round(subtasks.filter((subtask) => subtask.completed).length / subtasks.length * 100) : item.status === "complete" ? 100 : 0;
+    const taskProgress = ["action", "priority"].includes(type) ? `<section class="task-progress-panel"><div class="section-heading"><div><p class="eyebrow">Task progress</p><h3>Subtasks</h3></div><strong>${subtaskProgress}%</strong></div><div class="task-progress-bar"><span style="width:${subtaskProgress}%"></span></div><p class="secondary-text">${subtasks.filter((subtask) => subtask.completed).length} of ${subtasks.length} subtasks complete</p><label>Subtasks <span class="field-hint">one per line</span><textarea name="subtasksText" rows="4" placeholder="Add the steps that make this outcome complete">${escapeHtml(subtasks.map((subtask) => subtask.title).join("\n"))}</textarea></label></section>` : "";
+    return `<dialog id="work-detail" class="modal work-detail-dialog" aria-labelledby="work-detail-title"><div class="modal__header"><div><p class="eyebrow">${item.id ? "Work item" : "Quick add"}</p><h2 id="work-detail-title">${item.id ? "Work item details" : "Add work item"}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close work item">\xD7</button></div><form class="modal__body work-form" data-work-form><input type="hidden" name="id" value="${escapeHtml(item.id || "")}"><div class="form-two-col"><label>Type<select name="type"><option value="action" ${type === "action" ? "selected" : ""}>Action</option><option value="priority" ${type === "priority" ? "selected" : ""}>Priority</option><option value="risk" ${type === "risk" ? "selected" : ""}>Risk</option><option value="decision" ${type === "decision" ? "selected" : ""}>Decision</option><option value="follow-up" ${type === "follow-up" ? "selected" : ""}>Follow-up</option></select></label><label>Group<select name="group"><option value="now" ${item.group === "now" ? "selected" : ""}>Now</option><option value="next" ${!item.group || item.group === "next" ? "selected" : ""}>Next</option><option value="later" ${item.group === "later" ? "selected" : ""}>Later</option><option value="waiting" ${item.group === "waiting" ? "selected" : ""}>Waiting</option></select></label></div><label>Title<input name="title" maxlength="140" value="${escapeHtml(item.title || "")}" required placeholder="What needs your leadership?"></label><label>Outcome<textarea name="outcome" rows="2" placeholder="What will be different when this is done?">${escapeHtml(item.outcome || "")}</textarea></label><div class="form-two-col"><label>Responsible person or area <span class="field-hint">optional plain text</span><input name="responsible" value="${escapeHtml(item.responsible || "")}"></label><label>Due date or time<input type="date" name="dueDate" value="${escapeHtml(item.dueDate || "")}"></label></div><div class="form-two-col"><label>Status<select name="status">${workStatusOptions(type, item.status)}</select></label><label>Risk level<select name="riskLevel"><option value="monitor" ${item.riskLevel === "monitor" ? "selected" : ""}>Monitor</option><option value="at-risk" ${item.riskLevel === "at-risk" ? "selected" : ""}>At risk</option><option value="critical" ${item.riskLevel === "critical" ? "selected" : ""}>Critical</option></select></label></div>${taskProgress}<label>Next action<textarea name="nextAction" rows="2">${escapeHtml(item.nextAction || "")}</textarea></label><label>Notes<textarea name="notes" rows="3">${escapeHtml(item.notes || "")}</textarea></label><label>Related item IDs <span class="field-hint">optional, comma separated</span><input name="relatedItemIds" value="${escapeHtml((item.relatedItemIds || []).join(", "))}"></label><div data-type-fields>${workTypeFields(type, item)}</div><p class="autosave-note" data-autosave-note>Changes save automatically.</p><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Close</button><button type="submit" class="primary-action">Save item</button></div></form></dialog>`;
   }
   var reviewActions = [
     ["carry-forward", "Carry forward"],
@@ -355,6 +554,67 @@
     const repeatedRiskAction = summary.repeatedRiskLabels?.[0] ? `<button type="button" class="secondary-action" data-improvement-from-risk="${escapeHtml(summary.repeatedRiskLabels[0])}">Turn into improvement</button>` : "";
     return `<section class="weekly-command" aria-labelledby="weekly-title"><div class="review-intro"><div><p class="eyebrow">Review the rhythm</p><h2 id="weekly-title">Make the week useful.</h2><p class="secondary-text">${escapeHtml(weekStart)} to ${escapeHtml(weekEnd)} \xB7 A concise local summary of what your days are teaching you.</p></div><span class="review-time">10 min</span></div><div class="review-switcher" role="group" aria-label="Review period"><a href="#review" class="secondary-action">Daily review</a><a href="#review/weekly" class="secondary-action review-switcher--active">Weekly review</a></div><section class="weekly-summary" aria-labelledby="summary-title"><div class="section-heading"><div><p class="eyebrow">Automatic summary</p><h2 id="summary-title">What the week says</h2></div></div><div class="summary-metrics">${metric("priorities completed", summary.prioritiesCompleted)}${metric("carried forward", summary.prioritiesCarried)}${metric("repeated risks", summary.repeatedRisks)}${metric("overdue follow-ups", summary.overdueFollowUps)}${metric("decisions completed", summary.decisionsCompleted)}${metric("improvements captured", summary.improvementsCaptured)}${metric("morning preparations", summary.morningPreparations)}${metric("huddles completed", summary.huddlesCompleted)}${metric("day reviews completed", summary.dayReviewsCompleted)}</div><div class="summary-callout"><p><strong>Most common blocker:</strong> ${escapeHtml(summary.mostCommonBlocker || "No repeated blocker yet.")}</p><p><strong>Repeated pattern:</strong> ${escapeHtml(repeatedRiskText)}</p>${repeatedRiskAction}</div></section><section class="weekly-questions" aria-labelledby="questions-title"><div class="section-heading"><div><p class="eyebrow">Reflect</p><h2 id="questions-title">What should change?</h2></div></div>${answerFields}</section><section class="weekly-output" aria-labelledby="next-week-title"><div class="section-heading"><div><p class="eyebrow">Prepare next week</p><h2 id="next-week-title">Three priorities, one improvement, one focus.</h2></div></div><div class="weekly-priority-fields">${[0, 1, 2].map((index) => `<label>Priority ${index + 1}<input data-weekly-priority="${index}" value="${escapeHtml(review.nextPriorities?.[index] || "")}" placeholder="A meaningful outcome"></label>`).join("")}</div><div class="form-two-col"><label>Operating improvement<textarea rows="2" data-weekly-improvement placeholder="One change to test">${escapeHtml(review.operatingImprovement || "")}</textarea></label><label>Leadership focus<textarea rows="2" data-weekly-focus placeholder="How you want to lead">${escapeHtml(review.leadershipFocus || "")}</textarea></label></div><button type="button" class="primary-action" data-weekly-save>Save weekly review <span aria-hidden="true">\u2192</span></button></section></section>`;
   }
+  function createL10MetricChart(metric, entries) {
+    const points = entries.filter((entry) => entry.metricId === metric.id && Number.isFinite(Number(entry.actual))).sort((a, b) => String(a.weekStart).localeCompare(String(b.weekStart))).slice(-8).map((entry) => ({
+      label: String(entry.weekStart || "").slice(5),
+      actual: Number(entry.actual),
+      goal: Number(entry.goal ?? metric.weeklyGoal)
+    }));
+    const chartLabel = `${metric.name} weekly actual versus goal`;
+    if (!points.length) return `<article class="l10-chart l10-chart--empty"><div class="l10-chart__heading"><div><span class="work-type">${escapeHtml(metric.area || "Team area")}</span><h3>${escapeHtml(metric.name)}</h3></div><span class="secondary-text">No weekly data yet</span></div><p class="secondary-text">Save a weekly number to start the local trend.</p></article>`;
+    const width = 560;
+    const height = 190;
+    const pad = { top: 18, right: 18, bottom: 32, left: 42 };
+    const maxValue = Math.max(...points.flatMap((point) => [point.actual, point.goal]), 1);
+    const minValue = Math.min(...points.flatMap((point) => [point.actual, point.goal]), 0);
+    const range = Math.max(maxValue - minValue, 1);
+    const x = (index) => pad.left + (points.length === 1 ? (width - pad.left - pad.right) / 2 : index * (width - pad.left - pad.right) / (points.length - 1));
+    const y = (value) => pad.top + (maxValue - value) * (height - pad.top - pad.bottom) / range;
+    const actualLine = points.map((point, index) => `${x(index)},${y(point.actual)}`).join(" ");
+    const goalLine = points.map((point, index) => `${x(index)},${y(point.goal)}`).join(" ");
+    const labels = points.map((point, index) => `<text x="${x(index)}" y="${height - 9}" text-anchor="middle">${escapeHtml(point.label)}</text>`).join("");
+    const dots = points.map((point, index) => `<circle class="l10-chart__dot" cx="${x(index)}" cy="${y(point.actual)}" r="4"><title>${escapeHtml(point.label)}: actual ${point.actual}, goal ${point.goal}</title></circle>`).join("");
+    const latest = points[points.length - 1];
+    const status = scorecardStatus(latest.goal, latest.actual, metric.direction);
+    const statusLabel2 = status === "on-track" ? "On track" : "Off track";
+    const light = status === "on-track" ? "green" : "red";
+    return `<article class="l10-chart" aria-label="${escapeHtml(chartLabel)}"><div class="l10-chart__heading"><div><span class="work-type">${escapeHtml(metric.area || "Team area")}</span><h3>${escapeHtml(metric.name)}</h3></div><span class="l10-traffic-light l10-traffic-light--${light}" role="img" aria-label="Latest result: ${statusLabel2}"><span aria-hidden="true">\u25CF</span><strong>${statusLabel2}</strong></span></div><svg class="l10-chart__svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(chartLabel)}"><line class="l10-chart__axis" x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}"></line><polyline class="l10-chart__goal" points="${goalLine}"></polyline><polyline class="l10-chart__actual" points="${actualLine}"></polyline>${dots}${labels}</svg><div class="l10-chart__legend"><span><i class="l10-chart__legend-line l10-chart__legend-line--actual"></i>Actual</span><span><i class="l10-chart__legend-line l10-chart__legend-line--goal"></i>Goal</span><span>Latest: ${latest.actual}</span></div></article>`;
+  }
+  function createL10View({ settings, meeting, metrics, entries, rocks, issues, history, weekStart }) {
+    const active = meeting?.currentSection || "segue";
+    const agenda = L10_AGENDA.map((section, index) => `<button type="button" class="l10-agenda-item ${active === section.id ? "l10-agenda-item--active" : ""} ${meeting?.sectionStatus?.[section.id] ? "l10-agenda-item--done" : ""}" data-l10-section="${section.id}"><span>${index + 1}</span><strong>${section.label}</strong><small>${section.minutes} min</small></button>`).join("");
+    const currentEntries = entries.filter((entry) => entry.weekStart === weekStart);
+    const metricRows = metrics.filter((metric) => metric.active !== false).map((metric) => {
+      const entry = currentEntries.find((item) => item.metricId === metric.id) || {};
+      const status = scorecardStatus(entry.goal ?? metric.weeklyGoal, entry.actual, metric.direction);
+      const statusLabel2 = status === "on-track" ? "On track" : status === "off-track" ? "Off track" : "Not entered";
+      const light = status === "on-track" ? "green" : status === "off-track" ? "red" : "amber";
+      return `<article class="l10-record-card"><div><span class="work-type">${escapeHtml(metric.area || "Team area")}</span><h3>${escapeHtml(metric.name)}</h3><p>Goal: ${escapeHtml(entry.goal ?? metric.weeklyGoal ?? "Not set")} \xB7 Actual: ${escapeHtml(entry.actual ?? "Not entered")}</p></div><span class="l10-traffic-light l10-traffic-light--${light}" role="img" aria-label="${statusLabel2}"><span aria-hidden="true">\u25CF</span><strong>${statusLabel2}</strong></span><div class="l10-record-actions"><button type="button" class="text-button" data-l10-edit-metric="${metric.id}">Edit</button><button type="button" class="text-button text-button--quiet" data-l10-delete-metric="${metric.id}">Delete</button><button type="button" class="text-button" data-l10-metric-issue="${metric.id}">Add to Issues</button></div></article>`;
+    }).join("");
+    const rockRows = rocks.map((rock) => `<article class="l10-record-card"><div><span class="work-type">${escapeHtml(rock.area || "Team area")}</span><h3>${escapeHtml(rock.outcome)}</h3><p>Due ${escapeHtml(rock.dueDate || "Not set")}</p></div><span class="status-chip status-chip--${rock.status === "on-track" ? "success" : rock.status === "off-track" ? "warning" : "neutral"}">${escapeHtml(rock.status || "on-track")}</span><button type="button" class="text-button" data-l10-rock-issue="${rock.id}">Add to Issues</button></article>`).join("");
+    const issueRows = issues.sort((a, b) => (a.priorityOrder || 0) - (b.priorityOrder || 0)).map((issue) => `<article class="l10-record-card"><div><span class="work-type">${escapeHtml(issue.source || "manual")}</span><h3>${escapeHtml(issue.title)}</h3><p>${escapeHtml(issue.status || "open")}</p></div><button type="button" class="secondary-action" data-l10-open-issue="${issue.id}">Work in IDS</button></article>`).join("");
+    let sectionContent = "";
+    if (active === "segue") sectionContent = `<form class="l10-section-form" data-l10-segue-form><label>Leadership best<textarea name="leadershipBest" rows="2">${escapeHtml(meeting.segue?.leadershipBest || "")}</textarea></label><label>Business, customer, or community best<textarea name="businessBest" rows="2">${escapeHtml(meeting.segue?.businessBest || "")}</textarea></label><label>Optional reflection<textarea name="reflection" rows="2">${escapeHtml(meeting.segue?.reflection || "")}</textarea></label><button class="primary-action" type="submit">Save and continue</button></form>`;
+    if (active === "scorecard") sectionContent = `<div class="l10-section-form"><p class="secondary-text">Review the weekly numbers only. Add off-track items to IDS for discussion.</p><section class="l10-chart-grid" aria-label="Scorecard trends">${metrics.filter((metric) => metric.active !== false).map((metric) => createL10MetricChart(metric, entries)).join("") || '<div class="section-empty"><p>Add a scorecard metric below to start plotting trends.</p></div>'}</section><div class="l10-record-list">${metricRows || '<div class="section-empty"><p>No scorecard metrics yet.</p></div>'}</div><form data-l10-scorecard-entry-form><label>Metric<select name="metricId">${metrics.map((metric) => `<option value="${metric.id}">${escapeHtml(metric.name)}</option>`).join("")}</select></label><div class="form-two-col"><label>Goal<input name="goal" type="number" step="any" required></label><label>Actual<input name="actual" type="number" step="any" required></label></div><label>Note<textarea name="note" rows="2"></textarea></label><button class="secondary-action" type="submit">Save weekly number</button></form></div>`;
+    if (active === "rocks") sectionContent = `<div class="l10-section-form"><div class="l10-record-list">${rockRows || '<div class="section-empty"><p>No Rocks yet.</p></div>'}</div><form data-l10-rock-form><label>Outcome<input name="outcome" required></label><div class="form-two-col"><label>Area<input name="area"></label><label>Due date<input name="dueDate" type="date"></label></div><button class="secondary-action" type="submit">Add Rock</button></form></div>`;
+    if (active === "headlines") sectionContent = `<form class="l10-section-form" data-l10-headline-form><label>Headline type<select name="type"><option value="customer">Customer/community</option><option value="team">Team area</option><option value="operating">Operating</option></select></label><label>Area<input name="area"></label><label>Headline<textarea name="text" rows="2" required></textarea></label><label><input type="checkbox" name="concern"> This needs attention</label><button class="primary-action" type="submit">Save headline</button></form><div class="l10-headline-list">${(meeting.headlines || []).map((headline) => `<p><strong>${escapeHtml(headline.type)}</strong> \xB7 ${escapeHtml(headline.text)}</p>`).join("")}</div>`;
+    if (active === "todos") sectionContent = `<div class="l10-section-form"><div class="l10-record-list">${(meeting.todos || []).map((todo) => `<article class="l10-record-card"><div><h3>${escapeHtml(todo.title)}</h3><p>${escapeHtml(todo.area || "Team area")} \xB7 due ${escapeHtml(todo.dueDate || "Not set")}</p></div><button type="button" class="text-button" data-l10-todo-toggle="${todo.id}">${todo.status === "done" ? "Done" : "Not done"}</button></article>`).join("") || '<div class="section-empty"><p>No previous To-Dos.</p></div>'}</div><form data-l10-todo-form><label>To-Do<input name="title" required></label><div class="form-two-col"><label>Area<input name="area"></label><label>Due date<input name="dueDate" type="date"></label></div><button class="secondary-action" type="submit">Add To-Do</button></form></div>`;
+    if (active === "ids") sectionContent = `<div class="l10-section-form"><div class="l10-record-list">${issueRows || '<div class="section-empty"><p>No Issues yet. Add one from the form below.</p></div>'}</div><form data-l10-issue-form><label>Issue<input name="title" required placeholder="State the issue, not only the symptom"></label><label>Area<input name="area"></label><button class="secondary-action" type="submit">Add issue to IDS</button></form></div>`;
+    if (active === "conclude") sectionContent = `<form class="l10-section-form" data-l10-conclude-form><label>Cascading message<textarea name="cascadingMessage" rows="2"></textarea></label><label>Meeting improvement<textarea name="meetingImprovement" rows="2">${escapeHtml(meeting.meetingImprovement || "")}</textarea></label><label>Meeting rating (1\u201310)<input name="rating" type="number" min="1" max="10" value="${escapeHtml(meeting.rating || "")}" required></label><button class="primary-action" type="submit">Complete L10 meeting</button></form>`;
+    return `<section class="l10-command" aria-labelledby="l10-title"><div class="l10-intro"><div><p class="eyebrow">Weekly leadership meeting</p><h2 id="l10-title">L10 Meeting</h2><p class="secondary-text">${escapeHtml(weekStart)} \xB7 week ending ${escapeHtml(meeting.weekEnd || "")} \xB7 90 minutes \xB7 local-only workspace</p></div><span class="review-time">${L10_AGENDA.reduce((total, section) => total + section.minutes, 0)} min</span></div><div class="review-switcher" role="group" aria-label="Review period"><a href="#review" class="secondary-action">Daily review</a><a href="#review/weekly" class="secondary-action">Weekly review</a><a href="#review/l10" class="secondary-action review-switcher--active">L10 meeting</a></div><div class="l10-layout"><aside class="l10-agenda" aria-label="L10 agenda">${agenda}</aside><section class="l10-active-section" aria-labelledby="l10-section-title"><p class="eyebrow">${L10_AGENDA.find((item) => item.id === active)?.minutes} minutes</p><h2 id="l10-section-title">${L10_AGENDA.find((item) => item.id === active)?.label}</h2>${sectionContent}<button type="button" class="secondary-action" data-l10-next>Save section and continue</button></section></div><section class="l10-resources"><div class="section-heading"><div><p class="eyebrow">Operating setup</p><h2>Scorecard and team areas</h2></div></div><form data-l10-metric-form class="form-two-col"><label>New scorecard metric<input name="name" placeholder="e.g. Follow-ups completed on time" required></label><label>Area<input name="area" placeholder="Operations"></label><label>Direction<select name="direction"><option value="at-least">At least</option><option value="at-most">At most</option></select></label><label>Weekly goal<input name="weeklyGoal" type="number" step="any" required></label><button class="secondary-action" type="submit">Add metric</button></form><p class="secondary-text">${settings.teamAreas?.length ? `Areas: ${settings.teamAreas.map(escapeHtml).join(" \xB7 ")}` : "Use team areas rather than employee profiles."}</p></section><details class="l10-history"><summary>Previous L10 meetings (${history.length})</summary><div>${history.map((item) => `<article class="l10-history-row"><div><p>${escapeHtml(item.weekStart)}${item.weekEnd ? ` \u2013 ${escapeHtml(item.weekEnd)}` : ""} \xB7 ${item.completedAt ? "Complete" : "In progress"} \xB7 rating ${escapeHtml(item.rating || "Not rated")}</p></div><button type="button" class="secondary-action" data-l10-history-id="${item.id}">View details</button></article>`).join("") || "<p>No previous meetings yet.</p>"}</div></details></section>`;
+  }
+  function createL10IssueDialog(issue = {}) {
+    return `<dialog id="l10-issue-dialog" class="modal work-detail-dialog" aria-labelledby="l10-issue-title"><div class="modal__header"><div><p class="eyebrow">IDS</p><h2 id="l10-issue-title">Work the issue</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close issue">\xD7</button></div><form class="modal__body work-form" data-l10-ids-form><input type="hidden" name="id" value="${escapeHtml(issue.id || "")}"><label>Issue title<input name="title" value="${escapeHtml(issue.title || "")}" required></label><label>Identify<textarea name="identify" rows="3">${escapeHtml(issue.identify || "")}</textarea></label><label>Discuss<textarea name="discuss" rows="3">${escapeHtml(issue.discuss || "")}</textarea></label><label>Solve<textarea name="solve" rows="3">${escapeHtml(issue.solve || "")}</textarea></label><div class="form-two-col"><label>Status<select name="status">${["open", "in-discussion", "solved", "carried-forward"].map((value) => `<option value="${value}" ${issue.status === value ? "selected" : ""}>${value}</option>`).join("")}</select></label><label>Convert solution<select name="conversion"><option value="">No conversion</option><option value="decision">Create decision</option><option value="follow-up">Create follow-up</option><option value="improvement">Create improvement</option><option value="message">Cascading message</option></select></label></div><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Save IDS outcome</button></div></form></dialog>`;
+  }
+  function createL10SettingsDialog(settings = {}) {
+    return `<dialog id="l10-settings-dialog" class="modal" aria-labelledby="l10-settings-title"><div class="modal__header"><div><p class="eyebrow">L10 setup</p><h2 id="l10-settings-title">Meeting setup</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close meeting setup">\xD7</button></div><form class="modal__body work-form" data-l10-settings-form><label>Meeting day<select name="meetingDay">${["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day, index) => `<option value="${index + 1}" ${Number(settings.meetingDay) === index + 1 ? "selected" : ""}>${day}</option>`).join("")}</select></label><label>Meeting time<input type="time" name="meetingTime" value="${escapeHtml(settings.meetingTime || "09:00")}"></label><label>Team areas<input name="teamAreas" value="${escapeHtml((settings.teamAreas || []).join(", "))}" placeholder="Operations, Customer, Leadership"></label><div class="form-two-col"><label>Facilitator area<input name="facilitatorArea" value="${escapeHtml(settings.facilitatorArea || "")}"></label><label>Scribe area<input name="scribeArea" value="${escapeHtml(settings.scribeArea || "")}"></label></div><label>Meeting rating target<input type="number" name="ratingTarget" min="1" max="10" value="${escapeHtml(settings.ratingTarget || 8)}"></label><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="submit" class="primary-action">Save setup</button></div></form></dialog>`;
+  }
+  function createL10MeetingDetailDialog(meeting = {}) {
+    const todoList = (meeting.todos || []).map((todo) => `<li>${todo.status === "done" ? "\u2713" : "\u25CB"} ${escapeHtml(todo.title)} \xB7 ${escapeHtml(todo.area || "Team area")} \xB7 due ${escapeHtml(todo.dueDate || "Not set")}</li>`).join("");
+    const headlineList = (meeting.headlines || []).map((headline) => `<li><strong>${escapeHtml(headline.type)}</strong> \xB7 ${escapeHtml(headline.text)}</li>`).join("");
+    const messages = (meeting.cascadingMessages || []).map((message) => `<li>${escapeHtml(message)}</li>`).join("");
+    return `<dialog id="l10-history-${escapeHtml(meeting.id)}" class="modal l10-detail-dialog" aria-labelledby="l10-detail-title-${escapeHtml(meeting.id)}"><div class="modal__header"><div><p class="eyebrow">Previous L10 meeting</p><h2 id="l10-detail-title-${escapeHtml(meeting.id)}">${escapeHtml(meeting.weekStart || "Meeting details")}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close meeting details">\xD7</button></div><div class="modal__body l10-detail-body"><div class="l10-detail-summary"><span>Week ending</span><strong>${escapeHtml(meeting.weekEnd || "Not recorded")}</strong><span>Rating</span><strong>${escapeHtml(meeting.rating || "Not rated")} / 10</strong></div><section><h3>Segue</h3><p><strong>Leadership best:</strong> ${escapeHtml(meeting.segue?.leadershipBest || "Not recorded")}</p><p><strong>Business/customer/community best:</strong> ${escapeHtml(meeting.segue?.businessBest || "Not recorded")}</p></section><section><h3>Headlines</h3><ul>${headlineList || "<li>None recorded.</li>"}</ul></section><section><h3>To-Dos</h3><ul>${todoList || "<li>None recorded.</li>"}</ul></section><section><h3>Cascading messages</h3><ul>${messages || "<li>None recorded.</li>"}</ul></section><section><h3>Meeting improvement</h3><p>${escapeHtml(meeting.meetingImprovement || "None recorded.")}</p></section><div class="modal__actions"><button type="button" class="secondary-action" data-print-l10-history="${escapeHtml(meeting.id)}">Print meeting</button><button type="button" class="primary-action" data-close-dialog>Done</button></div></div></dialog>`;
+  }
   var improvementCategories = [
     ["simplify", "Simplify"],
     ["remove-delay", "Remove delay"],
@@ -381,7 +641,8 @@
   }
   function playbookTopicCard(topic, state) {
     const saved = state.savedTopicIds?.includes(topic.id);
-    return `<article class="playbook-card"><div class="playbook-card__top"><span class="work-type">${escapeHtml(topic.group)}</span>${saved ? '<span class="status-chip status-chip--success">Saved</span>' : ""}</div><h3>${escapeHtml(topic.title)}</h3><p>${escapeHtml(topic.summary)}</p><button type="button" class="secondary-action" data-open-playbook-topic="${topic.id}">Open guidance <span aria-hidden="true">\u2192</span></button></article>`;
+    const completed = state.completedTopicIds?.includes(topic.id);
+    return `<article class="playbook-card ${completed ? "playbook-card--completed" : ""}"><div class="playbook-card__top"><span class="work-type">${escapeHtml(topic.group)}</span><div class="playbook-card__badges">${saved ? '<span class="status-chip status-chip--success">Saved</span>' : ""}${completed ? '<span class="status-chip status-chip--success">Completed</span>' : ""}</div></div><h3>${escapeHtml(topic.title)}</h3><p>${escapeHtml(topic.summary)}</p><div class="playbook-card__actions"><button type="button" class="secondary-action" data-open-playbook-topic="${topic.id}">Open guidance <span aria-hidden="true">\u2192</span></button><button type="button" class="playbook-complete" data-playbook-complete="${topic.id}" aria-pressed="${completed}" aria-label="${completed ? "Mark skill incomplete" : "Mark skill complete"}"><span aria-hidden="true">${completed ? "\u2713" : "\u25CB"}</span>${completed ? "Completed" : "Complete skill"}</button></div></article>`;
   }
   function createPlaybookView(topics, state, query = "", group = "All topics") {
     const normalizedQuery = query.trim().toLowerCase();
@@ -393,14 +654,15 @@
     const groups = ["All topics", ...new Set(topics.map((topic) => topic.group))];
     const savedTopics = (state.savedTopicIds || []).map(playbookTopicById).filter(Boolean);
     const recentTopics = (state.recentTopicIds || []).map(playbookTopicById).filter(Boolean);
+    const completedTopics = (state.completedTopicIds || []).map(playbookTopicById).filter(Boolean);
     const groupButtons = groups.map((name) => `<button type="button" class="work-filter ${group === name ? "work-filter--active" : ""}" data-playbook-group="${escapeHtml(name)}" aria-pressed="${group === name}">${escapeHtml(name)}</button>`).join("");
     const smallSection = (label, items) => `<section class="playbook-section playbook-section--compact"><div class="section-heading"><div><p class="eyebrow">${label}</p><h2>${label}</h2></div><span class="section-count">${items.length}</span></div>${items.length ? `<div class="playbook-grid">${items.slice(0, 4).map((topic) => playbookTopicCard(topic, state)).join("")}</div>` : '<div class="section-empty"><span aria-hidden="true">\u2014</span><p>No topics here yet.</p></div>'}</section>`;
     const content = matching.length ? `<div class="playbook-grid">${matching.map((topic) => playbookTopicCard(topic, state)).join("")}</div>` : `<div class="section-empty"><span aria-hidden="true">\u2014</span><p>No guidance matches \u201C${escapeHtml(query)}\u201D. Try a simpler phrase.</p></div>`;
-    return `<section class="playbook-command" aria-labelledby="playbook-title"><div class="work-intro"><div><p class="eyebrow">Guidance when it matters</p><h2 id="playbook-title">Lead with a clear next move.</h2><p class="secondary-text">Short, practical guidance for the moments that shape the day. Everything is available offline.</p></div></div><label class="playbook-search">Search the Playbook<input type="search" data-playbook-search value="${escapeHtml(query)}" placeholder="Try \u201Crisk\u201D, \u201Cdelegate\u201D, or \u201Cweekly review\u201D" autocomplete="off"></label><div class="work-filters playbook-filters" role="group" aria-label="Playbook topic groups">${groupButtons}</div>${smallSection("Saved topics", savedTopics)}${smallSection("Recently viewed", recentTopics)}<section class="playbook-section" aria-labelledby="all-playbook-topics"><div class="section-heading"><div><p class="eyebrow">Topic groups</p><h2 id="all-playbook-topics">${normalizedQuery ? "Search results" : group}</h2></div><span class="section-count">${matching.length}</span></div>${content}</section></section>`;
+    return `<section class="playbook-command" aria-labelledby="playbook-title"><div class="work-intro"><div><p class="eyebrow">Guidance when it matters</p><h2 id="playbook-title">Lead with a clear next move.</h2><p class="secondary-text">Short, practical guidance for the moments that shape the day. Everything is available offline.</p></div></div><label class="playbook-search">Search the Playbook<input type="search" data-playbook-search value="${escapeHtml(query)}" placeholder="Try \u201Crisk\u201D, \u201Cdelegate\u201D, or \u201Cweekly review\u201D" autocomplete="off"></label><div class="work-filters playbook-filters" role="group" aria-label="Playbook topic groups">${groupButtons}</div>${smallSection("Saved topics", savedTopics)}${smallSection("Recently viewed", recentTopics)}${smallSection("Completed skills", completedTopics)}<section class="playbook-section" aria-labelledby="all-playbook-topics"><div class="section-heading"><div><p class="eyebrow">Topic groups</p><h2 id="all-playbook-topics">${normalizedQuery ? "Search results" : group}</h2></div><span class="section-count">${matching.length}</span></div>${content}</section></section>`;
   }
-  function createPlaybookDialog(topic, saved = false) {
+  function createPlaybookDialog(topic, saved = false, completed = false) {
     if (!topic) return "";
-    return `<dialog id="playbook-detail" class="modal playbook-dialog" aria-labelledby="playbook-detail-title"><div class="modal__header"><div><p class="eyebrow">${escapeHtml(topic.group)}</p><h2 id="playbook-detail-title">${escapeHtml(topic.title)}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close guidance">\xD7</button></div><div class="modal__body playbook-detail"><p class="secondary-text">${escapeHtml(topic.summary)}</p><dl><div><dt>When to use it</dt><dd>${escapeHtml(topic.when)}</dd></div><div><dt>What to do</dt><dd>${escapeHtml(topic.what)}</dd></div><div><dt>What to say</dt><dd>${escapeHtml(topic.say)}</dd></div><div><dt>What to avoid</dt><dd>${escapeHtml(topic.avoid)}</dd></div><div><dt>What success looks like</dt><dd>${escapeHtml(topic.success)}</dd></div></dl><div class="modal__actions"><button type="button" class="secondary-action" data-playbook-save="${topic.id}">${saved ? "Remove from saved" : "Save topic"}</button><button type="button" class="primary-action" data-close-dialog>Done</button></div></div></dialog>`;
+    return `<dialog id="playbook-detail" class="modal playbook-dialog" aria-labelledby="playbook-detail-title"><div class="modal__header"><div><p class="eyebrow">${escapeHtml(topic.group)}</p><h2 id="playbook-detail-title">${escapeHtml(topic.title)}</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close guidance">\xD7</button></div><div class="modal__body playbook-detail"><p class="secondary-text">${escapeHtml(topic.summary)}</p><dl><div><dt>When to use it</dt><dd>${escapeHtml(topic.when)}</dd></div><div><dt>What to do</dt><dd>${escapeHtml(topic.what)}</dd></div><div><dt>What to say</dt><dd>${escapeHtml(topic.say)}</dd></div><div><dt>What to avoid</dt><dd>${escapeHtml(topic.avoid)}</dd></div><div><dt>What success looks like</dt><dd>${escapeHtml(topic.success)}</dd></div></dl><div class="modal__actions"><button type="button" class="secondary-action" data-playbook-save="${topic.id}">${saved ? "Remove from saved" : "Save topic"}</button><button type="button" class="playbook-complete" data-playbook-complete="${topic.id}" aria-pressed="${completed}"><span aria-hidden="true">${completed ? "\u2713" : "\u25CB"}</span>${completed ? "Completed" : "Mark complete"}</button><button type="button" class="primary-action" data-close-dialog>Done</button></div></div></dialog>`;
   }
   function createContextualGuidance(topicId, label = "Playbook guidance") {
     const topic = playbookTopicById(topicId);
@@ -413,9 +675,9 @@
   }
   function navItems(currentKey, className) {
     const items = navigation.map(
-      ([key, label, icon]) => `<a class="nav-item ${className}" href="#${key}" ${currentKey === key ? 'aria-current="page"' : ""}><span class="nav-item__icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`
+      ([key, label, icon]) => `<a class="nav-item ${className}" data-mobile-menu-link href="#${key}" ${currentKey === key ? 'aria-current="page"' : ""}><span class="nav-item__icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`
     ).join("");
-    return `${items}${currentKey === "review" ? '<a class="nav-item nav-item--subtle" href="#review/weekly"><span class="nav-item__icon" aria-hidden="true">\u21B3</span><span>Weekly review</span></a>' : ""}`;
+    return `${items}${currentKey === "review" ? '<a class="nav-item nav-item--subtle" href="#review/weekly"><span class="nav-item__icon" aria-hidden="true">\u21B3</span><span>Weekly review</span></a><a class="nav-item nav-item--subtle" href="#review/l10"><span class="nav-item__icon" aria-hidden="true">\u21B3</span><span>L10 meeting</span></a>' : ""}`;
   }
   function settingsDialog() {
     return `<dialog id="settings-dialog" class="modal" aria-labelledby="settings-title">
@@ -426,13 +688,23 @@
       ["system", "System"],
       ["dark", "Dark"]
     ])}
-      <button type="button" class="secondary-action settings-data-button" data-open-data>Data</button>
+      <div class="settings-actions"><button type="button" class="secondary-action settings-data-button" data-open-data>Data</button><button type="button" class="secondary-action" data-reset-onboarding>Restart onboarding</button></div>
     </div>
   </dialog>`;
   }
   function createDataDialog(snapshots = []) {
-    const snapshotList = snapshots.length ? snapshots.map((snapshot) => `<li><span><strong>${escapeHtml(new Intl.DateTimeFormat(void 0, { dateStyle: "medium", timeStyle: "short" }).format(new Date(snapshot.createdAt)))}</strong><small>${escapeHtml(snapshot.snapshotType)} snapshot \xB7 ${snapshot.recordCount || 0} records</small></span><button type="button" class="text-button" data-restore-snapshot="${escapeHtml(snapshot.id)}">Restore</button></li>`).join("") : '<li class="section-empty"><span aria-hidden="true">\u2014</span><p>No local snapshots yet.</p></li>';
-    return `<dialog id="data-dialog" class="modal data-dialog" aria-labelledby="data-title"><div class="modal__header"><div><p class="eyebrow">Settings \xB7 Data</p><h2 id="data-title">Protect your workspace.</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close data settings">\xD7</button></div><div class="modal__body data-manager"><p class="secondary-text">Backups, restores, and imports happen locally. Nothing is uploaded.</p><section class="data-section"><h3>JSON backup</h3><p>Export everything needed to rebuild this workspace on another device.</p><button type="button" class="primary-action" data-export-backup>Export backup</button><label class="file-picker">Restore backup<input type="file" accept="application/json,.json" data-restore-file></label><div class="restore-preview" data-restore-preview hidden></div></section><section class="data-section"><h3>CSV tools</h3><div class="form-two-col"><label>Dataset<select data-csv-type><option value="priorities">Priorities</option><option value="risks">Risks</option><option value="decisions">Decisions</option><option value="followUps">Follow-ups</option><option value="improvements">Improvements</option><option value="dailySummaries">Daily summaries</option><option value="weeklySummaries">Weekly summaries</option></select></label><div class="data-actions"><button type="button" class="secondary-action" data-export-csv>Export CSV</button><button type="button" class="text-button" data-download-csv-template>Download template</button></div></div><label class="file-picker">Import CSV<input type="file" accept="text/csv,.csv" data-csv-file></label><div class="csv-preview" data-csv-preview hidden></div></section><section class="data-section"><h3>Local snapshots</h3><p>Automatic daily and weekly snapshots rotate on this device.</p><ul class="history-list snapshot-list">${snapshotList}</ul></section><section class="data-section data-danger"><h3>Delete all data</h3><p>This removes workspace records and cannot be undone. Export a backup first.</p><button type="button" class="secondary-action" data-delete-all-data>Delete all data</button></section><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Done</button></div></div></dialog>`;
+    const snapshotList = snapshots.length ? snapshots.map((snapshot) => `<li><span><strong>${escapeHtml(new Intl.DateTimeFormat(void 0, { dateStyle: "medium", timeStyle: "short" }).format(new Date(snapshot.createdAt)))}</strong><small>${escapeHtml(snapshot.snapshotType)} snapshot \xB7 ${snapshot.recordCount || 0} records</small></span><div class="snapshot-actions"><button type="button" class="text-button" data-restore-snapshot="${escapeHtml(snapshot.id)}">Restore</button><button type="button" class="icon-button snapshot-delete" data-delete-snapshot="${escapeHtml(snapshot.id)}" aria-label="Delete ${escapeHtml(snapshot.snapshotType)} snapshot" title="Delete snapshot"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg></button></div></li>`).join("") : '<li class="section-empty"><span aria-hidden="true">\u2014</span><p>No local snapshots yet.</p></li>';
+    return `<dialog id="data-dialog" class="modal data-dialog" aria-labelledby="data-title"><div class="modal__header"><div><p class="eyebrow">Settings \xB7 Data</p><h2 id="data-title">Protect your workspace.</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close data settings">\xD7</button></div><div class="modal__body data-manager"><p class="secondary-text">Backups, restores, and imports happen locally. Nothing is uploaded.</p><section class="data-section"><h3>JSON backup</h3><p>Export everything needed to rebuild this workspace on another device.</p><button type="button" class="primary-action" data-export-backup>Export backup</button><label class="file-picker">Restore backup<input type="file" accept="application/json,.json" data-restore-file></label><div class="restore-preview" data-restore-preview hidden></div></section><section class="data-section"><h3>CSV tools</h3><div class="form-two-col"><label>Dataset<select data-csv-type><option value="priorities">Priorities</option><option value="risks">Risks</option><option value="decisions">Decisions</option><option value="followUps">Follow-ups</option><option value="improvements">Improvements</option><option value="l10ScorecardMetrics">L10 Scorecard metrics</option><option value="l10ScorecardEntries">L10 Scorecard entries</option><option value="l10Rocks">L10 Rocks</option><option value="l10Issues">L10 Issues</option><option value="l10Todos">L10 To-Dos</option><option value="l10Meetings">L10 meetings</option><option value="dailySummaries">Daily summaries</option><option value="weeklySummaries">Weekly summaries</option></select></label><div class="data-actions"><button type="button" class="secondary-action" data-export-csv>Export CSV</button><button type="button" class="text-button" data-download-csv-template>Download template</button></div></div><label class="file-picker">Import CSV<input type="file" accept="text/csv,.csv" data-csv-file></label><div class="csv-preview" data-csv-preview hidden></div></section><section class="data-section"><h3>Local snapshots</h3><p>Automatic daily and weekly snapshots rotate on this device.</p><ul class="history-list snapshot-list">${snapshotList}</ul></section><section class="data-section data-danger"><h3>Delete all data</h3><p>This removes workspace records and cannot be undone. Export a backup first.</p><button type="button" class="primary-action destructive-action" data-delete-all-data>Delete all data</button></section><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Done</button></div></div></dialog>`;
+  }
+  function createSnapshotDeleteDialog(snapshot = {}) {
+    const snapshotLabel = `${snapshot.snapshotType || "local"} snapshot`;
+    return `<dialog id="snapshot-delete-dialog" class="modal snapshot-delete-dialog" aria-labelledby="snapshot-delete-title"><div class="modal__header"><div><p class="eyebrow">Local snapshot</p><h2 id="snapshot-delete-title">Delete this snapshot?</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close delete snapshot dialog">\xD7</button></div><div class="modal__body"><div class="snapshot-warning"><span class="snapshot-warning__icon" aria-hidden="true">!</span><div><strong>This will be permanently deleted.</strong><p>The ${escapeHtml(snapshotLabel)} contains ${snapshot.recordCount || 0} saved records. Deleting it will not affect your current workspace.</p></div></div><p class="secondary-text">If you may need this snapshot later, export a backup before deleting it.</p><div class="modal__actions snapshot-delete-actions"><button type="button" class="secondary-action" data-snapshot-delete-cancel>Cancel</button><button type="button" class="secondary-action" data-snapshot-export-delete="${escapeHtml(snapshot.id || "")}">Export first, then delete</button><button type="button" class="primary-action snapshot-delete-confirm" data-snapshot-delete-confirm="${escapeHtml(snapshot.id || "")}">Delete permanently</button></div></div></dialog>`;
+  }
+  function createResetOnboardingDialog() {
+    return `<dialog id="reset-onboarding-dialog" class="modal reset-onboarding-dialog" aria-labelledby="reset-onboarding-title"><div class="modal__header"><div><p class="eyebrow">Settings \xB7 Onboarding</p><h2 id="reset-onboarding-title">Restart onboarding?</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close restart onboarding dialog">\xD7</button></div><div class="modal__body"><div class="snapshot-warning"><span class="snapshot-warning__icon" aria-hidden="true">\u21BB</span><div><strong>Your setup answers will be cleared.</strong><p>Your existing priorities, work items, reviews, improvements, L10 records, and journey progress will remain on this device.</p></div></div><p class="secondary-text">You will return to the Welcome screen and can complete the setup again with a different leadership context.</p><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Cancel</button><button type="button" class="primary-action" data-reset-onboarding-confirm>Restart onboarding</button></div></div></dialog>`;
+  }
+  function createDeleteAllDataDialog() {
+    return `<dialog id="delete-all-data-dialog" class="modal delete-all-data-dialog" aria-labelledby="delete-all-data-title"><div class="modal__header"><div><p class="eyebrow">Settings \xB7 Data</p><h2 id="delete-all-data-title">Delete all workspace data?</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close delete all data dialog">\xD7</button></div><div class="modal__body"><div class="danger-warning"><span class="danger-warning__icon" aria-hidden="true">!</span><div><strong>This action is permanent.</strong><p>All priorities, work items, reviews, improvements, journey progress, L10 records, playbook progress, schedules, and local snapshots will be removed from this device.</p></div></div><p class="secondary-text">Export a JSON backup first if you may need to recover this workspace later.</p><div class="modal__actions delete-all-data-actions"><button type="button" class="secondary-action" data-delete-all-export>Export backup first</button><button type="button" class="secondary-action" data-close-dialog>Cancel</button></div><label class="delete-confirmation-field">Type <strong>DELETE ALL DATA</strong> to confirm<input type="text" data-delete-all-phrase autocomplete="off" spellcheck="false" placeholder="DELETE ALL DATA"></label><div class="modal__actions"><button type="button" class="primary-action destructive-action" data-delete-all-confirm>Delete all data</button></div></div></dialog>`;
   }
   function createSegmentedControl(label, options) {
     return `<fieldset class="preference-group"><legend>${label}</legend><div class="segmented-control" role="group" aria-label="${label}">${options.map(([value, text]) => `<button type="button" data-theme-choice="${value}" aria-pressed="${value === "system"}">${text}</button>`).join("")}</div></fieldset>`;
@@ -445,15 +717,9 @@
   }
   function createAppShell(route) {
     return `<div class="app-layout">
-    <aside class="sidebar" aria-label="Application navigation">
-      <div class="sidebar__top"><a class="brand" href="#today" aria-label="TalentisOS home"><span class="brand-mark" aria-hidden="true">T</span><span class="brand-wordmark">Talentis<span>OS</span></span></a><button class="icon-button sidebar-toggle" type="button" data-toggle-sidebar aria-expanded="true" aria-label="Collapse sidebar">\u2190</button></div>
-      <nav class="sidebar__nav" aria-label="Primary navigation"><p class="nav-label">Workspace</p>${navItems(route.key, "")}</nav>
-      <div class="sidebar__bottom"><button class="nav-item settings-link" type="button" data-open-settings><span class="nav-item__icon" aria-hidden="true">\u2699</span><span>Settings</span></button><p class="sidebar-caption">Leadership, made clear.</p></div>
-    </aside>
-    <header class="mobile-header"><a class="brand" href="#today" aria-label="TalentisOS home"><span class="brand-mark" aria-hidden="true">T</span><span class="brand-wordmark">Talentis<span>OS</span></span></a><button class="icon-button" type="button" data-open-settings aria-label="Open settings">\u2699</button></header>
+    <header class="top-header" aria-label="Application header"><a class="brand" href="#today" aria-label="TalentisOS home"><span class="brand-mark" aria-hidden="true">T</span><span class="brand-wordmark">Talentis<span>OS</span></span></a><nav class="top-nav" aria-label="Primary navigation">${navItems(route.key, "top-nav__links")}</nav><div class="top-header__actions">${["review", "playbook"].includes(route.key) ? "" : `<button class="primary-action top-header__cta" type="button" data-primary-action>${route.action}<span aria-hidden="true">\u2192</span></button>`}<button class="secondary-action top-header__settings" type="button" data-open-settings>Settings</button><button class="icon-button menu-toggle" type="button" data-mobile-menu-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label="Open navigation menu"><span aria-hidden="true">\u2630</span></button></div></header>
+    <div class="mobile-menu-backdrop" data-close-mobile-menu></div><aside id="mobile-menu" class="mobile-menu" aria-label="Mobile navigation" aria-hidden="true"><div class="mobile-menu__header"><span class="eyebrow">Workspace</span><button class="icon-button" type="button" data-close-mobile-menu aria-label="Close navigation menu">\xD7</button></div><nav>${navItems(route.key, "mobile-menu__link")}</nav><button class="nav-item mobile-menu__settings" type="button" data-open-settings data-close-mobile-menu><span class="nav-item__icon" aria-hidden="true">\u2699</span><span>Settings</span></button></aside>
     <main id="main-content" class="content-area"><div class="content-inner"><header class="page-header"><div><p class="eyebrow">${route.eyebrow}</p><h1>${route.label}</h1></div><div class="page-header__meta"><span class="date-label">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</span><span class="status-dot" aria-label="Offline-ready shell"></span></div></header><div id="view-root"></div></div></main>
-    <nav class="bottom-nav" aria-label="Primary navigation">${navItems(route.key, "")}<button class="nav-item" type="button" data-open-settings><span class="nav-item__icon" aria-hidden="true">\u2022\u2022\u2022</span><span>More</span></button></nav>
-    ${["review", "playbook"].includes(route.key) ? "" : `<div class="primary-action-bar"><button class="primary-action" type="button" data-primary-action>${route.action}<span aria-hidden="true">\u2192</span></button></div>`}
     ${settingsDialog()}
   </div>`;
   }
@@ -470,7 +736,7 @@
 
   // src/db.js
   var DB_NAME = "talentisos";
-  var DB_VERSION = 6;
+  var DB_VERSION = 10;
   var stores = {
     settings: "settings",
     dailyPlans: "dailyPlans",
@@ -482,6 +748,15 @@
     weeklyReviews: "weeklyReviews",
     improvements: "improvements",
     playbookState: "playbookState",
+    journeyState: "journeyState",
+    l10Settings: "l10Settings",
+    l10ScorecardMetrics: "l10ScorecardMetrics",
+    l10ScorecardEntries: "l10ScorecardEntries",
+    l10Rocks: "l10Rocks",
+    l10Issues: "l10Issues",
+    l10Meetings: "l10Meetings",
+    meetingSchedules: "meetingSchedules",
+    eodRecords: "eodRecords",
     backupSnapshots: "backupSnapshots",
     appMeta: "appMeta"
   };
@@ -539,10 +814,36 @@
         if (!database2.objectStoreNames.contains(stores.playbookState)) {
           database2.createObjectStore(stores.playbookState, { keyPath: "id" });
         }
+        if (!database2.objectStoreNames.contains(stores.journeyState)) {
+          database2.createObjectStore(stores.journeyState, { keyPath: "id" });
+        }
+        if (!database2.objectStoreNames.contains(stores.l10Settings)) database2.createObjectStore(stores.l10Settings, { keyPath: "id" });
+        if (!database2.objectStoreNames.contains(stores.l10ScorecardMetrics)) database2.createObjectStore(stores.l10ScorecardMetrics, { keyPath: "id" });
+        if (!database2.objectStoreNames.contains(stores.l10ScorecardEntries)) {
+          const entries = database2.createObjectStore(stores.l10ScorecardEntries, { keyPath: "id" });
+          entries.createIndex("weekStart", "weekStart");
+          entries.createIndex("metricId", "metricId");
+        }
+        if (!database2.objectStoreNames.contains(stores.l10Rocks)) database2.createObjectStore(stores.l10Rocks, { keyPath: "id" });
+        if (!database2.objectStoreNames.contains(stores.l10Issues)) database2.createObjectStore(stores.l10Issues, { keyPath: "id" });
+        if (!database2.objectStoreNames.contains(stores.l10Meetings)) {
+          const meetings = database2.createObjectStore(stores.l10Meetings, { keyPath: "id" });
+          meetings.createIndex("weekStart", "weekStart");
+        }
+        if (!database2.objectStoreNames.contains(stores.meetingSchedules)) {
+          const schedules = database2.createObjectStore(stores.meetingSchedules, { keyPath: "id" });
+          schedules.createIndex("nextDate", "nextDate");
+          schedules.createIndex("active", "active");
+        }
         if (!database2.objectStoreNames.contains(stores.backupSnapshots)) {
           const snapshots = database2.createObjectStore(stores.backupSnapshots, { keyPath: "id" });
           snapshots.createIndex("snapshotType", "snapshotType");
           snapshots.createIndex("createdAt", "createdAt");
+        }
+        if (!database2.objectStoreNames.contains(stores.eodRecords)) {
+          const eodRecords = database2.createObjectStore(stores.eodRecords, { keyPath: "id" });
+          eodRecords.createIndex("date", "date");
+          eodRecords.createIndex("status", "status");
         }
         if (!database2.objectStoreNames.contains(stores.appMeta)) {
           database2.createObjectStore(stores.appMeta, { keyPath: "key" });
@@ -578,6 +879,7 @@
       key: "onboarding",
       completed: false,
       completionSeen: false,
+      welcomeSeen: false,
       step: 0,
       answers: {},
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -723,15 +1025,67 @@
   }
   async function getPlaybookState(database2) {
     const existing = await getRecord(database2, stores.playbookState, "primary");
-    return existing || { id: "primary", savedTopicIds: [], recentTopicIds: [] };
+    return existing || { id: "primary", savedTopicIds: [], recentTopicIds: [], completedTopicIds: [] };
   }
   async function savePlaybookState(database2, state) {
     return putRecord(database2, stores.playbookState, {
       id: "primary",
       savedTopicIds: state.savedTopicIds || [],
       recentTopicIds: state.recentTopicIds || [],
+      completedTopicIds: state.completedTopicIds || [],
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     });
+  }
+  async function getJourneyState(database2) {
+    const existing = await getRecord(database2, stores.journeyState, "primary");
+    return existing || { id: "primary", startedAt: null, completedMilestoneIds: [], completedAt: {}, meetingPreparation: {} };
+  }
+  async function saveJourneyState(database2, state) {
+    const next = {
+      id: "primary",
+      startedAt: state.startedAt || (/* @__PURE__ */ new Date()).toISOString(),
+      completedMilestoneIds: state.completedMilestoneIds || [],
+      completedAt: state.completedAt || {},
+      meetingPreparation: state.meetingPreparation || {},
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    await putRecord(database2, stores.journeyState, next);
+    return next;
+  }
+  async function getL10Settings(database2) {
+    return await getRecord(database2, stores.l10Settings, "primary") || { id: "primary", meetingDay: 1, meetingTime: "09:00", durationMinutes: 90, teamAreas: [], facilitatorArea: "", scribeArea: "", ratingTarget: 8 };
+  }
+  async function getL10Meeting(database2, weekStart) {
+    return getRecord(database2, stores.l10Meetings, `l10-${weekStart}`);
+  }
+  async function getL10Meetings(database2) {
+    return getAll(database2, stores.l10Meetings);
+  }
+  async function getL10Collection(database2, storeName) {
+    return getAll(database2, stores[storeName]);
+  }
+  async function saveL10Record(database2, storeName, record) {
+    const next = { ...record, updatedAt: (/* @__PURE__ */ new Date()).toISOString() };
+    await putRecord(database2, stores[storeName], next);
+    return next;
+  }
+  async function getMeetingSchedules(database2) {
+    return getAll(database2, stores.meetingSchedules);
+  }
+  async function saveMeetingSchedule(database2, schedule) {
+    return putRecord(database2, stores.meetingSchedules, { ...schedule, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+  async function deleteMeetingSchedule(database2, id) {
+    return deleteRecord(database2, stores.meetingSchedules, id);
+  }
+  async function getEodRecord(database2, date) {
+    return await getRecord(database2, stores.eodRecords, `eod-${date}`) || null;
+  }
+  async function getEodRecords(database2) {
+    return (await getAll(database2, stores.eodRecords)).sort((a, b) => b.date.localeCompare(a.date));
+  }
+  async function saveEodRecord(database2, record) {
+    return putRecord(database2, stores.eodRecords, { ...record, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
   }
   async function getBackupSnapshots(database2) {
     return (await getAll(database2, stores.backupSnapshots)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -770,6 +1124,16 @@
     "weeklyReviews",
     "improvements",
     "savedPlaybookTopics",
+    "completedPlaybookTopics",
+    "journeyState",
+    "l10Settings",
+    "l10ScorecardMetrics",
+    "l10ScorecardEntries",
+    "l10Rocks",
+    "l10Issues",
+    "l10Meetings",
+    "meetingSchedules",
+    "eodRecords",
     "onboardingState"
   ];
   var datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -799,7 +1163,7 @@
   }
   function migrateBackup(input) {
     if (!input || typeof input !== "object") throw new Error("The selected file is not a JSON object.");
-    if (input.format === "TalentisOS workspace backup" && input.exportVersion === EXPORT_FORMAT_VERSION) return sanitizeImportedValue(input);
+    if (input.format === "TalentisOS workspace backup" && input.exportVersion === EXPORT_FORMAT_VERSION) return createBackup(input.data || {}, input.exportedAt || (/* @__PURE__ */ new Date()).toISOString());
     if (input.format === "TalentisOS workspace backup" && input.exportVersion === 0 && input.data) {
       return createBackup(input.data, input.exportedAt || (/* @__PURE__ */ new Date()).toISOString());
     }
@@ -828,7 +1192,16 @@
       tomorrowPlans: data.tomorrowPlans,
       weeklyReviews: data.weeklyReviews,
       improvements: data.improvements,
-      playbookState: [{ id: "primary", savedTopicIds: data.savedPlaybookTopics || [], recentTopicIds: [] }],
+      playbookState: [{ id: "primary", savedTopicIds: data.savedPlaybookTopics || [], completedTopicIds: data.completedPlaybookTopics || [], recentTopicIds: [] }],
+      journeyState: data.journeyState || [],
+      l10Settings: data.l10Settings || [],
+      l10ScorecardMetrics: data.l10ScorecardMetrics || [],
+      l10ScorecardEntries: data.l10ScorecardEntries || [],
+      l10Rocks: data.l10Rocks || [],
+      l10Issues: data.l10Issues || [],
+      l10Meetings: data.l10Meetings || [],
+      meetingSchedules: data.meetingSchedules || [],
+      eodRecords: data.eodRecords || [],
       appMeta: data.onboardingState || []
     };
   }
@@ -878,7 +1251,13 @@
     risks: { required: ["title", "planDate"], columns: ["id", "planDate", "title", "whatAtRisk", "impact", "immediateAction", "dueDate", "status", "riskLevel"] },
     decisions: { required: ["title", "planDate"], columns: ["id", "planDate", "title", "decisionRequired", "decisionMade", "resultingAction", "dueDate", "status"] },
     followUps: { required: ["title", "dueDate"], columns: ["id", "title", "responsible", "dueDate", "nextAction", "status", "followedUpWith"] },
-    improvements: { required: ["notWorking", "change"], columns: ["id", "notWorking", "change", "why", "nextStep", "category", "status", "createdAt"] }
+    improvements: { required: ["notWorking", "change"], columns: ["id", "notWorking", "change", "why", "nextStep", "category", "status", "createdAt"] },
+    l10ScorecardMetrics: { required: ["name", "weeklyGoal"], columns: ["id", "name", "area", "direction", "weeklyGoal", "active", "order"] },
+    l10ScorecardEntries: { required: ["metricId", "weekStart", "goal", "actual"], columns: ["id", "metricId", "weekStart", "goal", "actual", "status", "note"] },
+    l10Rocks: { required: ["outcome"], columns: ["id", "quarter", "outcome", "area", "dueDate", "status"] },
+    l10Issues: { required: ["title"], columns: ["id", "source", "title", "area", "priorityOrder", "identify", "discuss", "solve", "status", "createdAt", "solvedAt"] },
+    l10Todos: { required: ["title"], columns: ["id", "meetingId", "title", "area", "dueDate", "status"] },
+    l10Meetings: { required: ["weekStart"], columns: ["id", "weekStart", "weekEnd", "meetingAt", "rating", "completedAt", "meetingImprovement"] }
   };
   function csvSchema(type) {
     const schema = csvSchemas[type];
@@ -893,7 +1272,7 @@
     const records = parsed.rows.map((row, index) => {
       const rowNumber = index + 2;
       for (const column of schema.required) if (!row[column]?.trim()) errors.push(`Row ${rowNumber}: ${column} is required.`);
-      for (const column of ["planDate", "dueDate", "createdAt"]) {
+      for (const column of ["planDate", "weekStart", "dueDate", "createdAt"]) {
         if (row[column] && (column === "createdAt" ? Number.isNaN(Date.parse(row[column])) : !datePattern.test(row[column]) || Number.isNaN(Date.parse(`${row[column]}T12:00:00`)))) errors.push(`Row ${rowNumber}: ${column} is not a valid date.`);
       }
       return sanitizeImportedValue(row);
@@ -923,8 +1302,13 @@
   var currentHistory = [];
   var currentReviewSuggestions = [];
   var currentWeeklyReview;
+  var currentL10Meeting;
+  var currentMeetingSchedules = [];
+  var currentEodFilter = "all";
   var currentImprovements = [];
   var currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
+  var currentJourneyState = { id: "primary", completedMilestoneIds: [], meetingPreparation: {} };
+  var selectedJourneyMilestoneId = "";
   var currentPlaybookQuery = "";
   var currentPlaybookGroup = "All topics";
   var currentSnapshots = [];
@@ -933,6 +1317,8 @@
   var updateRequested = false;
   var autosaveTimer;
   var lastUndo;
+  var l10TimerInterval;
+  var journeyTouchStartX = null;
   function showToast(message) {
     toastRegion.replaceChildren();
     toastRegion.innerHTML = createToast(message);
@@ -985,9 +1371,9 @@
   }
   function savedTheme() {
     try {
-      return localStorage.getItem("talentisos-theme") || "system";
+      return localStorage.getItem("talentisos-theme") || "dark";
     } catch {
-      return "system";
+      return "dark";
     }
   }
   async function collectBackupData() {
@@ -995,6 +1381,10 @@
     const dailyPlans = await read(stores.dailyPlans);
     const workItems = await read(stores.workItems);
     const playbookState = await read(stores.playbookState);
+    const journeyState = await read(stores.journeyState);
+    const l10Settings = await read(stores.l10Settings);
+    const meetingSchedules = await read(stores.meetingSchedules);
+    const eodRecords = await read(stores.eodRecords);
     const appMeta = await read(stores.appMeta);
     return {
       settings: await read(stores.settings),
@@ -1010,6 +1400,16 @@
       weeklyReviews: await read(stores.weeklyReviews),
       improvements: await read(stores.improvements),
       savedPlaybookTopics: playbookState[0]?.savedTopicIds || [],
+      completedPlaybookTopics: playbookState[0]?.completedTopicIds || [],
+      journeyState,
+      l10Settings,
+      l10ScorecardMetrics: await read(stores.l10ScorecardMetrics),
+      l10ScorecardEntries: await read(stores.l10ScorecardEntries),
+      l10Rocks: await read(stores.l10Rocks),
+      l10Issues: await read(stores.l10Issues),
+      l10Meetings: await read(stores.l10Meetings),
+      meetingSchedules,
+      eodRecords,
       onboardingState: appMeta.filter((item) => item.key === "onboarding")
     };
   }
@@ -1034,6 +1434,11 @@
     const backup = createBackup(await collectBackupData());
     downloadFile(JSON.stringify(backup, null, 2), `TalentisOS_Backup_${dateStamp()}.json`, "application/json");
     showToast("Backup exported locally.");
+  }
+  function exportSnapshot(snapshot) {
+    if (!snapshot?.backup) return;
+    downloadFile(JSON.stringify(snapshot.backup, null, 2), `TalentisOS_Snapshot_${dateStamp()}.json`, "application/json");
+    showToast("Snapshot exported locally.");
   }
   async function saveAutomaticSnapshot(snapshotType) {
     const backup = createBackup(await collectBackupData());
@@ -1074,6 +1479,8 @@
   function csvRows(type, data) {
     if (type === "dailySummaries") return data.dailyReviews.map((item) => ({ date: item.date, summary: item.summary || item.improvement || "", closed: item.closed ? "Yes" : "No" }));
     if (type === "weeklySummaries") return data.weeklyReviews.map((item) => ({ weekStart: item.weekStart, achieved: item.answers?.achieved || "", incomplete: item.answers?.incomplete || "", nextPriorities: (item.nextPriorities || []).join(" | "), operatingImprovement: item.operatingImprovement || "", leadershipFocus: item.leadershipFocus || "" }));
+    if (type === "l10Todos") return data.l10Meetings.flatMap((meeting) => (meeting.todos || []).map((todo) => ({ ...todo, meetingId: meeting.id })));
+    if (type === "l10Meetings") return data.l10Meetings.map((meeting) => ({ id: meeting.id, weekStart: meeting.weekStart, weekEnd: meeting.weekEnd || "", meetingAt: meeting.meetingAt, rating: meeting.rating || "", completedAt: meeting.completedAt || "", meetingImprovement: meeting.meetingImprovement || "" }));
     return data[type] || [];
   }
   function csvColumns(type, data) {
@@ -1168,6 +1575,8 @@
       currentPlan = await getDailyPlan(database);
       currentPriorities = await getPriorities(database, currentPlan.date);
       currentWorkItems = await getWorkItems(database);
+      currentJourneyState = await getJourneyState(database);
+      currentMeetingSchedules = await getMeetingSchedules(database);
       await importPreparedPlanIfNeeded();
       const action = currentPriorities.length < 3 ? "Add a priority" : "Review priorities";
       app.innerHTML = createAppShell({ ...route, action });
@@ -1176,7 +1585,22 @@
         currentPriorities,
         currentWorkItems
       );
+      document.querySelector("#view-root").insertAdjacentHTML("afterbegin", `${createMeetingScheduleCard(currentMeetingSchedules)}<section class="journey-today-card" aria-labelledby="journey-today-title"><div><p class="eyebrow">Your journey</p><h2 id="journey-today-title">Continue your first 90 days</h2><p class="secondary-text">Your next leadership milestone is ready.</p></div><a class="secondary-action" href="#journey">Open journey <span aria-hidden="true">\u2192</span></a></section>${createMeetingScheduleDialog(currentMeetingSchedules)}`);
       document.title = "Today \u2014 TalentisOS";
+    } else if (route.key === "journey") {
+      currentJourneyState = await getJourneyState(database);
+      app.innerHTML = createAppShell(route);
+      document.querySelector("#view-root").innerHTML = createJourneyView(currentJourneyState, selectedJourneyMilestoneId) + createMeetingBuilderDialog(currentJourneyState);
+      document.title = "Journey \u2014 TalentisOS";
+    } else if (route.key === "eod") {
+      const eodDate = dateOnly();
+      const existingEod = await getEodRecord(database, eodDate);
+      const eod = existingEod || { id: `eod-${eodDate}`, date: eodDate, status: "not-started", step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "" };
+      const eodHistory = await getEodRecords(database);
+      currentWorkItems = await getWorkItems(database);
+      app.innerHTML = createAppShell(route);
+      document.querySelector("#view-root").innerHTML = createEodView({ eod, date: eodDate, workItems: currentWorkItems, history: eodHistory.filter((item) => item.date !== eodDate), filter: currentEodFilter });
+      document.title = "End of Day \u2014 TalentisOS";
     } else if (route.key === "work") {
       currentWorkItems = await getWorkItems(database);
       app.innerHTML = createAppShell(route);
@@ -1206,9 +1630,38 @@
         ...route,
         action: currentReview.closed ? "Finish Day" : "Finish Day"
       });
-      if (route.subroute === "weekly") {
+      if (route.subroute === "l10") {
+        const weekStart = l10WeekStart(/* @__PURE__ */ new Date());
+        const l10Settings = await getL10Settings(database);
+        currentL10Meeting = await getL10Meeting(database, weekStart) || defaultL10Meeting(weekStart);
+        const l10Data = {
+          settings: l10Settings,
+          meeting: currentL10Meeting,
+          metrics: await getL10Collection(database, "l10ScorecardMetrics"),
+          entries: await getL10Collection(database, "l10ScorecardEntries"),
+          rocks: await getL10Collection(database, "l10Rocks"),
+          issues: await getL10Collection(database, "l10Issues"),
+          history: await getL10Meetings(database),
+          weekStart
+        };
+        app.innerHTML = createAppShell({ ...route, label: "Review", action: "Finish Day" });
+        document.querySelector("#view-root").innerHTML = createL10View(l10Data) + l10Data.history.map((item) => createL10MeetingDetailDialog(item)).join("") + createL10IssueDialog() + createL10SettingsDialog(l10Settings) + createImprovementSheet();
+        document.querySelector("#view-root").insertAdjacentHTML("afterbegin", '<button type="button" class="secondary-action l10-settings-trigger" data-open-l10-settings>Meeting setup</button>');
+        const activeSection = document.querySelector(".l10-active-section");
+        document.querySelector(".l10-intro")?.insertAdjacentHTML("beforeend", `<form class="l10-week-form" data-l10-week-form><label>Week ending<input type="date" name="weekEnd" value="${escapeHtml(currentL10Meeting.weekEnd || l10WeekEnd(weekStart))}" required></label><button class="secondary-action" type="submit">Save date</button></form>`);
+        const timerSeconds = l10RemainingSeconds(currentL10Meeting, currentL10Meeting.currentSection);
+        activeSection?.querySelector("h2")?.insertAdjacentHTML("afterend", `<div class="l10-timer" aria-live="polite"><strong data-l10-timer>${String(Math.floor(timerSeconds / 60)).padStart(2, "0")}:${String(timerSeconds % 60).padStart(2, "0")}</strong><button type="button" class="secondary-action" data-l10-timer-toggle>${currentL10Meeting.timer?.startedAt ? "Pause timer" : currentL10Meeting.timer?.paused ? "Resume timer" : "Start timer"}</button></div>`);
+        window.clearInterval(l10TimerInterval);
+        if (currentL10Meeting.timer?.startedAt) l10TimerInterval = window.setInterval(() => {
+          const seconds = l10RemainingSeconds(currentL10Meeting, currentL10Meeting.currentSection);
+          const timer = document.querySelector("[data-l10-timer]");
+          if (timer) timer.textContent = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+        }, 1e3);
+        document.title = "L10 Meeting \u2014 TalentisOS";
+      } else if (route.subroute === "weekly") {
         const weekStart = startOfWeek(/* @__PURE__ */ new Date());
         currentWeeklyReview = await getWeeklyReview(database, weekStart);
+        const l10MeetingForWeek = await getL10Meeting(database, weekStart);
         currentImprovements = await getImprovements(database);
         const closures = currentHistory.filter((closure) => closure.date >= weekStart && closure.date <= addDays(weekStart, 6));
         const weekPriorities = (await getAllPriorities(database)).filter((item) => item.planDate >= weekStart && item.planDate <= addDays(weekStart, 6));
@@ -1222,6 +1675,7 @@
           weekStart,
           weekEnd: addDays(weekStart, 6)
         }) + createImprovementSheet();
+        if (l10MeetingForWeek) document.querySelector("#view-root").insertAdjacentHTML("afterbegin", `<section class="l10-weekly-link"><div><p class="eyebrow">L10 meeting connection</p><h2>${l10MeetingForWeek.completedAt ? "L10 completed" : "L10 in progress"}</h2><p class="secondary-text">${l10MeetingForWeek.todos?.filter((todo) => todo.status === "done").length || 0} To-Dos complete \xB7 ${l10MeetingForWeek.issueIds?.length || 0} linked Issues \xB7 Rating ${escapeHtml(l10MeetingForWeek.rating || "Not rated")}</p></div><a class="secondary-action" href="#review/l10">Open L10 meeting <span aria-hidden="true">\u2192</span></a></section>`);
       } else {
         document.querySelector("#view-root").innerHTML = createReviewView({
           review: currentReview,
@@ -1384,7 +1838,7 @@
     await savePlaybookState(database, currentPlaybookState);
     const existing = document.querySelector("#playbook-detail");
     existing?.remove();
-    app.insertAdjacentHTML("beforeend", createPlaybookDialog(topic, currentPlaybookState.savedTopicIds?.includes(topic.id)));
+    app.insertAdjacentHTML("beforeend", createPlaybookDialog(topic, currentPlaybookState.savedTopicIds?.includes(topic.id), currentPlaybookState.completedTopicIds?.includes(topic.id)));
     openDialog(document.querySelector("#playbook-detail"));
   }
   function renderPlaybookResults() {
@@ -1429,6 +1883,11 @@
     const values = formValues(form);
     const existing = currentWorkItems.find((item) => item.id === values.id);
     const checkbox = form.elements.escalationRequired;
+    const subtaskTitles = values.subtasksText == null ? null : values.subtasksText.split("\n").map((title) => title.trim()).filter(Boolean);
+    const subtasks = subtaskTitles == null ? existing?.subtasks || [] : subtaskTitles.map((title) => {
+      const previous = (existing?.subtasks || []).find((subtask) => subtask.title === title);
+      return previous || { id: crypto.randomUUID(), title, completed: false, createdAt: (/* @__PURE__ */ new Date()).toISOString() };
+    });
     return {
       ...existing || {},
       id: values.id || crypto.randomUUID(),
@@ -1443,6 +1902,7 @@
       nextAction: values.nextAction.trim(),
       notes: values.notes.trim(),
       relatedItemIds: values.relatedItemIds.split(",").map((id) => id.trim()).filter(Boolean),
+      ...subtaskTitles == null ? {} : { subtasks },
       whatAtRisk: values.whatAtRisk?.trim() || "",
       impact: values.impact?.trim() || "",
       immediateAction: values.immediateAction?.trim() || "",
@@ -1505,11 +1965,14 @@
   async function completeOnboarding(answers) {
     await putRecord(database, stores.settings, {
       id: "primary",
-      teamFunction: answers.functionType,
-      outcomes: [answers.outcome0, answers.outcome1, answers.outcome2].filter(Boolean),
+      leadershipSituation: answers.leadershipSituation,
+      teamFunction: answers.workType,
+      guidanceLevel: answers.guidanceLevel,
       workdayStart: answers.startTime,
-      morningHuddle: answers.morningHuddle === "yes",
       reviewTime: answers.reviewTime,
+      leaderRole: answers.leaderRole,
+      reportingRoles: (answers.reportingRoles || "").split("\n").map((role) => role.trim()).filter(Boolean),
+      teamStructure: answers.teamStructure,
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     });
   }
@@ -1655,6 +2118,28 @@
     await saveDailyReview(database, currentReview);
     await render();
   }
+  document.addEventListener("touchstart", (event) => {
+    if (getRoute().key === "journey" && event.touches.length === 1) journeyTouchStartX = event.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener("touchend", async (event) => {
+    if (getRoute().key !== "journey" || journeyTouchStartX === null) return;
+    const distance = event.changedTouches[0].clientX - journeyTouchStartX;
+    journeyTouchStartX = null;
+    if (Math.abs(distance) < 60) return;
+    const progress = getJourneyProgress(currentJourneyState);
+    const currentIndex = progress.milestones.findIndex((milestone) => milestone.id === (selectedJourneyMilestoneId || progress.current.id));
+    const nextIndex = Math.max(0, Math.min(progress.milestones.length - 1, currentIndex + (distance < 0 ? 1 : -1)));
+    if (nextIndex !== currentIndex) {
+      selectedJourneyMilestoneId = progress.milestones[nextIndex].id;
+      await render();
+    }
+  }, { passive: true });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !document.body.classList.contains("mobile-menu-open")) return;
+    document.body.classList.remove("mobile-menu-open");
+    document.querySelector("[data-mobile-menu-toggle]")?.setAttribute("aria-expanded", "false");
+    document.querySelector("#mobile-menu")?.setAttribute("aria-hidden", "true");
+  });
   document.addEventListener("submit", async (event) => {
     const submittedForm = event.target;
     if (submittedForm.dataset.submitting === "true") {
@@ -1676,11 +2161,172 @@
         ...onboardingState,
         step: Number(onboardingForm.dataset.step) + 1,
         answers: { ...onboardingState.answers, ...values },
-        completed: Number(onboardingForm.dataset.step) === 4,
+        completed: Number(onboardingForm.dataset.step) === 5,
         completionSeen: onboardingState.completionSeen || false
       });
       if (onboardingState.completed) await completeOnboarding(onboardingState.answers);
       showToast(onboardingState.completed ? "Your playbook is ready." : "Saved.");
+      await render();
+      return;
+    }
+    const eodTaskForm = event.target.closest("[data-eod-task-form]");
+    if (eodTaskForm) {
+      event.preventDefault();
+      const values = formValues(eodTaskForm);
+      const eodDate = dateOnly();
+      const eod = await getEodRecord(database, eodDate) || { id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: 0, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "" };
+      const task = await saveWorkItem(database, { id: crypto.randomUUID(), type: "action", group: eod.step === 0 ? "now" : "next", title: values.title.trim(), dueDate: values.dueDate || "", priority: values.priority || "Normal", status: eod.step === 0 ? "complete" : "not-started", source: "eod", completedAt: eod.step === 0 ? (/* @__PURE__ */ new Date()).toISOString() : "", subtasks: [] });
+      await saveEodRecord(database, { ...eod, status: "in-progress", completedTaskIds: eod.step === 0 ? [.../* @__PURE__ */ new Set([...eod.completedTaskIds || [], task.id])] : eod.completedTaskIds, outstandingTaskIds: eod.step === 1 ? [.../* @__PURE__ */ new Set([...eod.outstandingTaskIds || [], task.id])] : eod.outstandingTaskIds });
+      showToast("Task saved locally.");
+      await render();
+      return;
+    }
+    const eodRiskForm = event.target.closest("[data-eod-risk-form]");
+    if (eodRiskForm) {
+      event.preventDefault();
+      const values = formValues(eodRiskForm);
+      const eodDate = dateOnly();
+      const eod = await getEodRecord(database, eodDate) || { id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: 2, completedTaskIds: [], outstandingTaskIds: [], riskIds: [], tomorrowPriorityIds: [], tomorrowNote: "", handoverNote: "" };
+      const risk = await saveWorkItem(database, { id: crypto.randomUUID(), type: "risk", group: "now", title: values.title.trim(), impact: values.impact, riskLevel: values.riskLevel, nextAction: values.nextAction || "", status: "not-started", source: "eod", createdAt: (/* @__PURE__ */ new Date()).toISOString() });
+      await saveEodRecord(database, { ...eod, riskIds: [.../* @__PURE__ */ new Set([...eod.riskIds || [], risk.id])] });
+      showToast("Risk captured locally.");
+      await render();
+      return;
+    }
+    const meetingForm = event.target.closest("[data-meeting-builder-form]");
+    if (meetingForm) {
+      event.preventDefault();
+      const values = formValues(meetingForm);
+      currentJourneyState = await saveJourneyState(database, { ...currentJourneyState, meetingPreparation: { purpose: values.purpose, introduction: values.introduction, questions: new FormData(meetingForm).getAll("questions"), expectations: values.expectations, close: values.close } });
+      meetingForm.closest("dialog")?.close();
+      showToast("Meeting plan saved locally.");
+      await render();
+      return;
+    }
+    const l10SegueForm = event.target.closest("[data-l10-segue-form]");
+    if (l10SegueForm) {
+      event.preventDefault();
+      const values = formValues(l10SegueForm);
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, segue: values, sectionStatus: { ...currentL10Meeting.sectionStatus, segue: true } });
+      showToast("Segue saved locally.");
+      await render();
+      return;
+    }
+    const l10ScorecardForm = event.target.closest("[data-l10-scorecard-entry-form]");
+    if (l10ScorecardForm) {
+      event.preventDefault();
+      const values = formValues(l10ScorecardForm);
+      const metric = (await getL10Collection(database, "l10ScorecardMetrics")).find((item) => item.id === values.metricId);
+      await saveL10Record(database, "l10ScorecardEntries", { id: `entry-${values.metricId}-${currentL10Meeting.weekStart}`, metricId: values.metricId, weekStart: currentL10Meeting.weekStart, goal: Number(values.goal), actual: Number(values.actual), status: scorecardStatus(values.goal, values.actual, metric?.direction), note: values.note || "", addedToIssues: false });
+      showToast("Scorecard number saved.");
+      await render();
+      return;
+    }
+    const l10MetricForm = event.target.closest("[data-l10-metric-form]");
+    if (l10MetricForm) {
+      event.preventDefault();
+      const values = formValues(l10MetricForm);
+      const metricId = l10MetricForm.dataset.editMetric || crypto.randomUUID();
+      const existing = l10MetricForm.dataset.editMetric ? (await getL10Collection(database, "l10ScorecardMetrics")).find((item) => item.id === metricId) : {};
+      await saveL10Record(database, "l10ScorecardMetrics", { ...existing, id: metricId, name: values.name, area: values.area, direction: values.direction, weeklyGoal: Number(values.weeklyGoal), active: true, order: existing.order || Date.now() });
+      showToast(l10MetricForm.dataset.editMetric ? "Scorecard metric updated." : "Scorecard metric added.");
+      await render();
+      return;
+    }
+    const l10WeekForm = event.target.closest("[data-l10-week-form]");
+    if (l10WeekForm) {
+      event.preventDefault();
+      const values = formValues(l10WeekForm);
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, weekEnd: values.weekEnd });
+      showToast("Week ending date saved.");
+      await render();
+      return;
+    }
+    const l10SettingsForm = event.target.closest("[data-l10-settings-form]");
+    if (l10SettingsForm) {
+      event.preventDefault();
+      const values = formValues(l10SettingsForm);
+      await saveL10Record(database, "l10Settings", { id: "primary", meetingDay: Number(values.meetingDay), meetingTime: values.meetingTime, durationMinutes: 90, teamAreas: values.teamAreas.split(",").map((item) => item.trim()).filter(Boolean), facilitatorArea: values.facilitatorArea, scribeArea: values.scribeArea, ratingTarget: Number(values.ratingTarget) || 8 });
+      l10SettingsForm.closest("dialog")?.close();
+      showToast("L10 setup saved locally.");
+      await render();
+      return;
+    }
+    const meetingScheduleForm = event.target.closest("[data-meeting-schedule-form]");
+    if (meetingScheduleForm) {
+      event.preventDefault();
+      const values = formValues(meetingScheduleForm);
+      const scheduleId = meetingScheduleForm.dataset.editSchedule;
+      const existing = scheduleId ? currentMeetingSchedules.find((schedule) => schedule.id === scheduleId) : null;
+      const updatedSchedule = { ...existing || {}, id: scheduleId || crypto.randomUUID(), name: values.name.trim(), cadence: values.cadence, meetingTime: values.meetingTime, nextDate: values.nextDate, agenda: values.agenda || "", active: existing?.active !== false };
+      await saveMeetingSchedule(database, updatedSchedule);
+      showToast(scheduleId ? "Recurring meeting updated locally." : "Recurring meeting added locally.");
+      if (scheduleId) {
+        currentMeetingSchedules = currentMeetingSchedules.map((schedule) => schedule.id === scheduleId ? updatedSchedule : schedule);
+        meetingScheduleForm.dataset.originalSchedule = JSON.stringify({ name: updatedSchedule.name, cadence: updatedSchedule.cadence, meetingTime: updatedSchedule.meetingTime, nextDate: updatedSchedule.nextDate, agenda: updatedSchedule.agenda });
+        meetingScheduleForm.querySelector(".meeting-schedule-submit").disabled = true;
+        return;
+      }
+      await render();
+      return;
+    }
+    const l10RockForm = event.target.closest("[data-l10-rock-form]");
+    if (l10RockForm) {
+      event.preventDefault();
+      const values = formValues(l10RockForm);
+      await saveL10Record(database, "l10Rocks", { id: crypto.randomUUID(), outcome: values.outcome, area: values.area, dueDate: values.dueDate, status: "on-track", addedToIssues: false });
+      showToast("Rock added locally.");
+      await render();
+      return;
+    }
+    const l10HeadlineForm = event.target.closest("[data-l10-headline-form]");
+    if (l10HeadlineForm) {
+      event.preventDefault();
+      const values = formValues(l10HeadlineForm);
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, headlines: [...currentL10Meeting.headlines || [], { id: crypto.randomUUID(), type: values.type, area: values.area, text: values.text, concern: values.concern === "on" }] });
+      showToast("Headline saved locally.");
+      await render();
+      return;
+    }
+    const l10TodoForm = event.target.closest("[data-l10-todo-form]");
+    if (l10TodoForm) {
+      event.preventDefault();
+      const values = formValues(l10TodoForm);
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, todos: [...currentL10Meeting.todos || [], { id: crypto.randomUUID(), title: values.title, area: values.area, dueDate: values.dueDate, status: "not-done" }] });
+      showToast("To-Do added locally.");
+      await render();
+      return;
+    }
+    const l10IssueForm = event.target.closest("[data-l10-issue-form]");
+    if (l10IssueForm) {
+      event.preventDefault();
+      const values = formValues(l10IssueForm);
+      await saveL10Record(database, "l10Issues", { id: crypto.randomUUID(), title: values.title, area: values.area, source: "manual", priorityOrder: Date.now(), status: "open", identify: "", discuss: "", solve: "", createdAt: (/* @__PURE__ */ new Date()).toISOString() });
+      showToast("Issue added to IDS.");
+      await render();
+      return;
+    }
+    const l10IdsForm = event.target.closest("[data-l10-ids-form]");
+    if (l10IdsForm) {
+      event.preventDefault();
+      const values = formValues(l10IdsForm);
+      const issue = (await getL10Collection(database, "l10Issues")).find((item) => item.id === values.id);
+      const savedIssue = await saveL10Record(database, "l10Issues", { ...issue, title: values.title, identify: values.identify, discuss: values.discuss, solve: values.solve, status: values.status, solvedAt: values.status === "solved" ? (/* @__PURE__ */ new Date()).toISOString() : issue?.solvedAt });
+      if (values.conversion === "decision") await saveWorkItem(database, { id: crypto.randomUUID(), type: "decision", group: "next", title: savedIssue.solve || savedIssue.title, status: "required", sourceL10IssueId: savedIssue.id });
+      if (values.conversion === "follow-up") await saveWorkItem(database, { id: crypto.randomUUID(), type: "follow-up", group: "next", title: savedIssue.solve || savedIssue.title, status: "not-started", sourceL10IssueId: savedIssue.id });
+      if (values.conversion === "improvement") await saveImprovement(database, { id: crypto.randomUUID(), notWorking: savedIssue.title, change: savedIssue.solve, why: savedIssue.discuss, nextStep: savedIssue.solve, category: "workflow", status: "captured", sourceL10IssueId: savedIssue.id, createdAt: (/* @__PURE__ */ new Date()).toISOString() });
+      if (values.conversion === "message") currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, cascadingMessages: [...currentL10Meeting.cascadingMessages || [], savedIssue.solve || savedIssue.title] });
+      l10IdsForm.closest("dialog")?.close();
+      showToast("IDS outcome saved.");
+      await render();
+      return;
+    }
+    const l10ConcludeForm = event.target.closest("[data-l10-conclude-form]");
+    if (l10ConcludeForm) {
+      event.preventDefault();
+      const values = formValues(l10ConcludeForm);
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, rating: Number(values.rating), meetingImprovement: values.meetingImprovement, cascadingMessages: values.cascadingMessage ? [...currentL10Meeting.cascadingMessages || [], values.cascadingMessage] : currentL10Meeting.cascadingMessages, completedAt: (/* @__PURE__ */ new Date()).toISOString(), sectionStatus: { ...currentL10Meeting.sectionStatus, conclude: true } });
+      showToast("L10 meeting completed locally.");
       await render();
       return;
     }
@@ -1721,6 +2367,12 @@
     }
   });
   document.addEventListener("input", (event) => {
+    const meetingScheduleForm = event.target.closest("[data-meeting-schedule-form]");
+    if (meetingScheduleForm?.dataset.editSchedule) {
+      const current = JSON.stringify({ name: meetingScheduleForm.elements.name.value, cadence: meetingScheduleForm.elements.cadence.value, meetingTime: meetingScheduleForm.elements.meetingTime.value, nextDate: meetingScheduleForm.elements.nextDate.value, agenda: meetingScheduleForm.elements.agenda.value });
+      const saveButton = meetingScheduleForm.querySelector(".meeting-schedule-submit");
+      if (saveButton) saveButton.disabled = current === meetingScheduleForm.dataset.originalSchedule;
+    }
     const draftForm = event.target.closest("[data-priority-form], [data-improvement-form]");
     if (draftForm && !draftForm.elements.id?.value) saveDraft(draftForm);
     const playbookSearch = event.target.closest("[data-playbook-search]");
@@ -1777,7 +2429,29 @@
     window.clearTimeout(autosaveTimer);
     autosaveTimer = window.setTimeout(() => persistWorkForm(workForm), 600);
   });
+  document.addEventListener("focusin", (event) => {
+    const outcomeInput = event.target.closest('[data-onboarding-form] input[name^="outcome"]');
+    if (outcomeInput) outcomeInput.form.dataset.activeOutcome = outcomeInput.name;
+  });
   document.addEventListener("change", (event) => {
+    const tomorrowTask = event.target.closest("[data-eod-tomorrow-task]");
+    if (tomorrowTask) {
+      const eodDate = dateOnly();
+      getEodRecord(database, eodDate).then(async (eod) => {
+        if (!eod) return;
+        const selected = new Set(eod.tomorrowPriorityIds || []);
+        if (tomorrowTask.checked && selected.size >= 3) {
+          tomorrowTask.checked = false;
+          showToast("Choose up to three priorities for tomorrow.");
+          return;
+        }
+        if (tomorrowTask.checked) selected.add(tomorrowTask.dataset.eodTomorrowTask);
+        else selected.delete(tomorrowTask.dataset.eodTomorrowTask);
+        await saveEodRecord(database, { ...eod, tomorrowPriorityIds: [...selected] });
+        await render();
+      });
+      return;
+    }
     const restoreFile = event.target.closest("[data-restore-file]");
     if (restoreFile) {
       handleRestoreFile(restoreFile.files?.[0]);
@@ -1796,6 +2470,58 @@
     form.querySelector('select[name="status"]').innerHTML = workStatusOptions(workType.value, "");
   });
   document.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-eod-enter]")) {
+      const eodDate = dateOnly();
+      const existing = await getEodRecord(database, eodDate);
+      if (existing?.status === "closed") {
+        showToast("Today\u2019s EOD is already closed.");
+        return;
+      }
+      await saveEodRecord(database, { ...existing || {}, id: `eod-${eodDate}`, date: eodDate, status: "in-progress", step: existing?.step || 0, completedTaskIds: existing?.completedTaskIds || [], outstandingTaskIds: existing?.outstandingTaskIds || [], riskIds: existing?.riskIds || [], tomorrowPriorityIds: existing?.tomorrowPriorityIds || [], tomorrowNote: existing?.tomorrowNote || "", handoverNote: existing?.handoverNote || "" });
+      await render();
+      return;
+    }
+    if (event.target.closest("[data-eod-next], [data-eod-back]")) {
+      const eodDate = dateOnly();
+      const eod = await getEodRecord(database, eodDate);
+      if (!eod) return;
+      const tomorrowNote = document.querySelector("[data-eod-tomorrow-note]")?.value;
+      const handoverNote = document.querySelector("[data-eod-handover-note]")?.value;
+      const direction = event.target.closest("[data-eod-back]") ? -1 : 1;
+      await saveEodRecord(database, { ...eod, step: Math.max(0, Math.min(4, eod.step + direction)), tomorrowNote: tomorrowNote ?? eod.tomorrowNote, handoverNote: handoverNote ?? eod.handoverNote });
+      await render();
+      return;
+    }
+    if (event.target.closest("[data-eod-close]")) {
+      const eodDate = dateOnly();
+      const eod = await getEodRecord(database, eodDate);
+      if (!eod) return;
+      const risks = currentWorkItems.filter((item) => item.type === "risk" && item.status !== "complete");
+      await saveEodRecord(database, { ...eod, status: "closed", completedAt: (/* @__PURE__ */ new Date()).toISOString(), handoverNote: document.querySelector("[data-eod-handover-note]")?.value || eod.handoverNote, riskIds: risks.map((risk) => risk.id) });
+      showToast("Day closed. Tomorrow is clearer.");
+      await render();
+      return;
+    }
+    const eodFilter = event.target.closest("[data-eod-filter]");
+    if (eodFilter) {
+      currentEodFilter = eodFilter.dataset.eodFilter;
+      await render();
+      return;
+    }
+    const eodCompleteTask = event.target.closest("[data-eod-complete-task]");
+    if (eodCompleteTask) {
+      const task = currentWorkItems.find((item) => item.id === eodCompleteTask.dataset.eodCompleteTask);
+      if (task) {
+        await saveWorkItem(database, { ...task, status: task.status === "complete" ? "not-started" : "complete", completedAt: task.status === "complete" ? "" : (/* @__PURE__ */ new Date()).toISOString() });
+        await render();
+      }
+      return;
+    }
+    if (event.target.closest("[data-eod-history]")) {
+      currentEodFilter = "all";
+      document.querySelector(".eod-history")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     const themeButton = event.target.closest("[data-theme-choice]");
     if (themeButton) {
       applyTheme(themeButton.dataset.themeChoice, true);
@@ -1810,6 +2536,27 @@
       currentSnapshots = await getBackupSnapshots(database);
       document.body.insertAdjacentHTML("beforeend", createDataDialog(currentSnapshots));
       openDialog(document.querySelector("#data-dialog"));
+      return;
+    }
+    if (event.target.closest("[data-reset-onboarding]")) {
+      document.body.insertAdjacentHTML("beforeend", createResetOnboardingDialog());
+      openDialog(document.querySelector("#reset-onboarding-dialog"));
+      return;
+    }
+    if (event.target.closest("[data-reset-onboarding-confirm]")) {
+      onboardingState = await saveOnboardingState(database, {
+        key: "onboarding",
+        completed: false,
+        completionSeen: false,
+        welcomeSeen: false,
+        step: 0,
+        answers: {}
+      });
+      await deleteRecord(database, stores.settings, "primary");
+      document.querySelector("#reset-onboarding-dialog")?.remove();
+      document.querySelector("#settings-dialog")?.close();
+      showToast("Onboarding restarted. Your workspace data is unchanged.");
+      await render();
       return;
     }
     if (event.target.closest("[data-export-backup]")) {
@@ -1856,16 +2603,70 @@
       if (snapshot) showRestorePreview(snapshot.backup, "snapshot");
       return;
     }
+    const deleteSnapshot = event.target.closest("[data-delete-snapshot]");
+    if (deleteSnapshot) {
+      const snapshot = currentSnapshots.find((item) => item.id === deleteSnapshot.dataset.deleteSnapshot);
+      if (snapshot) {
+        document.body.insertAdjacentHTML("beforeend", createSnapshotDeleteDialog(snapshot));
+        openDialog(document.querySelector("#snapshot-delete-dialog"));
+      }
+      return;
+    }
+    const cancelSnapshotDelete = event.target.closest("[data-snapshot-delete-cancel]");
+    if (cancelSnapshotDelete) {
+      cancelSnapshotDelete.closest("dialog")?.close();
+      cancelSnapshotDelete.closest("dialog")?.remove();
+      return;
+    }
+    const exportAndDeleteSnapshot = event.target.closest("[data-snapshot-export-delete]");
+    if (exportAndDeleteSnapshot) {
+      const snapshot = currentSnapshots.find((item) => item.id === exportAndDeleteSnapshot.dataset.snapshotExportDelete);
+      if (snapshot) {
+        exportSnapshot(snapshot);
+        await deleteBackupSnapshot(database, snapshot.id);
+        currentSnapshots = await getBackupSnapshots(database);
+        exportAndDeleteSnapshot.closest("dialog")?.close();
+        exportAndDeleteSnapshot.closest("dialog")?.remove();
+        dataDialog()?.remove();
+        document.body.insertAdjacentHTML("beforeend", createDataDialog(currentSnapshots));
+        openDialog(document.querySelector("#data-dialog"));
+        showToast("Snapshot exported and deleted.");
+      }
+      return;
+    }
+    const confirmSnapshotDelete = event.target.closest("[data-snapshot-delete-confirm]");
+    if (confirmSnapshotDelete) {
+      const snapshot = currentSnapshots.find((item) => item.id === confirmSnapshotDelete.dataset.snapshotDeleteConfirm);
+      if (snapshot) {
+        await deleteBackupSnapshot(database, snapshot.id);
+        currentSnapshots = await getBackupSnapshots(database);
+        confirmSnapshotDelete.closest("dialog")?.close();
+        confirmSnapshotDelete.closest("dialog")?.remove();
+        dataDialog()?.remove();
+        document.body.insertAdjacentHTML("beforeend", createDataDialog(currentSnapshots));
+        openDialog(document.querySelector("#data-dialog"));
+        showToast("Snapshot permanently deleted.");
+      }
+      return;
+    }
     if (event.target.closest("[data-delete-all-data]")) {
-      const confirmed = window.confirm("This will permanently delete all workspace records. Export a backup now?");
-      if (!confirmed) return;
+      document.body.insertAdjacentHTML("beforeend", createDeleteAllDataDialog());
+      openDialog(document.querySelector("#delete-all-data-dialog"));
+      return;
+    }
+    if (event.target.closest("[data-delete-all-export]")) {
       await exportBackup();
-      const phrase = window.prompt("Type DELETE ALL DATA to confirm permanent deletion.");
+      return;
+    }
+    if (event.target.closest("[data-delete-all-confirm]")) {
+      const phrase = document.querySelector("[data-delete-all-phrase]")?.value.trim();
       if (phrase !== "DELETE ALL DATA") {
-        showToast("Deletion cancelled.");
+        showToast("Type DELETE ALL DATA exactly to confirm deletion.");
+        document.querySelector("[data-delete-all-phrase]")?.focus();
         return;
       }
-      await clearWorkspaceData(database);
+      await clearWorkspaceData(database, true);
+      document.querySelector("#delete-all-data-dialog")?.remove();
       document.querySelector("#data-dialog")?.remove();
       onboardingState = await getOnboardingState(database);
       showToast("All workspace data was deleted.");
@@ -1900,8 +2701,42 @@
       await savePlaybookState(database, currentPlaybookState);
       return;
     }
+    const playbookComplete = event.target.closest("[data-playbook-complete]");
+    if (playbookComplete) {
+      const topicId = playbookComplete.dataset.playbookComplete;
+      const completed = new Set(currentPlaybookState.completedTopicIds || []);
+      if (completed.has(topicId)) {
+        completed.delete(topicId);
+        showToast("Skill marked incomplete.");
+      } else {
+        completed.add(topicId);
+        showToast("Skill marked complete locally.");
+      }
+      currentPlaybookState.completedTopicIds = [...completed];
+      await savePlaybookState(database, currentPlaybookState);
+      const dialog = playbookComplete.closest("dialog");
+      if (dialog) {
+        playbookComplete.setAttribute("aria-pressed", String(completed.has(topicId)));
+        playbookComplete.innerHTML = completed.has(topicId) ? "\u2713 Completed" : "Mark complete";
+      } else {
+        renderPlaybookResults();
+      }
+      return;
+    }
     const closeButton = event.target.closest("[data-close-dialog]");
     if (closeButton) closeButton.closest("dialog")?.close();
+    const mobileMenuToggle = event.target.closest("[data-mobile-menu-toggle]");
+    if (mobileMenuToggle) {
+      const open = document.body.classList.toggle("mobile-menu-open");
+      mobileMenuToggle.setAttribute("aria-expanded", String(open));
+      document.querySelector("#mobile-menu")?.setAttribute("aria-hidden", String(!open));
+      return;
+    }
+    if (event.target.closest("[data-close-mobile-menu]") || event.target.closest("[data-mobile-menu-link]")) {
+      document.body.classList.remove("mobile-menu-open");
+      document.querySelector("[data-mobile-menu-toggle]")?.setAttribute("aria-expanded", "false");
+      document.querySelector("#mobile-menu")?.setAttribute("aria-hidden", "true");
+    }
     const collapseButton = event.target.closest("[data-toggle-sidebar]");
     if (collapseButton) {
       const collapsed = document.body.classList.toggle("sidebar-collapsed");
@@ -1912,6 +2747,139 @@
     const reviewAction = event.target.closest("[data-review-action]");
     if (reviewAction) {
       await applyReviewAction(reviewAction.dataset.reviewKey, reviewAction.dataset.reviewAction);
+      return;
+    }
+    if (event.target.closest("[data-open-l10-settings]")) {
+      document.querySelector("#l10-settings-dialog")?.showModal();
+      return;
+    }
+    if (event.target.closest("[data-open-meeting-schedules]")) {
+      document.querySelector("#meeting-schedules-dialog")?.showModal();
+      return;
+    }
+    const editMeeting = event.target.closest("[data-edit-meeting-schedule]");
+    if (editMeeting) {
+      const schedule = currentMeetingSchedules.find((item) => item.id === editMeeting.dataset.editMeetingSchedule);
+      const form = document.querySelector("[data-meeting-schedule-form]");
+      if (schedule && form) {
+        form.dataset.editSchedule = schedule.id;
+        form.dataset.originalSchedule = JSON.stringify({ name: schedule.name || "", cadence: schedule.cadence || "", meetingTime: schedule.meetingTime || "", nextDate: schedule.nextDate || "", agenda: schedule.agenda || "" });
+        form.elements.name.value = schedule.name || "";
+        form.elements.cadence.value = schedule.cadence || "weekly";
+        form.elements.meetingTime.value = schedule.meetingTime || "09:00";
+        form.elements.nextDate.value = schedule.nextDate || dateOnly();
+        form.elements.agenda.value = schedule.agenda || "";
+        const saveButton = form.querySelector(".meeting-schedule-submit");
+        saveButton.disabled = true;
+        saveButton.classList.add("meeting-schedule-save");
+        saveButton.setAttribute("aria-label", "Save meeting changes");
+        saveButton.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path></svg><span>Save changes</span>';
+        form.elements.name.focus();
+      }
+      return;
+    }
+    const deleteMeeting = event.target.closest("[data-delete-meeting-schedule]");
+    if (deleteMeeting) {
+      if (window.confirm("Delete this recurring meeting schedule?")) {
+        await deleteMeetingSchedule(database, deleteMeeting.dataset.deleteMeetingSchedule);
+        showToast("Recurring meeting deleted.");
+        await render();
+      }
+      return;
+    }
+    const l10HistoryButton = event.target.closest("[data-l10-history-id]");
+    if (l10HistoryButton) {
+      document.getElementById(`l10-history-${l10HistoryButton.dataset.l10HistoryId}`)?.showModal();
+      return;
+    }
+    const printL10History = event.target.closest("[data-print-l10-history]");
+    if (printL10History) {
+      document.body.classList.add("print-l10-detail");
+      window.addEventListener("afterprint", () => document.body.classList.remove("print-l10-detail"), { once: true });
+      window.print();
+      return;
+    }
+    const l10Section = event.target.closest("[data-l10-section]");
+    if (l10Section) {
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, currentSection: l10Section.dataset.l10Section });
+      await render();
+      return;
+    }
+    if (event.target.closest("[data-l10-timer-toggle]")) {
+      const current = currentL10Meeting.timer?.sectionId === currentL10Meeting.currentSection ? currentL10Meeting.timer : { sectionId: currentL10Meeting.currentSection, elapsedSeconds: 0, paused: false };
+      const elapsed = current.elapsedSeconds + (current.startedAt ? Math.floor((Date.now() - Date.parse(current.startedAt)) / 1e3) : 0);
+      const paused = Boolean(current.startedAt);
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, timer: { sectionId: currentL10Meeting.currentSection, elapsedSeconds: elapsed, startedAt: paused ? null : (/* @__PURE__ */ new Date()).toISOString(), paused } });
+      await render();
+      return;
+    }
+    if (event.target.closest("[data-l10-next]")) {
+      const index = Math.max(0, L10_AGENDA.findIndex((item) => item.id === currentL10Meeting.currentSection));
+      const next = L10_AGENDA[Math.min(L10_AGENDA.length - 1, index + 1)];
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, currentSection: next.id, sectionStatus: { ...currentL10Meeting.sectionStatus, [L10_AGENDA[index].id]: true } });
+      await render();
+      return;
+    }
+    const editMetric = event.target.closest("[data-l10-edit-metric]");
+    if (editMetric) {
+      const metric = (await getL10Collection(database, "l10ScorecardMetrics")).find((item) => item.id === editMetric.dataset.l10EditMetric);
+      const form = document.querySelector("[data-l10-metric-form]");
+      if (metric && form) {
+        form.dataset.editMetric = metric.id;
+        form.elements.name.value = metric.name || "";
+        form.elements.area.value = metric.area || "";
+        form.elements.direction.value = metric.direction || "at-least";
+        form.elements.weeklyGoal.value = metric.weeklyGoal ?? "";
+        form.querySelector('button[type="submit"]').textContent = "Update metric";
+        form.scrollIntoView({ behavior: "smooth", block: "center" });
+        form.elements.name.focus();
+      }
+      return;
+    }
+    const deleteMetric = event.target.closest("[data-l10-delete-metric]");
+    if (deleteMetric) {
+      const metric = (await getL10Collection(database, "l10ScorecardMetrics")).find((item) => item.id === deleteMetric.dataset.l10DeleteMetric);
+      if (metric && window.confirm(`Delete the scorecard metric \u201C${metric.name}\u201D?`)) {
+        await deleteRecord(database, stores.l10ScorecardMetrics, metric.id);
+        showToast("Scorecard metric deleted.");
+        await render();
+      }
+      return;
+    }
+    const metricIssue = event.target.closest("[data-l10-metric-issue]");
+    if (metricIssue) {
+      const metric = (await getL10Collection(database, "l10ScorecardMetrics")).find((item) => item.id === metricIssue.dataset.l10MetricIssue);
+      const entry = (await getL10Collection(database, "l10ScorecardEntries")).find((item) => item.metricId === metric.id && item.weekStart === currentL10Meeting.weekStart);
+      await saveL10Record(database, "l10Issues", { id: crypto.randomUUID(), title: `${metric.name} is off track`, area: metric.area, source: "scorecard", priorityOrder: Date.now(), status: "open", identify: entry?.note || "", discuss: "", solve: "", createdAt: (/* @__PURE__ */ new Date()).toISOString() });
+      showToast("Scorecard item added to Issues.");
+      await render();
+      return;
+    }
+    const rockIssue = event.target.closest("[data-l10-rock-issue]");
+    if (rockIssue) {
+      const rock = (await getL10Collection(database, "l10Rocks")).find((item) => item.id === rockIssue.dataset.l10RockIssue);
+      await saveL10Record(database, "l10Issues", { id: crypto.randomUUID(), title: `${rock.outcome} needs attention`, area: rock.area, source: "rock", priorityOrder: Date.now(), status: "open", identify: "", discuss: "", solve: "", createdAt: (/* @__PURE__ */ new Date()).toISOString() });
+      showToast("Rock added to Issues.");
+      await render();
+      return;
+    }
+    const openL10Issue = event.target.closest("[data-l10-open-issue]");
+    if (openL10Issue) {
+      const issue = (await getL10Collection(database, "l10Issues")).find((item) => item.id === openL10Issue.dataset.l10OpenIssue);
+      const dialog = document.querySelector("#l10-issue-dialog");
+      if (issue && dialog) {
+        dialog.querySelector('[name="id"]').value = issue.id;
+        ["title", "identify", "discuss", "solve", "status"].forEach((name) => {
+          if (dialog.elements[name]) dialog.elements[name].value = issue[name] || "";
+        });
+        dialog.showModal();
+      }
+      return;
+    }
+    const todoToggle = event.target.closest("[data-l10-todo-toggle]");
+    if (todoToggle) {
+      currentL10Meeting = await saveL10Record(database, "l10Meetings", { ...currentL10Meeting, todos: (currentL10Meeting.todos || []).map((todo) => todo.id === todoToggle.dataset.l10TodoToggle ? { ...todo, status: todo.status === "done" ? "not-done" : "done" } : todo) });
+      await render();
       return;
     }
     if (event.target.closest("[data-weekly-save]")) {
@@ -2091,6 +3059,53 @@
       showToast("Progress saved. You can resume here anytime.");
       return;
     }
+    if (event.target.closest("[data-begin-journey], [data-explore-talentis]")) {
+      onboardingState = await saveOnboardingState(database, { ...onboardingState, welcomeSeen: true, step: 0 });
+      await render();
+      return;
+    }
+    const completeMilestone = event.target.closest("[data-complete-milestone]");
+    if (completeMilestone) {
+      const id = completeMilestone.dataset.completeMilestone;
+      if (!currentJourneyState.completedMilestoneIds.includes(id)) {
+        currentJourneyState = await saveJourneyState(database, { ...currentJourneyState, completedMilestoneIds: [...currentJourneyState.completedMilestoneIds, id], completedAt: { ...currentJourneyState.completedAt || {}, [id]: (/* @__PURE__ */ new Date()).toISOString() } });
+        selectedJourneyMilestoneId = "";
+        showToast("Milestone complete. Keep the next step small.");
+        await render();
+      }
+      return;
+    }
+    const reopenMilestone = event.target.closest("[data-reopen-milestone]");
+    if (reopenMilestone) {
+      const id = reopenMilestone.dataset.reopenMilestone;
+      currentJourneyState = await saveJourneyState(database, {
+        ...currentJourneyState,
+        completedMilestoneIds: currentJourneyState.completedMilestoneIds.filter((milestoneId) => milestoneId !== id),
+        completedAt: Object.fromEntries(Object.entries(currentJourneyState.completedAt || {}).filter(([milestoneId]) => milestoneId !== id))
+      });
+      selectedJourneyMilestoneId = id;
+      showToast("Milestone added back to your journey.");
+      await render();
+      return;
+    }
+    const selectMilestone = event.target.closest("[data-select-milestone]");
+    if (selectMilestone) {
+      selectedJourneyMilestoneId = selectMilestone.dataset.selectMilestone;
+      await render();
+      return;
+    }
+    if (event.target.closest("[data-print-milestone]")) {
+      document.body.classList.add("print-journey-milestone");
+      window.addEventListener("afterprint", () => document.body.classList.remove("print-journey-milestone"), { once: true });
+      window.print();
+      return;
+    }
+    if (event.target.closest("[data-open-meeting-builder]")) {
+      const dialog = document.querySelector("#meeting-builder");
+      if (dialog && !dialog.open) dialog.showModal();
+      dialog?.querySelector("textarea")?.focus();
+      return;
+    }
     if (event.target.closest("[data-onboarding-back]")) {
       onboardingState = await saveOnboardingState(database, {
         ...onboardingState,
@@ -2101,10 +3116,21 @@
     }
     const suggestion = event.target.closest("[data-fill-outcome]");
     if (suggestion) {
-      const firstEmpty = [...document.querySelectorAll('[name^="outcome"]')].find(
-        (input) => !input.value
-      );
-      if (firstEmpty) firstEmpty.value = suggestion.dataset.fillOutcome;
+      const form = suggestion.closest("[data-onboarding-form]");
+      const outcomeInputs = [...form?.querySelectorAll('input[name^="outcome"]') || []];
+      const activeOutcome = form?.elements[form.dataset.activeOutcome];
+      const target = activeOutcome || outcomeInputs.find((input) => !input.value);
+      if (!target) {
+        showToast("All three outcomes are filled. Select an outcome field to replace it.");
+        return;
+      }
+      target.value = suggestion.dataset.fillOutcome;
+      target.focus();
+      form?.querySelectorAll("[data-fill-outcome]").forEach((button) => {
+        const selected = outcomeInputs.some((input) => input.value === button.dataset.fillOutcome);
+        button.classList.toggle("suggestion-chip--selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
       return;
     }
     if (event.target.closest("[data-start-today]")) {
@@ -2179,7 +3205,9 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", async () => {
       try {
-        const registration = await navigator.serviceWorker.register("/service-worker.js");
+        const registration = await navigator.serviceWorker.register(
+          new URL("./service-worker.js", document.baseURI)
+        );
         const announceWaiting = () => {
           if (registration.waiting && navigator.serviceWorker.controller) showUpdateToast(registration);
         };

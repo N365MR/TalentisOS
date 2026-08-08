@@ -6,7 +6,13 @@ Its core rhythm is **End of Day → Morning Huddle → Today’s Work** and its 
 
 ## Status
 
-Phase 2 is complete. The shell contains the five primary navigation areas, responsive navigation, appearance controls, accessible reusable UI primitives, PWA foundations, minimal onboarding, and the Today command centre. Later huddle, work, review, and improve workflows remain intentionally out of scope.
+Phase 10 is complete. TalentisOS includes local-first leadership workflows, an offline Playbook, backup/import/export, PWA hardening, and GitHub Pages deployment.
+
+## Live app
+
+Open TalentisOS at [https://n365mr.github.io/TalentisOS/](https://n365mr.github.io/TalentisOS/).
+
+GitHub Pages deploys from `main` through [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml). The production Vite base path is `/TalentisOS/`, including manifest, icon, and service-worker resolution.
 
 ## Local development
 

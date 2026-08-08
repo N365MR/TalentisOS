@@ -22,16 +22,17 @@
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <div id="app" class="app-root"></div>
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+    <script id="app-module" type="module" src="/src/main.js"></script>
     <script>
-      const talentisEntry = document.createElement('script');
+      const appModule = document.querySelector('#app-module');
       if (window.location.protocol === 'file:') {
-        talentisEntry.src = './file-app.js';
+        appModule?.remove();
+        const fileEntry = document.createElement('script');
+        fileEntry.src = './file-app.js';
+        document.body.append(fileEntry);
       } else {
-        document.querySelector('#file-style').disabled = true;
-        talentisEntry.type = 'module';
-        talentisEntry.src = '/src/main.js';
+        document.querySelector('#file-style')?.setAttribute('disabled', '');
       }
-      document.body.append(talentisEntry);
     </script>
   </body>
 </html>

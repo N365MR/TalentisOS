@@ -1,5 +1,5 @@
 const DB_NAME = 'talentisos';
-const DB_VERSION = 6;
+const DB_VERSION = 10;
 
 const stores = {
   settings: 'settings',
@@ -12,6 +12,15 @@ const stores = {
   weeklyReviews: 'weeklyReviews',
   improvements: 'improvements',
   playbookState: 'playbookState',
+  journeyState: 'journeyState',
+  l10Settings: 'l10Settings',
+  l10ScorecardMetrics: 'l10ScorecardMetrics',
+  l10ScorecardEntries: 'l10ScorecardEntries',
+  l10Rocks: 'l10Rocks',
+  l10Issues: 'l10Issues',
+  l10Meetings: 'l10Meetings',
+  meetingSchedules: 'meetingSchedules',
+  eodRecords: 'eodRecords',
   backupSnapshots: 'backupSnapshots',
   appMeta: 'appMeta',
 };
@@ -71,10 +80,36 @@ export function openDatabase() {
       if (!database.objectStoreNames.contains(stores.playbookState)) {
         database.createObjectStore(stores.playbookState, { keyPath: 'id' });
       }
+      if (!database.objectStoreNames.contains(stores.journeyState)) {
+        database.createObjectStore(stores.journeyState, { keyPath: 'id' });
+      }
+      if (!database.objectStoreNames.contains(stores.l10Settings)) database.createObjectStore(stores.l10Settings, { keyPath: 'id' });
+      if (!database.objectStoreNames.contains(stores.l10ScorecardMetrics)) database.createObjectStore(stores.l10ScorecardMetrics, { keyPath: 'id' });
+      if (!database.objectStoreNames.contains(stores.l10ScorecardEntries)) {
+        const entries = database.createObjectStore(stores.l10ScorecardEntries, { keyPath: 'id' });
+        entries.createIndex('weekStart', 'weekStart');
+        entries.createIndex('metricId', 'metricId');
+      }
+      if (!database.objectStoreNames.contains(stores.l10Rocks)) database.createObjectStore(stores.l10Rocks, { keyPath: 'id' });
+      if (!database.objectStoreNames.contains(stores.l10Issues)) database.createObjectStore(stores.l10Issues, { keyPath: 'id' });
+      if (!database.objectStoreNames.contains(stores.l10Meetings)) {
+        const meetings = database.createObjectStore(stores.l10Meetings, { keyPath: 'id' });
+        meetings.createIndex('weekStart', 'weekStart');
+      }
+      if (!database.objectStoreNames.contains(stores.meetingSchedules)) {
+        const schedules = database.createObjectStore(stores.meetingSchedules, { keyPath: 'id' });
+        schedules.createIndex('nextDate', 'nextDate');
+        schedules.createIndex('active', 'active');
+      }
       if (!database.objectStoreNames.contains(stores.backupSnapshots)) {
         const snapshots = database.createObjectStore(stores.backupSnapshots, { keyPath: 'id' });
         snapshots.createIndex('snapshotType', 'snapshotType');
         snapshots.createIndex('createdAt', 'createdAt');
+      }
+      if (!database.objectStoreNames.contains(stores.eodRecords)) {
+        const eodRecords = database.createObjectStore(stores.eodRecords, { keyPath: 'id' });
+        eodRecords.createIndex('date', 'date');
+        eodRecords.createIndex('status', 'status');
       }
       if (!database.objectStoreNames.contains(stores.appMeta)) {
         database.createObjectStore(stores.appMeta, { keyPath: 'key' });
@@ -115,6 +150,7 @@ export async function getOnboardingState(database) {
     key: 'onboarding',
     completed: false,
     completionSeen: false,
+    welcomeSeen: false,
     step: 0,
     answers: {},
     updatedAt: new Date().toISOString(),
@@ -284,7 +320,7 @@ export async function deleteImprovement(database, id) {
 
 export async function getPlaybookState(database) {
   const existing = await getRecord(database, stores.playbookState, 'primary');
-  return existing || { id: 'primary', savedTopicIds: [], recentTopicIds: [] };
+  return existing || { id: 'primary', savedTopicIds: [], recentTopicIds: [], completedTopicIds: [] };
 }
 
 export async function savePlaybookState(database, state) {
@@ -292,9 +328,52 @@ export async function savePlaybookState(database, state) {
     id: 'primary',
     savedTopicIds: state.savedTopicIds || [],
     recentTopicIds: state.recentTopicIds || [],
+    completedTopicIds: state.completedTopicIds || [],
     updatedAt: new Date().toISOString(),
   });
 }
+
+export async function getJourneyState(database) {
+  const existing = await getRecord(database, stores.journeyState, 'primary');
+  return existing || { id: 'primary', startedAt: null, completedMilestoneIds: [], completedAt: {}, meetingPreparation: {} };
+}
+
+export async function saveJourneyState(database, state) {
+  const next = {
+    id: 'primary',
+    startedAt: state.startedAt || new Date().toISOString(),
+    completedMilestoneIds: state.completedMilestoneIds || [],
+    completedAt: state.completedAt || {},
+    meetingPreparation: state.meetingPreparation || {},
+    updatedAt: new Date().toISOString(),
+  };
+  await putRecord(database, stores.journeyState, next);
+  return next;
+}
+
+export async function getL10Settings(database) {
+  return (await getRecord(database, stores.l10Settings, 'primary')) || { id: 'primary', meetingDay: 1, meetingTime: '09:00', durationMinutes: 90, teamAreas: [], facilitatorArea: '', scribeArea: '', ratingTarget: 8 };
+}
+
+export async function getL10Meeting(database, weekStart) {
+  return getRecord(database, stores.l10Meetings, `l10-${weekStart}`);
+}
+
+export async function getL10Meetings(database) { return getAll(database, stores.l10Meetings); }
+export async function getL10Collection(database, storeName) { return getAll(database, stores[storeName]); }
+export async function saveL10Record(database, storeName, record) {
+  const next = { ...record, updatedAt: new Date().toISOString() };
+  await putRecord(database, stores[storeName], next);
+  return next;
+}
+
+export async function getMeetingSchedules(database) { return getAll(database, stores.meetingSchedules); }
+export async function saveMeetingSchedule(database, schedule) { return putRecord(database, stores.meetingSchedules, { ...schedule, updatedAt: new Date().toISOString() }); }
+export async function deleteMeetingSchedule(database, id) { return deleteRecord(database, stores.meetingSchedules, id); }
+
+export async function getEodRecord(database, date) { return (await getRecord(database, stores.eodRecords, `eod-${date}`)) || null; }
+export async function getEodRecords(database) { return (await getAll(database, stores.eodRecords)).sort((a, b) => b.date.localeCompare(a.date)); }
+export async function saveEodRecord(database, record) { return putRecord(database, stores.eodRecords, { ...record, updatedAt: new Date().toISOString() }); }
 
 export async function getBackupSnapshots(database) {
   return (await getAll(database, stores.backupSnapshots)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));

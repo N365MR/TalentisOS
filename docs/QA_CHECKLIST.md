@@ -62,3 +62,15 @@ Security review:
 - Imported JSON/CSV text is sanitized before persistence; UI text uses HTML escaping.
 - CSP is declared in `index.html`; production hosting should also send equivalent HTTP security headers (`Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`).
 - File handling uses browser `File`, `Blob`, object URLs, and optional native share APIs; imported files are parsed as text only.
+
+## Phase 10 deployment validation — 2026-08-01
+
+- Vite production base is `/TalentisOS/` — PASS.
+- Production build creates `dist/assets`, `dist/manifest.webmanifest`, `dist/service-worker.js`, `dist/offline.html`, and `dist/icons/` — PASS.
+- Built HTML references hashed assets under `/TalentisOS/assets/` — PASS.
+- Manifest uses relative start, scope, and icon paths — PASS.
+- Service worker derives its cache paths from its registration scope — PASS.
+- GitHub Actions workflow triggers on `main`, runs `npm ci`, tests, production build, artifact upload, and Pages deployment — PASS (workflow contract/static test).
+- Live URL documented: <https://n365mr.github.io/TalentisOS/>.
+
+The workflow must be run after this change is pushed and GitHub Pages must be enabled for the repository. Final browser/device validation remains the deployment release check across desktop Safari, desktop Chrome, iPad Safari, installed iPad PWA, iPhone Safari, and installed iPhone PWA, including online/offline startup, import/export, dark mode, portrait, and landscape.

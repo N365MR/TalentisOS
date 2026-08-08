@@ -52,3 +52,19 @@ test('core daily workflow pathways remain wired for regression coverage', async 
     assert.match(components, new RegExp(marker));
   }
 });
+
+test('Pages deployment is configured for the repository subpath', async () => {
+  const viteConfig = await read('vite.config.js');
+  const workflow = await read('.github/workflows/deploy-pages.yml');
+  const manifest = await read('public/manifest.webmanifest');
+  const serviceWorker = await read('public/service-worker.js');
+  assert.match(viteConfig, /base:\s*['"]\/TalentisOS\/['"]/);
+  assert.match(workflow, /branches:\s*\[main\]/);
+  assert.match(workflow, /npm test/);
+  assert.match(workflow, /npm run build/);
+  assert.match(workflow, /upload-pages-artifact/);
+  assert.match(workflow, /deploy-pages/);
+  assert.match(manifest, /"start_url": "\.\/#today"/);
+  assert.match(manifest, /"src": "\.\/icons\/icon-192\.svg"/);
+  assert.match(serviceWorker, /self\.registration\.scope/);
+});

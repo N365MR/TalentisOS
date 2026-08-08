@@ -15,6 +15,16 @@ export const BACKUP_COLLECTIONS = [
   'weeklyReviews',
   'improvements',
   'savedPlaybookTopics',
+  'completedPlaybookTopics',
+  'journeyState',
+  'l10Settings',
+  'l10ScorecardMetrics',
+  'l10ScorecardEntries',
+  'l10Rocks',
+  'l10Issues',
+  'l10Meetings',
+  'meetingSchedules',
+  'eodRecords',
   'onboardingState',
 ];
 
@@ -51,7 +61,7 @@ export function createBackup(data, exportedAt = new Date().toISOString()) {
 
 export function migrateBackup(input) {
   if (!input || typeof input !== 'object') throw new Error('The selected file is not a JSON object.');
-  if (input.format === 'TalentisOS workspace backup' && input.exportVersion === EXPORT_FORMAT_VERSION) return sanitizeImportedValue(input);
+  if (input.format === 'TalentisOS workspace backup' && input.exportVersion === EXPORT_FORMAT_VERSION) return createBackup(input.data || {}, input.exportedAt || new Date().toISOString());
   if (input.format === 'TalentisOS workspace backup' && input.exportVersion === 0 && input.data) {
     return createBackup(input.data, input.exportedAt || new Date().toISOString());
   }
@@ -83,7 +93,16 @@ export function restoreCollections(backup) {
     tomorrowPlans: data.tomorrowPlans,
     weeklyReviews: data.weeklyReviews,
     improvements: data.improvements,
-    playbookState: [{ id: 'primary', savedTopicIds: data.savedPlaybookTopics || [], recentTopicIds: [] }],
+    playbookState: [{ id: 'primary', savedTopicIds: data.savedPlaybookTopics || [], completedTopicIds: data.completedPlaybookTopics || [], recentTopicIds: [] }],
+    journeyState: data.journeyState || [],
+    l10Settings: data.l10Settings || [],
+    l10ScorecardMetrics: data.l10ScorecardMetrics || [],
+    l10ScorecardEntries: data.l10ScorecardEntries || [],
+    l10Rocks: data.l10Rocks || [],
+    l10Issues: data.l10Issues || [],
+    l10Meetings: data.l10Meetings || [],
+    meetingSchedules: data.meetingSchedules || [],
+    eodRecords: data.eodRecords || [],
     appMeta: data.onboardingState || [],
   };
 }
@@ -140,6 +159,12 @@ const csvSchemas = {
   decisions: { required: ['title', 'planDate'], columns: ['id', 'planDate', 'title', 'decisionRequired', 'decisionMade', 'resultingAction', 'dueDate', 'status'] },
   followUps: { required: ['title', 'dueDate'], columns: ['id', 'title', 'responsible', 'dueDate', 'nextAction', 'status', 'followedUpWith'] },
   improvements: { required: ['notWorking', 'change'], columns: ['id', 'notWorking', 'change', 'why', 'nextStep', 'category', 'status', 'createdAt'] },
+  l10ScorecardMetrics: { required: ['name', 'weeklyGoal'], columns: ['id', 'name', 'area', 'direction', 'weeklyGoal', 'active', 'order'] },
+  l10ScorecardEntries: { required: ['metricId', 'weekStart', 'goal', 'actual'], columns: ['id', 'metricId', 'weekStart', 'goal', 'actual', 'status', 'note'] },
+  l10Rocks: { required: ['outcome'], columns: ['id', 'quarter', 'outcome', 'area', 'dueDate', 'status'] },
+  l10Issues: { required: ['title'], columns: ['id', 'source', 'title', 'area', 'priorityOrder', 'identify', 'discuss', 'solve', 'status', 'createdAt', 'solvedAt'] },
+  l10Todos: { required: ['title'], columns: ['id', 'meetingId', 'title', 'area', 'dueDate', 'status'] },
+  l10Meetings: { required: ['weekStart'], columns: ['id', 'weekStart', 'weekEnd', 'meetingAt', 'rating', 'completedAt', 'meetingImprovement'] },
 };
 
 export function csvSchema(type) {
@@ -156,7 +181,7 @@ export function validateCsv(type, parsed) {
   const records = parsed.rows.map((row, index) => {
     const rowNumber = index + 2;
     for (const column of schema.required) if (!row[column]?.trim()) errors.push(`Row ${rowNumber}: ${column} is required.`);
-    for (const column of ['planDate', 'dueDate', 'createdAt']) {
+    for (const column of ['planDate', 'weekStart', 'dueDate', 'createdAt']) {
       if (row[column] && (column === 'createdAt' ? Number.isNaN(Date.parse(row[column])) : !datePattern.test(row[column]) || Number.isNaN(Date.parse(`${row[column]}T12:00:00`)))) errors.push(`Row ${rowNumber}: ${column} is not a valid date.`);
     }
     return sanitizeImportedValue(row);
