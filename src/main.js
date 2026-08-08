@@ -452,7 +452,7 @@ async function render() {
     app.innerHTML = createAppShell(route);
     document.querySelector('#view-root').innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems, availableDates);
     const openItems = huddleItems.filter((ref) => currentWorkItems.some((item) => item.id === ref.itemId && item.status !== 'complete'));
-    if (huddleDate === today && openItems.length && huddleDialogShownDate !== today) {
+    if (openItems.length && huddleDialogShownDate !== huddleDate) {
       document.body.insertAdjacentHTML('beforeend', createHuddleMeetingDialog(huddleDate, currentWorkItems, huddleItems));
       document.querySelector('#morning-huddle-dialog')?.showModal();
       huddleDialogShownDate = today;
@@ -1496,6 +1496,7 @@ document.addEventListener('click', async (event) => {
   const huddleDateButton = event.target.closest('[data-huddle-date]');
   if (huddleDateButton) {
     currentHuddleDate = huddleDateButton.dataset.huddleDate;
+    huddleDialogShownDate = '';
     await render();
     return;
   }

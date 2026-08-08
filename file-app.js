@@ -775,7 +775,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     return `<div class="toast" role="status">${message}</div>`;
   }
   function createAppShell(route) {
-    return `<div class="app-layout ${route.key === "eod" ? "app-layout--eod" : ""}">
+    return `<div class="app-layout ${["eod", "huddle"].includes(route.key) ? `app-layout--${route.key}` : ""} ">
     <header class="top-header" aria-label="Application header"><a class="brand" href="#today" aria-label="TalentisOS home"><span class="brand-mark" aria-hidden="true">T</span><span class="brand-wordmark">Talentis<span>OS</span></span></a><nav class="top-nav" aria-label="Primary navigation">${navItems(route.key, "top-nav__links")}</nav><div class="top-header__actions">${["review", "playbook"].includes(route.key) ? "" : `<button class="primary-action top-header__cta" type="button" data-primary-action>${route.action}<span aria-hidden="true">\u2192</span></button>`}<button class="secondary-action top-header__settings" type="button" data-open-settings>Settings</button><button class="icon-button menu-toggle" type="button" data-mobile-menu-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label="Open navigation menu"><span aria-hidden="true">\u2630</span></button></div></header>
     <div class="mobile-menu-backdrop" data-close-mobile-menu></div><aside id="mobile-menu" class="mobile-menu" aria-label="Mobile navigation" aria-hidden="true"><div class="mobile-menu__header"><span class="eyebrow">Workspace</span><button class="icon-button" type="button" data-close-mobile-menu aria-label="Close navigation menu">\xD7</button></div><nav>${navItems(route.key, "mobile-menu__link")}</nav><button class="nav-item mobile-menu__settings" type="button" data-open-settings data-close-mobile-menu><span class="nav-item__icon" aria-hidden="true">\u2699</span><span>Settings</span></button></aside>
     <main id="main-content" class="content-area"><div class="content-inner"><header class="page-header"><div><p class="eyebrow">${route.eyebrow}</p><h1>${route.label}</h1></div><div class="page-header__meta"><span class="date-label">${new Intl.DateTimeFormat(void 0, { weekday: "long", month: "long", day: "numeric" }).format(/* @__PURE__ */ new Date())}</span><span class="status-dot" aria-label="Offline-ready shell"></span></div></header><div id="view-root"></div></div></main>
@@ -1727,7 +1727,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
       app.innerHTML = createAppShell(route);
       document.querySelector("#view-root").innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems, availableDates);
       const openItems = huddleItems.filter((ref) => currentWorkItems.some((item) => item.id === ref.itemId && item.status !== "complete"));
-      if (huddleDate === today && openItems.length && huddleDialogShownDate !== today) {
+      if (openItems.length && huddleDialogShownDate !== huddleDate) {
         document.body.insertAdjacentHTML("beforeend", createHuddleMeetingDialog(huddleDate, currentWorkItems, huddleItems));
         document.querySelector("#morning-huddle-dialog")?.showModal();
         huddleDialogShownDate = today;
@@ -2702,6 +2702,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     const huddleDateButton = event.target.closest("[data-huddle-date]");
     if (huddleDateButton) {
       currentHuddleDate = huddleDateButton.dataset.huddleDate;
+      huddleDialogShownDate = "";
       await render();
       return;
     }
