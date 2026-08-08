@@ -1103,6 +1103,7 @@ dialog:focus-visible {
 .eod-carry-forward h2 { margin: .2rem 0; }
 .eod-carry-forward p { margin: 0; }
 .eod-carry-forward__actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; justify-content: flex-end; }
+.huddle-date-switcher { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
 .carry-review-list { display: grid; gap: .55rem; max-height: 20rem; overflow: auto; }
 .carry-review-item { display: flex; align-items: center; gap: .7rem; padding: .8rem; border: 1px solid var(--color-divider); border-radius: .75rem; background: var(--color-surface-subtle); }
 .carry-review-item span { display: grid; gap: .2rem; }

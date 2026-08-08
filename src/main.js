@@ -121,6 +121,7 @@ let currentWeeklyReview;
 let currentL10Meeting;
 let currentMeetingSchedules = [];
 let currentEodFilter = 'all';
+let currentHuddleDate = '';
 let currentImprovements = [];
 let currentPlaybookState = { savedTopicIds: [], recentTopicIds: [] };
 let currentJourneyState = { id: 'primary', completedMilestoneIds: [], meetingPreparation: {} };
@@ -437,11 +438,15 @@ async function render() {
     document.querySelector('#view-root').innerHTML = createJourneyView(currentJourneyState, selectedJourneyMilestoneId) + createMeetingBuilderDialog(currentJourneyState);
     document.title = 'Journey — TalentisOS';
   } else if (route.key === 'huddle') {
-    const huddleDate = dateOnly();
-    const huddleItems = await getHuddleItems(database, huddleDate);
+    const today = dateOnly();
+    const allHuddleItems = await getHuddleItems(database);
+    const availableDates = [...new Set(allHuddleItems.filter((item) => item.status !== 'removed' && item.huddleDate).map((item) => item.huddleDate))].sort();
+    const huddleDate = currentHuddleDate || (availableDates.includes(today) ? today : availableDates.find((date) => date >= today) || today);
+    currentHuddleDate = huddleDate;
+    const huddleItems = allHuddleItems.filter((item) => item.huddleDate === huddleDate && item.status !== 'removed');
     currentWorkItems = await getWorkItems(database);
     app.innerHTML = createAppShell(route);
-    document.querySelector('#view-root').innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems);
+    document.querySelector('#view-root').innerHTML = createHuddleView(huddleDate, currentWorkItems, huddleItems, availableDates);
     document.title = 'Morning Huddle — TalentisOS';
   } else if (route.key === 'eod') {
     const eodDate = dateOnly();
@@ -1445,6 +1450,13 @@ document.addEventListener('change', (event) => {
 });
 
 document.addEventListener('click', async (event) => {
+  const huddleDateButton = event.target.closest('[data-huddle-date]');
+  if (huddleDateButton) {
+    currentHuddleDate = huddleDateButton.dataset.huddleDate;
+    await render();
+    return;
+  }
+
   if (event.target.closest('[data-eod-add-all-huddle]')) {
     const huddleDate = getNextWorkday();
     const tasks = currentWorkItems.filter((item) => ['action', 'priority'].includes(item.type) && item.status !== 'complete');
