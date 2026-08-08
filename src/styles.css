@@ -2510,16 +2510,18 @@ textarea:focus-visible {
   border-top: 1px solid var(--color-divider);
 }
 .work-detail-dialog {
-  width: min(100% - var(--space-8), 34rem);
-  max-height: min(90svh, 52rem);
+  width: min(100% - var(--space-8), 40rem);
+  max-height: min(86svh, 52rem);
   margin: var(--space-8) var(--space-8) var(--space-8) auto;
   overflow: auto;
   border-radius: var(--radius-lg);
+  box-shadow: 0 1.5rem 4rem color-mix(in srgb, #000 35%, transparent);
 }
 .work-detail-dialog .modal__body {
   display: grid;
-  gap: var(--space-4);
+  gap: 1.1rem;
 }
+.work-detail-dialog .modal__header { position: sticky; top: 0; z-index: 1; background: var(--color-surface); }
 .form-two-col {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2539,12 +2541,13 @@ textarea:focus-visible {
   min-height: 3rem;
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-divider);
-  border-radius: var(--radius-sm);
+  border-radius: .75rem;
   outline: 0;
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
 }
+.work-form select { min-height: 3.25rem; font-weight: 700; }
 .work-form textarea {
   resize: vertical;
 }

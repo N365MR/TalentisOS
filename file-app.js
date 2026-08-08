@@ -408,7 +408,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     ["waiting", "Waiting", "Items waiting on a person, answer, or condition."]
   ];
   var workStatuses = [
-    ["not-started", "Not started"],
+    ["not-started", "Incomplete"],
     ["in-progress", "In progress"],
     ["waiting", "Waiting"],
     ["at-risk", "At risk"],

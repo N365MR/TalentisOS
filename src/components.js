@@ -329,7 +329,7 @@ const workGroups = [
 ];
 
 const workStatuses = [
-  ['not-started', 'Not started'],
+  ['not-started', 'Incomplete'],
   ['in-progress', 'In progress'],
   ['waiting', 'Waiting'],
   ['at-risk', 'At risk'],
