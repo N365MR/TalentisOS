@@ -6,10 +6,10 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('service worker uses versioned caches, offline fallback, and user-confirmed updates', async () => {
   const serviceWorker = await read('public/service-worker.js');
-  assert.match(serviceWorker, /talentisos-shell-v6/);
+  assert.match(serviceWorker, /talentisos-shell-v7/);
   assert.match(serviceWorker, /offline\.html/);
   assert.match(serviceWorker, /SKIP_WAITING/);
-  assert.doesNotMatch(serviceWorker, /install[\s\S]{0,300}skipWaiting\(\)/);
+  assert.match(serviceWorker, /then\(\(\) => self\.skipWaiting\(\)\)/);
   assert.match(serviceWorker, /caches\.delete/);
   assert.match(serviceWorker, /if \(cached\) return cached/);
   assert.match(serviceWorker, /event\.waitUntil\(caches\.open/);
@@ -64,8 +64,10 @@ test('active L10 timers are stopped before any route render', async () => {
 
 test('local snapshots expose restore only', async () => {
   const components = await read('src/components.js');
+  const css = await read('src/styles.css');
   assert.match(components, /data-restore-snapshot="\$\{escapeHtml\(snapshot\.id\)\}">Restore/);
   assert.doesNotMatch(components, /data-delete-snapshot/);
+  assert.match(css, /\.snapshot-list \.snapshot-delete \{ display: none !important; \}/);
 });
 
 test('Pages deployment is configured for the repository subpath', async () => {

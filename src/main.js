@@ -2417,7 +2417,7 @@ if ('serviceWorker' in navigator) {
       });
       announceWaiting();
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (updateRequested) window.location.reload();
+        if (updateRequested || document.documentElement.dataset.appReady === 'true') window.location.reload();
       });
     } catch {
       showToast('Offline support is unavailable in this browser session.');
