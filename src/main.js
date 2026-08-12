@@ -24,7 +24,6 @@ import {
   playbookTopics,
   escapeHtml,
   createDataDialog,
-  createSnapshotDeleteDialog,
   createResetOnboardingDialog,
   createDeleteAllDataDialog,
   createWorkDetailSheet,
@@ -1769,9 +1768,13 @@ document.addEventListener('click', async (event) => {
   const deleteSnapshot = event.target.closest('[data-delete-snapshot]');
   if (deleteSnapshot) {
     const snapshot = currentSnapshots.find((item) => item.id === deleteSnapshot.dataset.deleteSnapshot);
-    if (snapshot) {
-      document.body.insertAdjacentHTML('beforeend', createSnapshotDeleteDialog(snapshot));
-      openDialog(document.querySelector('#snapshot-delete-dialog'));
+    if (snapshot && window.confirm(`Delete this ${snapshot.snapshotType || 'local'} snapshot permanently?`)) {
+      await deleteBackupSnapshot(database, snapshot.id);
+      currentSnapshots = await getBackupSnapshots(database);
+      dataDialog()?.remove();
+      document.body.insertAdjacentHTML('beforeend', createDataDialog(currentSnapshots));
+      openDialog(document.querySelector('#data-dialog'));
+      showToast('Snapshot permanently deleted.');
     }
     return;
   }
