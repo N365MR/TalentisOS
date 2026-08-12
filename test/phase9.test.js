@@ -65,9 +65,11 @@ test('active L10 timers are stopped before any route render', async () => {
 test('local snapshots expose restore only', async () => {
   const components = await read('src/components.js');
   const css = await read('src/styles.css');
+  const index = await read('index.html');
   assert.match(components, /data-restore-snapshot="\$\{escapeHtml\(snapshot\.id\)\}">Restore/);
   assert.doesNotMatch(components, /data-delete-snapshot/);
   assert.match(css, /\.snapshot-list \.snapshot-delete \{ display: none !important; \}/);
+  assert.match(index, /removeLegacySnapshotDelete/);
 });
 
 test('Pages deployment is configured for the repository subpath', async () => {

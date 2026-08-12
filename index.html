@@ -24,6 +24,14 @@
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
     <script id="app-module" type="module" src="/src/main.js"></script>
     <script>
+      const removeLegacySnapshotDelete = () => {
+        document
+          .querySelectorAll('.snapshot-list [data-delete-snapshot], .snapshot-list .snapshot-delete, .snapshot-list .snapshot-actions button:nth-child(2)')
+          .forEach((button) => button.remove());
+      };
+      new MutationObserver(removeLegacySnapshotDelete).observe(document.documentElement, { childList: true, subtree: true });
+      removeLegacySnapshotDelete();
+
       const appModule = document.querySelector('#app-module');
       if (window.location.protocol === 'file:') {
         appModule?.remove();
