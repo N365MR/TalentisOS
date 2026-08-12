@@ -6,7 +6,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('service worker uses versioned caches, offline fallback, and user-confirmed updates', async () => {
   const serviceWorker = await read('public/service-worker.js');
-  assert.match(serviceWorker, /talentisos-shell-v5/);
+  assert.match(serviceWorker, /talentisos-shell-v6/);
   assert.match(serviceWorker, /offline\.html/);
   assert.match(serviceWorker, /SKIP_WAITING/);
   assert.doesNotMatch(serviceWorker, /install[\s\S]{0,300}skipWaiting\(\)/);

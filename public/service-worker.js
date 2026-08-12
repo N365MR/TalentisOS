@@ -1,4 +1,4 @@
-const CACHE_NAME = 'talentisos-shell-v5';
+const CACHE_NAME = 'talentisos-shell-v6';
 const BASE_PATH = new URL('./', self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,
