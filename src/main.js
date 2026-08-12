@@ -1764,20 +1764,6 @@ document.addEventListener('click', async (event) => {
     return;
   }
 
-  const deleteSnapshot = event.target.closest('[data-delete-snapshot]');
-  if (deleteSnapshot) {
-    const snapshot = currentSnapshots.find((item) => item.id === deleteSnapshot.dataset.deleteSnapshot);
-    if (snapshot) {
-      await deleteBackupSnapshot(database, snapshot.id);
-      currentSnapshots = await getBackupSnapshots(database);
-      dataDialog()?.remove();
-      document.body.insertAdjacentHTML('beforeend', createDataDialog(currentSnapshots));
-      openDialog(document.querySelector('#data-dialog'));
-      showToast('Snapshot permanently deleted.');
-    }
-    return;
-  }
-
   if (event.target.closest('[data-delete-all-data]')) {
     document.body.insertAdjacentHTML('beforeend', createDeleteAllDataDialog());
     openDialog(document.querySelector('#delete-all-data-dialog'));

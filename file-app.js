@@ -752,7 +752,7 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
   </dialog>`;
   }
   function createDataDialog(snapshots = []) {
-    const snapshotList = snapshots.length ? snapshots.map((snapshot) => `<li><span><strong>${escapeHtml(new Intl.DateTimeFormat(void 0, { dateStyle: "medium", timeStyle: "short" }).format(new Date(snapshot.createdAt)))}</strong><small>${escapeHtml(snapshot.snapshotType)} snapshot \xB7 ${snapshot.recordCount || 0} records</small></span><div class="snapshot-actions"><button type="button" class="text-button" data-restore-snapshot="${escapeHtml(snapshot.id)}">Restore</button><button type="button" class="text-button text-button--quiet snapshot-delete" data-delete-snapshot="${escapeHtml(snapshot.id)}">Delete</button></div></li>`).join("") : '<li class="section-empty"><span aria-hidden="true">\u2014</span><p>No local snapshots yet.</p></li>';
+    const snapshotList = snapshots.length ? snapshots.map((snapshot) => `<li><span><strong>${escapeHtml(new Intl.DateTimeFormat(void 0, { dateStyle: "medium", timeStyle: "short" }).format(new Date(snapshot.createdAt)))}</strong><small>${escapeHtml(snapshot.snapshotType)} snapshot \xB7 ${snapshot.recordCount || 0} records</small></span><div class="snapshot-actions"><button type="button" class="text-button" data-restore-snapshot="${escapeHtml(snapshot.id)}">Restore</button></div></li>`).join("") : '<li class="section-empty"><span aria-hidden="true">\u2014</span><p>No local snapshots yet.</p></li>';
     return `<dialog id="data-dialog" class="modal data-dialog" aria-labelledby="data-title"><div class="modal__header"><div><p class="eyebrow">Settings \xB7 Data</p><h2 id="data-title">Protect your workspace.</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close data settings">\xD7</button></div><div class="modal__body data-manager"><p class="secondary-text">Backups, restores, and imports happen locally. Nothing is uploaded.</p><section class="data-section"><h3>JSON backup</h3><p>Export everything needed to rebuild this workspace on another device.</p><button type="button" class="primary-action" data-export-backup>Export backup</button><label class="file-picker">Restore backup<input type="file" accept="application/json,.json" data-restore-file></label><div class="restore-preview" data-restore-preview hidden></div></section><section class="data-section"><h3>CSV tools</h3><div class="form-two-col"><label>Dataset<select data-csv-type><option value="priorities">Priorities</option><option value="risks">Risks</option><option value="decisions">Decisions</option><option value="followUps">Follow-ups</option><option value="improvements">Improvements</option><option value="l10ScorecardMetrics">L10 Scorecard metrics</option><option value="l10ScorecardEntries">L10 Scorecard entries</option><option value="l10Rocks">L10 Rocks</option><option value="l10Issues">L10 Issues</option><option value="l10Todos">L10 To-Dos</option><option value="l10Meetings">L10 meetings</option><option value="dailySummaries">Daily summaries</option><option value="weeklySummaries">Weekly summaries</option></select></label><div class="data-actions"><button type="button" class="secondary-action" data-export-csv>Export CSV</button><button type="button" class="text-button" data-download-csv-template>Download template</button></div></div><label class="file-picker">Import CSV<input type="file" accept="text/csv,.csv" data-csv-file></label><div class="csv-preview" data-csv-preview hidden></div></section><section class="data-section"><h3>Local snapshots</h3><p>Automatic daily and weekly snapshots rotate on this device.</p><ul class="history-list snapshot-list">${snapshotList}</ul></section><section class="data-section data-danger"><h3>Delete all data</h3><p>This removes workspace records and cannot be undone. Export a backup first.</p><button type="button" class="primary-action destructive-action" data-delete-all-data>Delete all data</button></section><div class="modal__actions"><button type="button" class="secondary-action" data-close-dialog>Done</button></div></div></dialog>`;
   }
   function createResetOnboardingDialog() {
@@ -2934,19 +2934,6 @@ Decisions and next actions"></textarea></label><button class="primary-action mee
     if (restoreSnapshot) {
       const snapshot = currentSnapshots.find((item) => item.id === restoreSnapshot.dataset.restoreSnapshot);
       if (snapshot) showRestorePreview(snapshot.backup, "snapshot");
-      return;
-    }
-    const deleteSnapshot = event.target.closest("[data-delete-snapshot]");
-    if (deleteSnapshot) {
-      const snapshot = currentSnapshots.find((item) => item.id === deleteSnapshot.dataset.deleteSnapshot);
-      if (snapshot) {
-        await deleteBackupSnapshot(database, snapshot.id);
-        currentSnapshots = await getBackupSnapshots(database);
-        dataDialog()?.remove();
-        document.body.insertAdjacentHTML("beforeend", createDataDialog(currentSnapshots));
-        openDialog(document.querySelector("#data-dialog"));
-        showToast("Snapshot permanently deleted.");
-      }
       return;
     }
     if (event.target.closest("[data-delete-all-data]")) {
