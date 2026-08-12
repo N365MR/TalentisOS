@@ -62,6 +62,13 @@ test('active L10 timers are stopped before any route render', async () => {
   assert.match(main, /function stopL10Timer\(\)[\s\S]{0,160}clearInterval\(l10TimerInterval\)/);
 });
 
+test('snapshot delete is a direct action that refreshes the local list', async () => {
+  const main = await read('src/main.js');
+  const components = await read('src/components.js');
+  assert.match(components, /data-delete-snapshot="\$\{escapeHtml\(snapshot\.id\)\}">Delete/);
+  assert.match(main, /if \(snapshot\) \{\s+await deleteBackupSnapshot\(database, snapshot\.id\);[\s\S]*currentSnapshots = await getBackupSnapshots\(database\);/);
+});
+
 test('Pages deployment is configured for the repository subpath', async () => {
   const viteConfig = await read('vite.config.js');
   const workflow = await read('.github/workflows/deploy-pages.yml');

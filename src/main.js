@@ -1767,7 +1767,7 @@ document.addEventListener('click', async (event) => {
   const deleteSnapshot = event.target.closest('[data-delete-snapshot]');
   if (deleteSnapshot) {
     const snapshot = currentSnapshots.find((item) => item.id === deleteSnapshot.dataset.deleteSnapshot);
-    if (snapshot && window.confirm(`Delete this ${snapshot.snapshotType || 'local'} snapshot permanently?`)) {
+    if (snapshot) {
       await deleteBackupSnapshot(database, snapshot.id);
       currentSnapshots = await getBackupSnapshots(database);
       dataDialog()?.remove();
