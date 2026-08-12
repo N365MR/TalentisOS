@@ -139,6 +139,11 @@ let lastUndo;
 let l10TimerInterval;
 let journeyTouchStartX = null;
 
+function stopL10Timer() {
+  window.clearInterval(l10TimerInterval);
+  l10TimerInterval = undefined;
+}
+
 function showToast(message) {
   toastRegion.replaceChildren();
   toastRegion.innerHTML = createToast(message);
@@ -264,12 +269,6 @@ async function exportBackup() {
   const backup = createBackup(await collectBackupData());
   downloadFile(JSON.stringify(backup, null, 2), `TalentisOS_Backup_${dateStamp()}.json`, 'application/json');
   showToast('Backup exported locally.');
-}
-
-function exportSnapshot(snapshot) {
-  if (!snapshot?.backup) return;
-  downloadFile(JSON.stringify(snapshot.backup, null, 2), `TalentisOS_Snapshot_${dateStamp()}.json`, 'application/json');
-  showToast('Snapshot exported locally.');
 }
 
 async function saveAutomaticSnapshot(snapshotType) {
@@ -408,6 +407,7 @@ async function applyCsvImport() {
 }
 
 async function render() {
+  stopL10Timer();
   if (!onboardingState.completed || !onboardingState.completionSeen) {
     app.innerHTML = createOnboarding(onboardingState);
     applyTheme(savedTheme());
@@ -516,7 +516,6 @@ async function render() {
       document.querySelector('.l10-intro')?.insertAdjacentHTML('beforeend', `<form class="l10-week-form" data-l10-week-form><label>Week ending<input type="date" name="weekEnd" value="${escapeHtml(currentL10Meeting.weekEnd || l10WeekEnd(weekStart))}" required></label><button class="secondary-action" type="submit">Save date</button></form>`);
       const timerSeconds = l10RemainingSeconds(currentL10Meeting, currentL10Meeting.currentSection);
       activeSection?.querySelector('h2')?.insertAdjacentHTML('afterend', `<div class="l10-timer" aria-live="polite"><strong data-l10-timer>${String(Math.floor(timerSeconds / 60)).padStart(2, '0')}:${String(timerSeconds % 60).padStart(2, '0')}</strong><button type="button" class="secondary-action" data-l10-timer-toggle>${currentL10Meeting.timer?.startedAt ? 'Pause timer' : currentL10Meeting.timer?.paused ? 'Resume timer' : 'Start timer'}</button></div>`);
-      window.clearInterval(l10TimerInterval);
       if (currentL10Meeting.timer?.startedAt) l10TimerInterval = window.setInterval(() => { const seconds = l10RemainingSeconds(currentL10Meeting, currentL10Meeting.currentSection); const timer = document.querySelector('[data-l10-timer]'); if (timer) timer.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; }, 1000);
       document.title = 'L10 Meeting — TalentisOS';
     } else if (route.subroute === 'weekly') {
@@ -1771,46 +1770,6 @@ document.addEventListener('click', async (event) => {
     if (snapshot && window.confirm(`Delete this ${snapshot.snapshotType || 'local'} snapshot permanently?`)) {
       await deleteBackupSnapshot(database, snapshot.id);
       currentSnapshots = await getBackupSnapshots(database);
-      dataDialog()?.remove();
-      document.body.insertAdjacentHTML('beforeend', createDataDialog(currentSnapshots));
-      openDialog(document.querySelector('#data-dialog'));
-      showToast('Snapshot permanently deleted.');
-    }
-    return;
-  }
-
-  const cancelSnapshotDelete = event.target.closest('[data-snapshot-delete-cancel]');
-  if (cancelSnapshotDelete) {
-    cancelSnapshotDelete.closest('dialog')?.close();
-    cancelSnapshotDelete.closest('dialog')?.remove();
-    return;
-  }
-
-  const exportAndDeleteSnapshot = event.target.closest('[data-snapshot-export-delete]');
-  if (exportAndDeleteSnapshot) {
-    const snapshot = currentSnapshots.find((item) => item.id === exportAndDeleteSnapshot.dataset.snapshotExportDelete);
-    if (snapshot) {
-      exportSnapshot(snapshot);
-      await deleteBackupSnapshot(database, snapshot.id);
-      currentSnapshots = await getBackupSnapshots(database);
-      exportAndDeleteSnapshot.closest('dialog')?.close();
-      exportAndDeleteSnapshot.closest('dialog')?.remove();
-      dataDialog()?.remove();
-      document.body.insertAdjacentHTML('beforeend', createDataDialog(currentSnapshots));
-      openDialog(document.querySelector('#data-dialog'));
-      showToast('Snapshot exported and deleted.');
-    }
-    return;
-  }
-
-  const confirmSnapshotDelete = event.target.closest('[data-snapshot-delete-confirm]');
-  if (confirmSnapshotDelete) {
-    const snapshot = currentSnapshots.find((item) => item.id === confirmSnapshotDelete.dataset.snapshotDeleteConfirm);
-    if (snapshot) {
-      await deleteBackupSnapshot(database, snapshot.id);
-      currentSnapshots = await getBackupSnapshots(database);
-      confirmSnapshotDelete.closest('dialog')?.close();
-      confirmSnapshotDelete.closest('dialog')?.remove();
       dataDialog()?.remove();
       document.body.insertAdjacentHTML('beforeend', createDataDialog(currentSnapshots));
       openDialog(document.querySelector('#data-dialog'));

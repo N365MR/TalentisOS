@@ -6,11 +6,14 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('service worker uses versioned caches, offline fallback, and user-confirmed updates', async () => {
   const serviceWorker = await read('public/service-worker.js');
-  assert.match(serviceWorker, /talentisos-shell-v4/);
+  assert.match(serviceWorker, /talentisos-shell-v5/);
   assert.match(serviceWorker, /offline\.html/);
   assert.match(serviceWorker, /SKIP_WAITING/);
   assert.doesNotMatch(serviceWorker, /install[\s\S]{0,300}skipWaiting\(\)/);
   assert.match(serviceWorker, /caches\.delete/);
+  assert.match(serviceWorker, /if \(cached\) return cached/);
+  assert.match(serviceWorker, /event\.waitUntil\(caches\.open/);
+  assert.match(serviceWorker, /\['font', 'image', 'manifest', 'script', 'style'\]/);
 });
 
 test('standalone shell exposes install metadata and a restrictive local CSP', async () => {
@@ -51,6 +54,12 @@ test('core daily workflow pathways remain wired for regression coverage', async 
   for (const marker of ['data-priority-form', 'data-work-form', 'data-review-action', 'data-weekly-answer', 'data-improvement-form']) {
     assert.match(components, new RegExp(marker));
   }
+});
+
+test('active L10 timers are stopped before any route render', async () => {
+  const main = await read('src/main.js');
+  assert.match(main, /async function render\(\) \{\s+stopL10Timer\(\);/);
+  assert.match(main, /function stopL10Timer\(\)[\s\S]{0,160}clearInterval\(l10TimerInterval\)/);
 });
 
 test('Pages deployment is configured for the repository subpath', async () => {

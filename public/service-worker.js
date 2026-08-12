@@ -1,4 +1,4 @@
-const CACHE_NAME = 'talentisos-shell-v4';
+const CACHE_NAME = 'talentisos-shell-v5';
 const BASE_PATH = new URL('./', self.registration.scope).pathname;
 const APP_SHELL = [
   BASE_PATH,
@@ -32,25 +32,24 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const isNavigation = event.request.mode === 'navigate';
-  event.respondWith(
-    isNavigation
-      ? fetch(event.request)
-          .then((response) => {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-            return response;
-          })
-          .catch(() => caches.match(event.request).then((cached) => cached || caches.match(`${BASE_PATH}offline.html`)))
-      : caches.match(event.request).then((cached) => {
-          const network = fetch(event.request)
-            .then((response) => {
-              if (response.ok && new URL(event.request.url).origin === self.location.origin) {
-                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
-              }
-              return response;
-            })
-            .catch(() => cached || Response.error());
-          return cached || network;
-        }),
-  );
+  event.respondWith((async () => {
+    if (!isNavigation) {
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+    }
+
+    try {
+      const response = await fetch(event.request);
+      const destination = event.request.destination;
+      const shouldCache = response.ok && new URL(event.request.url).origin === self.location.origin &&
+        ['font', 'image', 'manifest', 'script', 'style'].includes(destination);
+      if (shouldCache || isNavigation) {
+        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone())));
+      }
+      return response;
+    } catch {
+      const cached = await caches.match(event.request);
+      return cached || (isNavigation ? caches.match(`${BASE_PATH}offline.html`) : Response.error());
+    }
+  })());
 });
