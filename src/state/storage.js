@@ -36,6 +36,11 @@ export function migrateDatabase(database, oldVersion, transaction) {
     if (!database.objectStoreNames.contains(STORE_NAMES.settings)) database.createObjectStore(STORE_NAMES.settings, { keyPath: 'key' });
     transaction.objectStore(METADATA_STORE).put(createMetadataRecord(), METADATA_KEY);
   }
+  if (oldVersion < 3) {
+    const tasks = transaction.objectStore(STORE_NAMES.tasks);
+    if (!tasks.indexNames.contains('by-due-date')) tasks.createIndex('by-due-date', 'dueDate');
+    if (!tasks.indexNames.contains('by-completed-at')) tasks.createIndex('by-completed-at', 'completedAt');
+  }
 }
 
 const knownStores = new Set(Object.values(STORE_NAMES));
