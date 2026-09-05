@@ -6,8 +6,8 @@
 | Phase | Name | Status |
 | --- | --- | --- |
 | 00 | Project Foundation, Control Centre & Engineering Baseline | APPROVED / BASELINED — approved 2026-09-06; implementation `7ae63adad332cf3877c733f69270015b9fce687a`; final baseline is this reconciliation commit (`HEAD`) |
-| 01 | Application Shell, Design System & Persistence Foundation | IMPLEMENTED — technical validation pending Founder acceptance |
-| 02 | Canonical Task Engine | NOT STARTED |
+| 01 | Application Shell, Design System & Persistence Foundation | APPROVED / BASELINED — approved 2026-09-06; controlling implementation baseline `d54da6f999994f3e19536c3ce8701729e76a371f` |
+| 02 | Canonical Task Engine, Subtasks & Workflow Reference Model | READY — authorised following Phase 01 approval |
 | 03 | End of Day | NOT STARTED |
 | 04 | Carry-Over Intelligence | NOT STARTED |
 | 05 | Morning Huddle | NOT STARTED |
