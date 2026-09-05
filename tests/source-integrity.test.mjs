@@ -35,6 +35,15 @@ test('storage and transfer layers remain separate from views', async () => {
   assert.match(transfer, /parseImport/);
 });
 
+test('startup renders a shell if task retrieval fails and task domain normalises legacy records', async () => {
+  const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+  const tasks = await readFile(new URL('../src/state/tasks.js', import.meta.url), 'utf8');
+  assert.match(main, /try \{ tasks = await listTasks\(\); \} catch/);
+  assert.match(main, /renderApp\(root, getRoute\(\), tasks\)/);
+  assert.match(tasks, /export function normaliseTask/);
+  assert.match(tasks, /subtasks: Array\.isArray\(task\.subtasks\)/);
+});
+
 test('PWA public assets are present and correctly referenced', async () => {
   const manifest = JSON.parse(await readFile(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'));
   assert.equal(manifest.start_url, './');
