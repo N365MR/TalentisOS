@@ -6,7 +6,7 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phase 00 establishes the controlled engineering and product baseline. The visible application is deliberately a small, non-functional foundation shell. Product workflows, task persistence, and domain modules are deferred to their authorised phases.
+Phase 01 establishes the responsive application shell, reusable design tokens, local-first IndexedDB foundation, safe versioned export/import boundary, and basic PWA shell. Daily workflow and leadership-tool routes are intentionally lightweight placeholders until their authorised phases.
 
 ## Run and verify
 

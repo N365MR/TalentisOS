@@ -6,8 +6,8 @@
 | Location | Responsibility |
 | --- | --- |
 | `src/main.js` | Browser startup and service-worker registration |
-| `src/state/` | Current metadata-only IndexedDB boundary; to evolve into data boundary |
-| `src/ui/` | Rendering and route constants |
+| `src/state/` | IndexedDB repository boundary, schema/migrations, and versioned data transfer |
+| `src/ui/` | Safe DOM rendering and static-host hash route constants |
 | `public/` | Manifest, icons, and service worker for static deployment |
 | `docs/` | Canonical controlled documentation |
 | `tests/` | Node-native baseline tests |

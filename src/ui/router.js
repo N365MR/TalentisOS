@@ -1,7 +1,3 @@
-export const ROUTES = Object.freeze({
-  FOUNDATION: 'foundation'
-});
-
-export function getRoute() {
-  return ROUTES.FOUNDATION;
-}
+export const ROUTES = Object.freeze({ DAILY: 'daily', END_OF_DAY: 'end-of-day', MORNING_HUDDLE: 'morning-huddle', TODAY: 'today', TASKS: 'tasks', ROADMAP: 'roadmap', KPIS: 'kpis', ISSUES: 'issues', MEETINGS: 'meetings', IMPROVEMENT: 'improvement', PLAYBOOKS: 'playbooks', ANALYTICS: 'analytics', SETTINGS: 'settings' });
+export const routeLabels = Object.freeze({ daily: 'Daily', 'end-of-day': 'End of Day', 'morning-huddle': 'Morning Huddle', today: 'Today’s Work', tasks: 'Tasks', roadmap: 'Leadership Roadmap', kpis: 'KPIs', issues: 'Issues', meetings: 'Meetings', improvement: 'Improvement', playbooks: 'Playbooks', analytics: 'Analytics', settings: 'Settings' });
+export function getRoute(hash = window.location.hash) { const candidate = hash.replace(/^#\/?/, ''); return Object.values(ROUTES).includes(candidate) ? candidate : ROUTES.DAILY; }

@@ -2,21 +2,34 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-test('app shell is the restrained Phase 00 foundation', async () => {
+test('app shell loads the Phase 01 application foundation', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.doesNotMatch(html, /<nav\b/i);
-  assert.doesNotMatch(html, /data-route=/);
   assert.match(html, /type="module" src="\.\/src\/main\.js"/);
-  assert.match(html, /<main id="app"/);
-  assert.match(html, /Your Daily Leadership Playbook/);
-  assert.match(html, /Foundation Ready/);
+  assert.match(html, /<div id="app"/);
+  const render = await readFile(new URL('../src/ui/render.js', import.meta.url), 'utf8');
+  assert.match(render, /Your Daily Leadership Playbook/);
+  assert.match(render, /Morning Huddle/);
+  assert.match(render, /Nothing needs your attention here yet/);
+  assert.match(render, /createElement/);
 });
 
-test('service worker precaches only the foundation application shell', async () => {
+test('service worker provides a versioned same-origin application shell cache', async () => {
   const worker = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.match(worker, /caches\.open/);
   assert.match(worker, /caches\.match/);
-  assert.doesNotMatch(worker, /api|sync|indexeddb/i);
+  assert.match(worker, /talentisos-shell-v3/);
+  assert.match(worker, /self\.location\.origin/);
+});
+
+test('storage and transfer layers remain separate from views', async () => {
+  const storage = await readFile(new URL('../src/state/storage.js', import.meta.url), 'utf8');
+  const transfer = await readFile(new URL('../src/state/transfer.js', import.meta.url), 'utf8');
+  assert.match(storage, /createObjectStore\(STORE_NAMES\.tasks/);
+  assert.match(storage, /createObjectStore\(STORE_NAMES\.settings/);
+  assert.match(storage, /createRecord/);
+  assert.match(storage, /updateRecord/);
+  assert.match(storage, /deleteRecord/);
+  assert.match(transfer, /parseImport/);
 });
 
 test('PWA public assets are present and correctly referenced', async () => {
