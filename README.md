@@ -1,32 +1,32 @@
 # TalentisOS X
 
-TalentisOS X is a private, local-first leadership operating system built with browser-native ES modules. It has no framework, build process, package manager, runtime dependency, account, or required cloud service.
+TalentisOS-X is a private, local-first leadership playbook built with Vite, Vanilla JavaScript, browser-native ES modules, semantic HTML, and modern CSS. It has no runtime dependency, account, or required cloud service.
 
 ## Phase 00A status
 
-This repository contains the modular rebuild foundation: a semantic four-route app shell, initial workspace schema, module boundaries, a minimal PWA registration, and Node-native tests. Product workflows, persistence, caching, and sync are intentionally deferred to their named phases.
+This repository contains a restrained foundation screen, metadata-only IndexedDB infrastructure, route constants for future mapping, an application-shell PWA cache, and Node-native tests. Product workflows and domain persistence are intentionally deferred to later approved phases.
 
 ## Run locally
 
 From this folder, run:
 
 ```sh
-python3 -m http.server 4173
+npm install
+npm run dev
 ```
 
 Then open [http://localhost:4173](http://localhost:4173).
 
-The core product is designed to keep workspace data on the device. IndexedDB/localStorage persistence, backup/restore, and optional sync are not implemented in Phase 00A.
+Phase 00A uses IndexedDB only for a small foundation metadata record. No workspace-domain persistence, backup/restore, or sync is implemented.
 
 ## Verify changes
 
 Run the dependency-free checks before publishing changes:
 
 ```sh
-node --test
-node --check src/main.js
-node --check sw.js
-git diff --check
+npm run build
+npm test
+npm run check
 ```
 
-The product contract and staged rebuild plan are in [docs/REBUILD_FROM_ZERO_PLAYBOOK.md](docs/REBUILD_FROM_ZERO_PLAYBOOK.md) and [docs/TALENTISOS_X_PRODUCT_REQUIREMENTS_DOCUMENT.md](docs/TALENTISOS_X_PRODUCT_REQUIREMENTS_DOCUMENT.md).
+Start with the [canonical source-of-truth](docs/governance/SOURCE-OF-TRUTH.md) and [Phase 00A record](docs/phases/PHASE-00A-BOOTSTRAP.md). Earlier audits and rebuild material remain historical context only.

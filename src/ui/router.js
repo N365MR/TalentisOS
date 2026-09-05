@@ -1,6 +1,7 @@
-const routes = new Set(['today', 'meetings', 'insights', 'settings']);
+export const ROUTES = Object.freeze({
+  FOUNDATION: 'foundation'
+});
 
-export function getRoute(hash = window.location.hash) {
-  const route = hash.replace(/^#/, '').split('/')[0];
-  return routes.has(route) ? route : 'today';
+export function getRoute() {
+  return ROUTES.FOUNDATION;
 }
