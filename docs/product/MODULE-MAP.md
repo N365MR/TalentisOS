@@ -1,3 +1,6 @@
 # Module Map
 
-Phase 00A has no operational modules. It reserves architecture for later view mapping while the visible foundation names the future leadership rhythm. Future module approval and scope belong in their respective phase records.
+**Status:** SUPERSEDED
+**Authority:** Founder
+
+Superseded by [Master Product Definition](../MASTER-PRODUCT-DEFINITION.md) and [Master Phase Register](../MASTER-PHASE-REGISTER.md). No operational module is implemented in Phase 00.

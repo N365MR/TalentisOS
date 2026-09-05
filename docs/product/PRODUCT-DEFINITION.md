@@ -1,3 +1,6 @@
 # Product Definition
 
-TalentisOS-X is a private, local-first leadership playbook that will help a leader close the day, prepare the next morning, and focus today’s work. Phase 00A provides only the foundation for that future experience.
+**Status:** SUPERSEDED
+**Authority:** Founder
+
+Superseded by [Master Product Definition](../MASTER-PRODUCT-DEFINITION.md). Retained as a historical Phase 00A record.

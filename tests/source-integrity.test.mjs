@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-test('app shell is the restrained Phase 00A foundation', async () => {
+test('app shell is the restrained Phase 00 foundation', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.doesNotMatch(html, /<nav\b/i);
   assert.doesNotMatch(html, /data-route=/);
@@ -21,9 +21,9 @@ test('service worker precaches only the foundation application shell', async () 
 
 test('PWA public assets are present and correctly referenced', async () => {
   const manifest = JSON.parse(await readFile(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'));
-  assert.equal(manifest.start_url, '/');
+  assert.equal(manifest.start_url, './');
   assert.equal(manifest.icons.length, 2);
   for (const icon of manifest.icons) {
-    await readFile(new URL(`../public${icon.src}`, import.meta.url), 'utf8');
+    await readFile(new URL(`../public/${icon.src.slice(2)}`, import.meta.url), 'utf8');
   }
 });

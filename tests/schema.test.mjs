@@ -12,6 +12,6 @@ test('creates a valid metadata-only foundation record', () => {
 });
 
 test('does not accept a premature domain model as metadata', () => {
-  assert.equal(isMetadataRecord({ schemaVersion: SCHEMA_VERSION, initializedAt: 'now', tasks: [] }), true);
+  assert.equal(isMetadataRecord({ schemaVersion: SCHEMA_VERSION, initializedAt: 'now', tasks: [] }), false);
   assert.equal(isMetadataRecord({ schemaVersion: SCHEMA_VERSION }), false);
 });

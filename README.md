@@ -1,32 +1,23 @@
-# TalentisOS X
+# TalentisOS
 
-TalentisOS-X is a private, local-first leadership playbook built with Vite, Vanilla JavaScript, browser-native ES modules, semantic HTML, and modern CSS. It has no runtime dependency, account, or required cloud service.
+**Your Daily Leadership Playbook.** TalentisOS is a calm, local-first leadership operating system that helps a leader prepare, align, execute, review, and improve through **End of Day → Morning Huddle → Today’s Work**.
 
-## Phase 00A status
+This repository is the canonical TalentisOS repository. The approved documentation in it is the authoritative product and engineering source of truth; see [document authority](docs/governance/DOCUMENT-AUTHORITY-AND-STATUS.md).
 
-This repository contains a restrained foundation screen, metadata-only IndexedDB infrastructure, route constants for future mapping, an application-shell PWA cache, and Node-native tests. Product workflows and domain persistence are intentionally deferred to later approved phases.
+## Current state
 
-## Run locally
+Phase 00 establishes the controlled engineering and product baseline. The visible application is deliberately a small, non-functional foundation shell. Product workflows, task persistence, and domain modules are deferred to their authorised phases.
 
-From this folder, run:
+## Run and verify
 
 ```sh
 npm install
 npm run dev
-```
-
-Then open [http://localhost:4173](http://localhost:4173).
-
-Phase 00A uses IndexedDB only for a small foundation metadata record. No workspace-domain persistence, backup/restore, or sync is implemented.
-
-## Verify changes
-
-Run the dependency-free checks before publishing changes:
-
-```sh
 npm run build
 npm test
 npm run check
 ```
 
-Start with the [canonical source-of-truth](docs/governance/SOURCE-OF-TRUTH.md) and [Phase 00A record](docs/phases/PHASE-00A-BOOTSTRAP.md). Earlier audits and rebuild material remain historical context only.
+The project uses Vite, browser-native ES modules, semantic HTML, modern CSS, IndexedDB, a web manifest, and a service worker. It has no account, backend, analytics, or required cloud service.
+
+Start with the [project charter](docs/PROJECT-CHARTER.md), [master product definition](docs/MASTER-PRODUCT-DEFINITION.md), [phase register](docs/MASTER-PHASE-REGISTER.md), and [Phase 00 record](docs/phases/PHASE-00-PROJECT-FOUNDATION.md).

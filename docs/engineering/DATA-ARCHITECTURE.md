@@ -1,5 +1,6 @@
 # Data Architecture
 
-Phase 00A opens IndexedDB database `TalentisOS`, schema version `1`, with one `metadata` object store and a `foundation` metadata key. It creates no task, KPI, EOD, huddle, meeting, coaching, rock, issue, roadmap, analytics, or other domain entities.
+**Status:** SUPERSEDED
+**Authority:** Founder
 
-The `onupgradeneeded` boundary creates missing infrastructure stores only, preserving existing stores so later migrations can evolve non-destructively.
+Superseded by the [Data Model](../data/DATA-MODEL.md) and [IndexedDB and Migration Standard](../data/INDEXEDDB-AND-MIGRATION-STANDARD.md). The metadata-only Phase 00A implementation remains current code.

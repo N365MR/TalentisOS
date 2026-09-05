@@ -10,5 +10,6 @@ export function createMetadataRecord(now = new Date().toISOString()) {
 export function isMetadataRecord(value) {
   return Boolean(value) && typeof value === 'object'
     && value.schemaVersion === SCHEMA_VERSION
-    && typeof value.initializedAt === 'string';
+    && typeof value.initializedAt === 'string'
+    && Object.keys(value).every(key => key === 'schemaVersion' || key === 'initializedAt');
 }

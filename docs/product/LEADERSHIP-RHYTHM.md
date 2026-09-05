@@ -1,3 +1,6 @@
 # Leadership Rhythm
 
-The intended daily rhythm is End of Day, Morning Huddle, and Today’s Work. These are product concepts, not implemented Phase 00A modules. Future phases will design each workflow using the product principles and a single-source-of-truth model.
+**Status:** SUPERSEDED
+**Authority:** Founder
+
+Superseded by [Master Product Definition](../MASTER-PRODUCT-DEFINITION.md) and [Product Principles](../PRODUCT-PRINCIPLES.md). The daily flow remains End of Day → Morning Huddle → Today’s Work.
