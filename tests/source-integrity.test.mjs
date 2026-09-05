@@ -11,6 +11,9 @@ test('app shell loads the Phase 01 application foundation', async () => {
   assert.match(render, /Morning Huddle/);
   assert.match(render, /Nothing needs your attention here yet/);
   assert.match(render, /createElement/);
+  const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+  assert.match(main, /showModal/);
+  assert.match(main, /confirmAction/);
 });
 
 test('service worker provides a versioned same-origin application shell cache', async () => {
