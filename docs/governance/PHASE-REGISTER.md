@@ -2,5 +2,5 @@
 
 | Phase | Scope | Status |
 | --- | --- | --- |
-| 00A | Bootstrap foundation | IMPLEMENTED — PENDING FOUNDER APPROVAL |
-| 00B | Not started | BLOCKED BY FOUNDER APPROVAL |
+| 00A | Bootstrap foundation | APPROVED / BASELINED — `81c577cc8f0c9b51b7edda95ea7417ad09db1f48` (`chore: integrate Phase 00A baseline onto main`) |
+| 00B | Not started | Eligible to enter once repository entry controls pass |
