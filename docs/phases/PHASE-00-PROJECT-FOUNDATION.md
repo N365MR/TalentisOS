@@ -1,8 +1,12 @@
 # Phase 00 — Project Foundation, Control Centre & Engineering Baseline
 
-**Status:** BLOCKED — remote GitHub access required for push verification
+**Status:** APPROVED / BASELINED
 **Authority:** Founder
+
+**Founder approval:** Confirmed 2026-09-06
+**Approved implementation commit:** `7ae63adad332cf3877c733f69270015b9fce687a`
+**Final Phase 00 baseline reconciliation commit:** This commit (`HEAD`); Phase 01 must begin from it or an authorised descendant.
 
 Phase 00 establishes controlled repository, documentation, product doctrine, governance, architecture, data, design, security, quality, requirements, phase control, and engineering-readiness standards. It deliberately does not implement substantive leadership modules.
 
-Exit requires all specified documents/statuses, clean build/test/check results, application and PWA inspection, responsive/accessibility evidence, clean pushed `main`, and explicit Founder approval. Local engineering validation is complete; remote fetch/push verification remains blocked by repository access. The delivery owner may report **READY FOR FOUNDER APPROVAL** only after that blocker is resolved, and cannot approve this phase.
+Exit evidence is complete: controlled documentation/statuses, clean build/test/check results, application/PWA inspection, responsive/accessibility evidence, aligned remote `main`, and Founder approval. No Phase 00 blocker remains. Phase 01 is READY but has not commenced.
