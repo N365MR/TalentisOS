@@ -1,32 +1,32 @@
-# TalentisOS
+# TalentisOS X
 
-TalentisOS is a responsive, local-first Progressive Web Application and daily leadership operating system for new and emerging leaders.
+TalentisOS X is a private, local-first leadership operating system built with browser-native ES modules. It has no framework, build process, package manager, runtime dependency, account, or required cloud service.
 
-Its core rhythm is **End of Day → Morning Huddle → Today’s Work** and its leadership cycle is **Prepare → Align → Execute → Review → Improve**.
+## Phase 00A status
 
-## Status
+This repository contains the modular rebuild foundation: a semantic four-route app shell, initial workspace schema, module boundaries, a minimal PWA registration, and Node-native tests. Product workflows, persistence, caching, and sync are intentionally deferred to their named phases.
 
-Phase 10 is complete. TalentisOS includes local-first leadership workflows, an offline Playbook, backup/import/export, PWA hardening, and GitHub Pages deployment.
+## Run locally
 
-## Live app
+From this folder, run:
 
-Open TalentisOS at [https://n365mr.github.io/TalentisOS/](https://n365mr.github.io/TalentisOS/).
-
-GitHub Pages deploys from `main` through [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml). The production Vite base path is `/TalentisOS/`, including manifest, icon, and service-worker resolution.
-
-## Local development
-
-```bash
-npm install
-npm run dev
+```sh
+python3 -m http.server 4173
 ```
 
-You can also open `index.html` directly from Finder or your file manager. The repository includes a local browser bundle for `file://` mode; IndexedDB-backed onboarding and Today data continue to work locally. After source changes, `npm run build` refreshes both the production build and the direct-open bundle.
+Then open [http://localhost:4173](http://localhost:4173).
 
-Quality and production commands: `npm test`, `npm run lint`, `npm run format`, `npm run build`, and `npm run preview`.
+The core product is designed to keep workspace data on the device. IndexedDB/localStorage persistence, backup/restore, and optional sync are not implemented in Phase 00A.
 
-## Product boundaries
+## Verify changes
 
-TalentisOS does not contain employee profiles, personal information, HR records, performance reviews, payroll, recruitment, skills matrices, surveillance, time tracking, CRM, ERP, full project management, chat, email, or complex workflow builders. There is no employee profile entity in the data model.
+Run the dependency-free checks before publishing changes:
 
-See `docs/` for the product, design, architecture, data, offline, import/export, accessibility, privacy, build, QA, and iPad guidance.
+```sh
+node --test
+node --check src/main.js
+node --check sw.js
+git diff --check
+```
+
+The product contract and staged rebuild plan are in [docs/REBUILD_FROM_ZERO_PLAYBOOK.md](docs/REBUILD_FROM_ZERO_PLAYBOOK.md) and [docs/TALENTISOS_X_PRODUCT_REQUIREMENTS_DOCUMENT.md](docs/TALENTISOS_X_PRODUCT_REQUIREMENTS_DOCUMENT.md).
