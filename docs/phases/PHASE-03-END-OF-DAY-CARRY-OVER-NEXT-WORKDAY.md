@@ -1,6 +1,6 @@
 # Phase 03 — End of Day Capture, Carry-Over & Next-Workday Engine
 
-**Status:** IMPLEMENTED AND VALIDATED — AWAITING FOUNDER APPROVAL
+**Status:** APPROVED AND BASELINED
 
 ## Scope
 
@@ -37,6 +37,45 @@ The End of Day route presents status-aware tiles for completed, outstanding, ris
 Automated coverage includes next-workday weekday/weekend/month/year boundaries, local date shape, EOD schema construction, task canonical normalization, transfer compatibility and source integrity. The repository quality commands are recorded with the implementation validation run.
 
 Final browser acceptance was completed on 2026-09-06 at desktop, 1024 × 1366 iPad, and 390 × 844 iPhone viewports. It verified IndexedDB initialization, one EOD record per work date across navigation/reload/reopen, persisted lightweight captures, canonical completion display, idempotent carry-over for selected open tasks, Friday/Saturday/Sunday hand-off to Monday, and Top 3 ordering, limit, persistence and replacement. A final corrective validation found that a completed Top 3 task could remain counted as active. The EOD view now derives active Top 3 items from canonical open-task state while retaining historical record data; regression coverage and a cache-version update ensure the correction is tested and delivered to returning PWA clients.
+
+## Final status
+
+**APPROVED AND BASELINED**
+
+## Founder approval
+
+- Date: 2026-09-06
+- Approved implementation: `de52773b3d94445a4fc72cb44e061bfa7b9076ce`
+
+## Final validation
+
+- Desktop acceptance: PASS
+- iPad acceptance: PASS
+- iPhone acceptance: PASS
+- Persistence/reload: PASS
+- One EOD record per date: PASS
+- Canonical completion synchronisation: PASS
+- Friday → Monday: PASS
+- Duplicate prevention: PASS
+- Console/runtime audit: PASS
+- `npm test`: PASS — 20 tests
+- `npm run build`: PASS
+- `npm run check`: PASS
+- `git diff --check`: PASS
+- Lint: unavailable; no script defined
+
+## Approved Phase 03 behaviour
+
+1. One persistent EOD record resolves for each work date.
+2. Canonical task identity is preserved across EOD and carry-over; tasks are referenced, not cloned.
+3. Carry count increments only for a genuine new target workday; carries are idempotent and retain `carried-forward` movement history.
+4. Monday–Thursday resolve to the next calendar workday; Friday, Saturday and Sunday resolve to Monday.
+5. Tomorrow's Top 3 supports at most three active canonical open tasks; completed tasks leave active presentation while historical EOD context remains intact.
+6. EOD completion and reopen use the same daily record.
+7. IndexedDB version 5 adds the `endOfDay` store with unique date identity while preserving Phase 02 task data.
+8. Phase 03 outputs are the approved prerequisite for Phase 04 — Morning Huddle & Alignment Engine. Phase 04 must consume the EOD service interfaces for carry-over, Top 3, lightweight operational captures, blocked/waiting state and next-workday identity rather than recreating them.
+
+These rules are protected by the approved project governance and change-control process.
 
 ## Deferred work
 

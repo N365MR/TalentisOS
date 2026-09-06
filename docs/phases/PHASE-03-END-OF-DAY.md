@@ -1,6 +1,6 @@
 # Phase 03 — End of Day Capture, Carry-Over & Next-Workday Engine
 
-**Status:** IMPLEMENTED AND VALIDATED — AWAITING FOUNDER APPROVAL
+**Status:** APPROVED AND BASELINED
 
 This early implementation note is retained for provenance. The controlling Phase 03 implementation record is [PHASE-03-END-OF-DAY-CARRY-OVER-NEXT-WORKDAY.md](PHASE-03-END-OF-DAY-CARRY-OVER-NEXT-WORKDAY.md).
 
