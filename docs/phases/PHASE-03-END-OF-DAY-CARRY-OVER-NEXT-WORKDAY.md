@@ -1,6 +1,6 @@
 # Phase 03 — End of Day Capture, Carry-Over & Next-Workday Engine
 
-**Status:** IMPLEMENTED — AWAITING FOUNDER APPROVAL
+**Status:** IMPLEMENTED AND VALIDATED — AWAITING FOUNDER APPROVAL
 
 ## Scope
 
@@ -35,6 +35,8 @@ The End of Day route presents status-aware tiles for completed, outstanding, ris
 ## Acceptance and validation
 
 Automated coverage includes next-workday weekday/weekend/month/year boundaries, local date shape, EOD schema construction, task canonical normalization, transfer compatibility and source integrity. The repository quality commands are recorded with the implementation validation run.
+
+Final browser acceptance was completed on 2026-09-06 at desktop, 1024 × 1366 iPad, and 390 × 844 iPhone viewports. It verified IndexedDB initialization, one EOD record per work date across navigation/reload/reopen, persisted lightweight captures, canonical completion display, idempotent carry-over for selected open tasks, Friday/Saturday/Sunday hand-off to Monday, and Top 3 ordering, limit, persistence and replacement. A final corrective validation found that a completed Top 3 task could remain counted as active. The EOD view now derives active Top 3 items from canonical open-task state while retaining historical record data; regression coverage and a cache-version update ensure the correction is tested and delivered to returning PWA clients.
 
 ## Deferred work
 
