@@ -10,7 +10,8 @@
 | 02 | Canonical Task Engine, Subtasks & Workflow Reference Model | APPROVED / BASELINED — approved 2026-09-06; controlling implementation baseline `4c16a189ddcd5d558a5947c802f1f91cbb674da2` |
 | 03 | End of Day Capture, Carry-Over & Next-Workday Engine | APPROVED AND BASELINED — approved 2026-09-06; controlling implementation baseline `de52773b3d94445a4fc72cb44e061bfa7b9076ce` |
 | 04 | Morning Huddle & Alignment Engine | APPROVED / BASELINED — approved 2026-09-06; controlling implementation baseline `0de128311440191eaf641dfd9948bafd524d7cd8` |
-| 05 | Today’s Work | NOT STARTED |
+| 05 | Today’s Work & Daily Execution Engine | IMPLEMENTED — pending validation and Founder approval |
+| 05A | GitHub Pages Production Runtime | IMPLEMENTED — pending deployment verification and Founder approval |
 | 06 | 30-60-90 Leadership Roadmap | NOT STARTED |
 | 07 | KPI / Scorecard Engine | NOT STARTED |
 | 08 | Rocks / Priorities | NOT STARTED |

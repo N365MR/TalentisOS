@@ -6,7 +6,13 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phases 03 and 04 deliver the End of Day → Morning Huddle handoff: a local daily close record carries selected open tasks by canonical reference into a persisted, aligned Morning Huddle. The default handoff respects the Monday–Friday rhythm, moving Friday selections to Monday. Morning Huddle stores only task references and alignment context, then exposes canonical commitments for the future Today’s Work phase.
+Phase 05 delivers Today’s Work as the Execute-stage surface. It consolidates canonical Top 3, Huddle commitments, due and overdue work, carry-overs, urgency, blocked/waiting work, explicitly added Today items, and work completed today—without cloning tasks or changing carry-over behaviour.
+
+## Production runtime
+
+The official production runtime is [GitHub Pages](https://n365mr.github.io/TalentisOS/). GitHub Actions builds the Vite production bundle and deploys static assets to the repository subpath `/TalentisOS/`; no local server, backend, authentication, or cloud database is part of production.
+
+TalentisOS data remains local to each browser and device in IndexedDB. To move data between devices or retain a backup, use **Settings → Export** to download the JSON backup, then use **Settings → Import** on the destination device. GitHub Pages deploys only the app shell, never your task data.
 
 ## Run and verify
 
@@ -17,6 +23,8 @@ npm run build
 npm test
 npm run check
 ```
+
+For a clean, CI-equivalent install, run `npm ci`. `npm run dev` serves the application locally; `npm run build` emits the GitHub Pages-ready production bundle to `dist/` (which is intentionally not committed).
 
 The project uses Vite, browser-native ES modules, semantic HTML, modern CSS, IndexedDB, a web manifest, and a service worker. It has no account, backend, analytics, or required cloud service.
 
