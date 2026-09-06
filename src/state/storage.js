@@ -41,6 +41,10 @@ export function migrateDatabase(database, oldVersion, transaction) {
     if (!tasks.indexNames.contains('by-due-date')) tasks.createIndex('by-due-date', 'dueDate');
     if (!tasks.indexNames.contains('by-completed-at')) tasks.createIndex('by-completed-at', 'completedAt');
   }
+  if (oldVersion < 4) {
+    const tasks = transaction.objectStore(STORE_NAMES.tasks);
+    if (!tasks.indexNames.contains('by-priority')) tasks.createIndex('by-priority', 'priority');
+  }
 }
 
 const knownStores = new Set(Object.values(STORE_NAMES));

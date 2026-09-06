@@ -6,7 +6,7 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phase 01 establishes the responsive application shell, reusable design tokens, local-first IndexedDB foundation, safe versioned export/import boundary, and basic PWA shell. Daily workflow and leadership-tool routes are intentionally lightweight placeholders until their authorised phases.
+Phase 02 adds the canonical local task engine: one stable task record can be referenced by End of Day, Morning Huddle, Today’s Work, and future leadership workflows without cloning work. It includes task lifecycle, scheduling, flags, blocked/waiting states, tags, subtasks, carry metadata, workflow references, and a responsive Tasks surface. Daily workflow and leadership-tool routes remain intentionally lightweight placeholders until their authorised phases.
 
 ## Run and verify
 

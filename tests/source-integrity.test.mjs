@@ -4,7 +4,7 @@ import test from 'node:test';
 
 test('app shell loads the Phase 01 application foundation', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /type="module" src="\.\/src\/main\.js"/);
+  assert.match(html, /type="module" src="\.\/src\/main\.js\?v=phase02"/);
   assert.match(html, /<div id="app"/);
   const render = await readFile(new URL('../src/ui/render.js', import.meta.url), 'utf8');
   assert.match(render, /Your Daily Leadership Playbook/);
@@ -20,7 +20,7 @@ test('service worker provides a versioned same-origin application shell cache', 
   const worker = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.match(worker, /caches\.open/);
   assert.match(worker, /caches\.match/);
-  assert.match(worker, /talentisos-shell-v4/);
+  assert.match(worker, /talentisos-shell-v6/);
   assert.match(worker, /self\.location\.origin/);
 });
 
@@ -42,6 +42,17 @@ test('startup renders a shell if task retrieval fails and task domain normalises
   assert.match(main, /renderApp\(root, getRoute\(\), tasks\)/);
   assert.match(tasks, /export function normaliseTask/);
   assert.match(tasks, /subtasks: Array\.isArray\(task\.subtasks\)/);
+});
+
+test('task detail editing and destructive task deletion use a confirmed canonical flow', async () => {
+  const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+  const tasks = await readFile(new URL('../src/state/tasks.js', import.meta.url), 'utf8');
+  assert.match(main, /openTaskDialog/);
+  assert.match(main, /Delete this task/);
+  assert.match(main, /deleting \? 'Delete task' : 'Replace data'/);
+  assert.match(tasks, /REFERENCE_TYPES/);
+  assert.match(tasks, /carryHistory/);
+  assert.match(tasks, /sameReference/);
 });
 
 test('PWA public assets are present and correctly referenced', async () => {

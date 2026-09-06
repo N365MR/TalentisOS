@@ -28,3 +28,16 @@ test('normalises a Phase 01 record with missing Phase 02 fields without changing
   assert.equal(normalised.status, 'open');
   assert.deepEqual(taskView([legacy], 'inbox', '2026-09-06').map(item => item.id), ['phase-01-task']);
 });
+
+test('normalises carry history and corrupted optional task arrays safely', () => {
+  const normalised = normaliseTask(task({ tags: [' leadership ', null, 'leadership'], references: [null, { id: 'ref-1', type: 'today' }], carryHistory: [null, { fromDate: '2026-09-05', toDate: '2026-09-06' }] }));
+  assert.deepEqual(normalised.tags, ['leadership', 'leadership']);
+  assert.equal(normalised.references.length, 1);
+  assert.equal(normalised.carryHistory.length, 1);
+});
+
+test('keeps completed tasks out of operational filters and orders completed work by recent update', () => {
+  const tasks = [task({ id: 'old', status: 'completed', updatedAt: '2026-09-05T00:00:00.000Z' }), task({ id: 'new', status: 'completed', updatedAt: '2026-09-06T00:00:00.000Z' }), task({ id: 'overdue', dueDate: '2026-09-05' })];
+  assert.deepEqual(taskView(tasks, 'today', '2026-09-06').map(item => item.id), ['overdue']);
+  assert.deepEqual(taskView(tasks, 'completed', '2026-09-06').map(item => item.id), ['new', 'old']);
+});

@@ -29,12 +29,12 @@ The task domain API in `src/state/tasks.js` owns lifecycle changes, subtask oper
 
 ## Persistence and migration
 
-Schema version 3 adds due-date and completion-date indexes to the existing task store. The migration is additive and preserves Phase 01 metadata, settings and task records; no database reset is performed. Timestamps use ISO 8601 and dates remain date-only strings where appropriate.
+Schema version 4 adds a priority index after version 3 introduced due-date and completion-date indexes. The migration is additive and preserves Phase 01 metadata, settings and task records; no database reset is performed. Missing optional Phase 02 fields, including carry history, are normalised safely at read time. Timestamps use ISO 8601 and dates remain date-only strings where appropriate.
 
 ## UI and testing
 
-The Tasks route provides fast title-first capture, the eight operational views, touch-sized completion controls, contextual state toggles, subtasks and visible progress. Automated tests cover task-view derivation and subtask progress; existing schema, transfer, source integrity, build and syntax checks remain part of validation.
+The Tasks route provides fast title-first capture, the eight operational views, touch-sized completion controls, a responsive editable task-detail dialog, confirmed deletion, contextual state toggles, subtasks and visible progress. Workflow references are validated against the future workflow type set and deduplicated by type, source and date. Carry-forward records a destination reference plus a dedicated carry-history entry. Automated tests cover task-view derivation, completed ordering, legacy/corrupt optional fields, subtask progress and detail-flow source integrity; build and syntax checks remain part of validation.
 
 ## Acceptance notes
 
-Founder manual acceptance should follow Scenarios A–G in the Phase 02 brief: create a task, edit its state, add and complete subtasks, block/unblock, wait/resume, complete, reload and reopen.
+Founder manual acceptance should follow Scenarios A–G in the Phase 02 brief: create a task, edit its state, add and complete subtasks, block/unblock, wait/resume, complete, reload and reopen. Technical validation on 2026-09-06 passed desktop (default), iPad (768×1024), and iPhone (390×844) layouts with no horizontal overflow. The live acceptance test created one temporary canonical task, attached EOD/Huddle/Today references, confirmed duplicate prevention and canonical completion, removed one reference without deleting the task, then removed the test data. Completion controls and task actions use 44px minimum touch targets.
