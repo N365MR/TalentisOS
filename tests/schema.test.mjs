@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SCHEMA_VERSION, createMetadataRecord, createMorningHuddleRecord, createTaskRecord, isMetadataRecord, isMorningHuddleRecord, isSupportedExport, isTaskRecord } from '../src/state/schema.js';
+import { SCHEMA_VERSION, EXPORT_VERSION, createMetadataRecord, createMorningHuddleRecord, createRoadmapRecord, createTaskRecord, isMetadataRecord, isMorningHuddleRecord, isSupportedExport, isTaskRecord } from '../src/state/schema.js';
 
 test('creates a valid metadata-only foundation record', () => {
   const metadata = createMetadataRecord('2026-09-05T00:00:00.000Z');
@@ -30,4 +30,10 @@ test('creates one valid, deduplicated Morning Huddle model for a workday', () =>
   assert.deepEqual(huddle.top3TaskIds, ['task-2', 'task-1']);
   assert.deepEqual(huddle.commitmentTaskIds, ['task-1']);
   assert.equal(isMorningHuddleRecord(huddle), true);
+});
+
+test('validates current exports containing the singleton roadmap', () => {
+  const task = createTaskRecord({ title: 'One task' }, { id: 'task-1', now: '2026-09-05T00:00:00.000Z' });
+  const huddle = createMorningHuddleRecord({ workDate: '2026-09-05' }, { id: 'huddle-1', now: '2026-09-05T00:00:00.000Z' });
+  assert.equal(isSupportedExport({ format: 'TalentisOS', exportVersion: EXPORT_VERSION, exportedAt: '2026-09-05T00:00:00.000Z', data: { tasks: [task], endOfDay: [], morningHuddles: [huddle], roadmap: [createRoadmapRecord()], settings: [] } }), true);
 });

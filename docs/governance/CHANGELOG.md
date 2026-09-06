@@ -5,6 +5,8 @@
 
 ## Unreleased
 
+- Implemented Phase 06 30–60–90 Leadership Roadmap: a local singleton roadmap with fixed outcome-led milestones, progress, Next Best Action, completion/reopen controls, IndexedDB migration v7, and JSON transfer v4. Roadmap progress does not alter canonical tasks or daily-rhythm records.
+
 - Implemented Phase 05A GitHub Pages production runtime: GitHub Actions now builds the Vite bundle with the `/TalentisOS/` base path and deploys the static `dist` artifact to GitHub Pages. Browser data remains local-only.
 
 - Implemented Phase 05 Today’s Work: a canonical, date-aware execution surface with Top 3, Huddle, due, overdue, carry, urgent, blocked, waiting, explicit Today, completion, progress, and quick-capture behaviour. Updated the service-worker cache to v9.

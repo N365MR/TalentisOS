@@ -12,7 +12,7 @@
 | 04 | Morning Huddle & Alignment Engine | APPROVED / BASELINED — approved 2026-09-06; controlling implementation baseline `0de128311440191eaf641dfd9948bafd524d7cd8` |
 | 05 | Today’s Work & Daily Execution Engine | IMPLEMENTED — pending validation and Founder approval |
 | 05A | GitHub Pages Production Runtime | IMPLEMENTED — pending deployment verification and Founder approval |
-| 06 | 30-60-90 Leadership Roadmap | NOT STARTED |
+| 06 | 30-60-90 Leadership Roadmap | IMPLEMENTED — pending validation and Founder approval |
 | 07 | KPI / Scorecard Engine | NOT STARTED |
 | 08 | Rocks / Priorities | NOT STARTED |
 | 09 | Issues / IDS / 5 Whys | NOT STARTED |

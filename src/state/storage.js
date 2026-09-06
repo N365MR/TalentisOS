@@ -53,6 +53,7 @@ export function migrateDatabase(database, oldVersion, transaction) {
     const records = database.createObjectStore(STORE_NAMES.morningHuddles, { keyPath: 'id' });
     records.createIndex('by-work-date', 'workDate', { unique: true });
   }
+  if (oldVersion < 7 && !database.objectStoreNames.contains(STORE_NAMES.roadmap)) database.createObjectStore(STORE_NAMES.roadmap, { keyPath: 'id' });
 }
 
 const knownStores = new Set(Object.values(STORE_NAMES));
