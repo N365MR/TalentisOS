@@ -4,7 +4,7 @@ import test from 'node:test';
 
 test('app shell loads the Phase 01 application foundation', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /type="module" src="\.\/src\/main\.js\?v=phase05-1"/);
+  assert.match(html, /type="module" src="\.\/src\/main\.js\?v=phase07-1"/);
   assert.match(html, /<div id="app"/);
   const render = await readFile(new URL('../src/ui/render.js', import.meta.url), 'utf8');
   assert.match(render, /Your Daily Leadership Playbook/);
@@ -20,7 +20,7 @@ test('service worker provides a versioned same-origin application shell cache', 
   const worker = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.match(worker, /caches\.open/);
   assert.match(worker, /caches\.match/);
-  assert.match(worker, /talentisos-shell-v11/);
+  assert.match(worker, /talentisos-shell-v12/);
   assert.match(worker, /self\.location\.origin/);
 });
 

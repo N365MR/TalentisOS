@@ -6,7 +6,7 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phase 05 delivers Today’s Work as the Execute-stage surface. It consolidates canonical Top 3, Huddle commitments, due and overdue work, carry-overs, urgency, blocked/waiting work, explicitly added Today items, and work completed today—without cloning tasks or changing carry-over behaviour.
+Phase 07 delivers a local-first KPI Scorecard. It evaluates deterministic current-period status, surfaces amber/red exceptions first, and links corrective action only through the existing canonical task engine and Morning Huddle references.
 
 ## Production runtime
 

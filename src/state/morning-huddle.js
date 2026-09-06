@@ -2,6 +2,7 @@ import { STORE_NAMES, createId, createMorningHuddleRecord, nowIso } from './sche
 import { createRecord, getAllRecords, updateRecord } from './storage.js';
 import { getMorningHuddleInputs } from './end-of-day.js';
 import { addTaskReference, createTask, listTasks } from './tasks.js';
+import { KPI_STATUSES, scorecardSnapshot } from './kpis.js';
 
 const uniqueIds = values => [...new Set((Array.isArray(values) ? values : []).filter(value => typeof value === 'string' && value))];
 const entries = values => (Array.isArray(values) ? values : []).filter(value => value && typeof value === 'object' && typeof value.id === 'string' && typeof value.title === 'string');
@@ -20,11 +21,13 @@ export async function saveMorningHuddle(input) {
   return updateRecord(STORE_NAMES.morningHuddles, next);
 }
 export async function assembleMorningHuddle(workDate) {
-  const huddle = await getOrCreateMorningHuddle(workDate); const tasks = await listTasks(); const byId = new Map(tasks.map(task => [task.id, task]));
+  const huddle = await getOrCreateMorningHuddle(workDate); const [tasks, scorecard] = await Promise.all([listTasks(), scorecardSnapshot(`${workDate}T12:00:00Z`)]); const byId = new Map(tasks.map(task => [task.id, task]));
   const resolve = ids => uniqueIds(ids).map(id => byId.get(id)).filter(Boolean);
   const carryovers = resolve(huddle.carryoverTaskIds); const top3 = resolve(huddle.top3TaskIds); const blockers = [...new Map([...carryovers, ...top3, ...tasks.filter(task => task.blocked || task.waiting)].filter(task => task.blocked || task.waiting).map(task => [task.id, task])).values()];
-  return { huddle, sourceFound: Boolean(huddle.sourceEodId), carryovers, top3, blockers, commitments: resolve(huddle.commitmentTaskIds), candidates: tasks.filter(task => !task.someday).sort((a, b) => (a.status === 'completed') - (b.status === 'completed') || (a.dueDate || '9999').localeCompare(b.dueDate || '9999')) };
+  const kpiExceptions = selectKpiExceptions(scorecard);
+  return { huddle, sourceFound: Boolean(huddle.sourceEodId), carryovers, top3, blockers, commitments: resolve(huddle.commitmentTaskIds), kpiExceptions, candidates: tasks.filter(task => !task.someday).sort((a, b) => (a.status === 'completed') - (b.status === 'completed') || (a.dueDate || '9999').localeCompare(b.dueDate || '9999')) };
 }
+export function selectKpiExceptions(scorecard = []) { return scorecard.filter(item => [KPI_STATUSES.OFF_TRACK, KPI_STATUSES.AT_RISK].includes(item.status)); }
 export async function setHuddleTop3(workDate, taskIds) { const ids = uniqueIds(taskIds); if (ids.length > 3) throw new TypeError("Today's Top 3 can contain at most three tasks."); const taskIdsPresent = new Set((await listTasks()).map(task => task.id)); if (ids.some(id => !taskIdsPresent.has(id))) throw new TypeError('Top 3 must reference canonical tasks.'); return saveMorningHuddle({ workDate, top3TaskIds: ids, status: 'in-progress' }); }
 export async function addTaskToHuddle(workDate, taskId) { const huddle = await getOrCreateMorningHuddle(workDate); if (!(await listTasks()).some(task => task.id === taskId)) throw new Error('Task not found.'); await addTaskReference(taskId, { type: 'huddle', sourceId: huddle.id, date: workDate }); return saveMorningHuddle({ workDate, carryoverTaskIds: uniqueIds([...huddle.carryoverTaskIds, taskId]), status: 'in-progress' }); }
 export async function removeTaskFromHuddle(workDate, taskId) { const huddle = await getOrCreateMorningHuddle(workDate); return saveMorningHuddle({ workDate, carryoverTaskIds: huddle.carryoverTaskIds.filter(id => id !== taskId), top3TaskIds: huddle.top3TaskIds.filter(id => id !== taskId), commitmentTaskIds: huddle.commitmentTaskIds.filter(id => id !== taskId) }); }

@@ -1,7 +1,7 @@
-export const SCHEMA_VERSION = 7;
-export const EXPORT_VERSION = 4;
+export const SCHEMA_VERSION = 9;
+export const EXPORT_VERSION = 5;
 export const EXPORT_FORMAT = 'TalentisOS';
-export const STORE_NAMES = Object.freeze({ metadata: 'metadata', tasks: 'tasks', endOfDay: 'endOfDay', morningHuddles: 'morningHuddles', roadmap: 'roadmap', settings: 'settings' });
+export const STORE_NAMES = Object.freeze({ metadata: 'metadata', tasks: 'tasks', endOfDay: 'endOfDay', morningHuddles: 'morningHuddles', roadmap: 'roadmap', settings: 'settings', kpis: 'kpis', kpiEntries: 'kpiEntries' });
 
 export const ROADMAP_ID = 'leadership-roadmap';
 export const ROADMAP_MILESTONES = Object.freeze([
@@ -59,9 +59,30 @@ export function createRoadmapRecord(input = {}, { now = nowIso() } = {}) {
   });
   return { id: ROADMAP_ID, milestones, createdAt: typeof input?.createdAt === 'string' ? input.createdAt : now, updatedAt: typeof input?.updatedAt === 'string' ? input.updatedAt : now };
 }
+const KPI_DIRECTIONS = new Set(['higher', 'lower', 'within-range']);
+const KPI_FREQUENCIES = new Set(['daily', 'weekly', 'monthly', 'quarterly']);
+const numeric = value => value === null || value === undefined || String(value).trim() === '' ? null : Number.isFinite(Number(value)) ? Number(value) : null;
+const range = value => ({ min: numeric(value?.min), max: numeric(value?.max) });
+export function createKpiRecord(input, { id = createId(), now = nowIso() } = {}) {
+  const name = String(input?.name ?? '').trim();
+  const direction = String(input?.direction ?? '').trim();
+  if (!name) throw new TypeError('A KPI name is required.');
+  if (!KPI_DIRECTIONS.has(direction)) throw new TypeError('A supported KPI direction is required.');
+  const frequency = KPI_FREQUENCIES.has(input?.frequency) ? input.frequency : 'monthly';
+  const record = { id, name, purpose: String(input?.purpose ?? '').trim(), ownerRole: String(input?.ownerRole ?? '').trim(), formula: String(input?.formula ?? '').trim(), unit: String(input?.unit ?? '').trim(), frequency, direction, target: range(input?.target), warning: range(input?.warning), offTrack: range(input?.offTrack), linkedTaskIds: [...new Set((Array.isArray(input?.linkedTaskIds) ? input.linkedTaskIds : []).filter(value => typeof value === 'string' && value))], createdAt: input?.createdAt ?? now, updatedAt: input?.updatedAt ?? now };
+  if (!record.purpose || !record.ownerRole || !record.formula || !record.unit) throw new TypeError('KPI purpose, owner role, formula or data source, and unit are required.');
+  return record;
+}
+export function createKpiEntryRecord(input, { id = createId(), now = nowIso() } = {}) {
+  const kpiId = String(input?.kpiId ?? '').trim(); const periodKey = String(input?.periodKey ?? '').trim(); const actual = numeric(input?.actual);
+  if (!kpiId || !/^\d{4}-(?:\d{2}|Q[1-4]|W\d{2}|\d{2}-\d{2})$/.test(periodKey) || actual === null) throw new TypeError('A KPI entry requires a KPI, valid reporting period, and numeric actual.');
+  return { id, kpiId, periodKey, actual, notes: String(input?.notes ?? '').trim(), history: Array.isArray(input?.history) ? [...input.history] : [{ id: createId(), type: 'reported', timestamp: now, actual }], createdAt: input?.createdAt ?? now, updatedAt: input?.updatedAt ?? now };
+}
 export function isMetadataRecord(value) { return Boolean(value) && typeof value === 'object' && value.schemaVersion === SCHEMA_VERSION && typeof value.initializedAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isTaskRecord(value) { return Boolean(value) && typeof value === 'object' && typeof value.id === 'string' && value.id.length > 0 && typeof value.title === 'string' && value.title.trim().length > 0 && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isEndOfDayRecord(value) { return Boolean(value) && typeof value === 'object' && typeof value.id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.date) && Array.isArray(value.taskIds) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isMorningHuddleRecord(value) { return Boolean(value) && typeof value === 'object' && typeof value.id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.workDate) && Array.isArray(value.carryoverTaskIds) && Array.isArray(value.top3TaskIds) && Array.isArray(value.commitmentTaskIds) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isRoadmapRecord(value) { return Boolean(value) && value.id === ROADMAP_ID && Array.isArray(value.milestones) && value.milestones.length === ROADMAP_MILESTONES.length && value.milestones.every((milestone, index) => { const [id, stage, title, outcome] = ROADMAP_MILESTONES[index]; return milestone?.id === id && milestone.stage === stage && milestone.title === title && milestone.outcome === outcome && ['not-started', 'in-progress', 'completed'].includes(milestone.status) && (milestone.status !== 'completed' || typeof milestone.completedAt === 'string'); }) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
-export function isSupportedExport(value) { const legacy = value?.exportVersion === 1 || value?.exportVersion === 2; const current = value?.exportVersion === EXPORT_VERSION; return Boolean(value) && typeof value === 'object' && value.format === EXPORT_FORMAT && (current || value?.exportVersion === 3 || legacy) && typeof value.exportedAt === 'string' && value.data && typeof value.data === 'object' && Array.isArray(value.data.tasks) && Array.isArray(value.data.settings) && (!legacy ? Array.isArray(value.data.endOfDay) && Array.isArray(value.data.morningHuddles) && value.data.endOfDay.every(isEndOfDayRecord) && value.data.morningHuddles.every(isMorningHuddleRecord) : true) && (!current || (Array.isArray(value.data.roadmap) && value.data.roadmap.every(isRoadmapRecord))) && value.data.tasks.every(isTaskRecord); }
+export function isKpiRecord(value) { try { const record = createKpiRecord(value, { id: value.id, now: value.createdAt }); const ranges = [record.target, record.warning, record.offTrack]; const validRanges = ranges.every(item => Number.isFinite(item.min) && Number.isFinite(item.max) && item.min <= item.max); const nested = record.direction === 'higher' ? record.target.max >= record.warning.max && record.warning.max >= record.offTrack.max : record.direction === 'lower' ? record.target.min <= record.warning.min && record.warning.min <= record.offTrack.min : record.offTrack.min <= record.warning.min && record.warning.min <= record.target.min && record.target.max <= record.warning.max && record.warning.max <= record.offTrack.max; return Boolean(value) && typeof value.id === 'string' && record.createdAt === value.createdAt && typeof value.updatedAt === 'string' && validRanges && nested; } catch { return false; } }
+export function isKpiEntryRecord(value) { try { return Boolean(value) && typeof value.id === 'string' && createKpiEntryRecord(value, { id: value.id, now: value.createdAt }).createdAt === value.createdAt && typeof value.updatedAt === 'string'; } catch { return false; } }
+export function isSupportedExport(value) { const legacy = value?.exportVersion === 1 || value?.exportVersion === 2; const current = value?.exportVersion === EXPORT_VERSION; return Boolean(value) && typeof value === 'object' && value.format === EXPORT_FORMAT && (current || value?.exportVersion === 4 || value?.exportVersion === 3 || legacy) && typeof value.exportedAt === 'string' && value.data && typeof value.data === 'object' && Array.isArray(value.data.tasks) && Array.isArray(value.data.settings) && (!legacy ? Array.isArray(value.data.endOfDay) && Array.isArray(value.data.morningHuddles) && value.data.endOfDay.every(isEndOfDayRecord) && value.data.morningHuddles.every(isMorningHuddleRecord) : true) && (!current || (Array.isArray(value.data.roadmap) && value.data.roadmap.every(isRoadmapRecord) && Array.isArray(value.data.kpis) && Array.isArray(value.data.kpiEntries) && value.data.kpis.every(isKpiRecord) && value.data.kpiEntries.every(isKpiEntryRecord))) && value.data.tasks.every(isTaskRecord); }

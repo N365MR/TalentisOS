@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SCHEMA_VERSION, EXPORT_VERSION, createMetadataRecord, createMorningHuddleRecord, createRoadmapRecord, createTaskRecord, isMetadataRecord, isMorningHuddleRecord, isSupportedExport, isTaskRecord } from '../src/state/schema.js';
+import { SCHEMA_VERSION, EXPORT_VERSION, createKpiEntryRecord, createKpiRecord, createMetadataRecord, createMorningHuddleRecord, createRoadmapRecord, createTaskRecord, isMetadataRecord, isMorningHuddleRecord, isSupportedExport, isTaskRecord } from '../src/state/schema.js';
 
 test('creates a valid metadata-only foundation record', () => {
   const metadata = createMetadataRecord('2026-09-05T00:00:00.000Z');
@@ -35,5 +35,7 @@ test('creates one valid, deduplicated Morning Huddle model for a workday', () =>
 test('validates current exports containing the singleton roadmap', () => {
   const task = createTaskRecord({ title: 'One task' }, { id: 'task-1', now: '2026-09-05T00:00:00.000Z' });
   const huddle = createMorningHuddleRecord({ workDate: '2026-09-05' }, { id: 'huddle-1', now: '2026-09-05T00:00:00.000Z' });
-  assert.equal(isSupportedExport({ format: 'TalentisOS', exportVersion: EXPORT_VERSION, exportedAt: '2026-09-05T00:00:00.000Z', data: { tasks: [task], endOfDay: [], morningHuddles: [huddle], roadmap: [createRoadmapRecord()], settings: [] } }), true);
+  const kpi = createKpiRecord({ name: 'Completion', purpose: 'Keep commitments dependable.', ownerRole: 'Operations', formula: 'Completed divided by due.', unit: '%', frequency: 'monthly', direction: 'higher', target: { min: 0, max: 95 }, warning: { min: 0, max: 90 }, offTrack: { min: 0, max: 80 }, linkedTaskIds: ['task-1'] }, { id: 'kpi-1', now: '2026-09-05T00:00:00.000Z' });
+  const entry = createKpiEntryRecord({ kpiId: kpi.id, periodKey: '2026-09', actual: 95 }, { id: 'entry-1', now: '2026-09-05T00:00:00.000Z' });
+  assert.equal(isSupportedExport({ format: 'TalentisOS', exportVersion: EXPORT_VERSION, exportedAt: '2026-09-05T00:00:00.000Z', data: { tasks: [task], endOfDay: [], morningHuddles: [huddle], roadmap: [createRoadmapRecord()], settings: [], kpis: [kpi], kpiEntries: [entry] } }), true);
 });

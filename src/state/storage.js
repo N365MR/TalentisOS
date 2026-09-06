@@ -54,6 +54,12 @@ export function migrateDatabase(database, oldVersion, transaction) {
     records.createIndex('by-work-date', 'workDate', { unique: true });
   }
   if (oldVersion < 7 && !database.objectStoreNames.contains(STORE_NAMES.roadmap)) database.createObjectStore(STORE_NAMES.roadmap, { keyPath: 'id' });
+  if (oldVersion < 8 && !database.objectStoreNames.contains(STORE_NAMES.kpis)) database.createObjectStore(STORE_NAMES.kpis, { keyPath: 'id' });
+  if (oldVersion < 9 && !database.objectStoreNames.contains(STORE_NAMES.kpiEntries)) {
+    const entries = database.createObjectStore(STORE_NAMES.kpiEntries, { keyPath: 'id' });
+    entries.createIndex('by-kpi-period', ['kpiId', 'periodKey'], { unique: true });
+    entries.createIndex('by-kpi', 'kpiId');
+  }
 }
 
 const knownStores = new Set(Object.values(STORE_NAMES));
