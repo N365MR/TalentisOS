@@ -5,6 +5,8 @@
 
 ## Unreleased
 
+- Approved and baselined Phase 06 — 30–60–90 Leadership Roadmap. Founder approval date: 2026-09-06. Controlling implementation baseline: `65a089426ae0fa53d45b5fba309b597819eea947`.
+
 - Implemented Phase 06 30–60–90 Leadership Roadmap: a local singleton roadmap with fixed outcome-led milestones, progress, Next Best Action, completion/reopen controls, IndexedDB migration v7, and JSON transfer v4. Roadmap progress does not alter canonical tasks or daily-rhythm records.
 
 - Implemented Phase 05A GitHub Pages production runtime: GitHub Actions now builds the Vite bundle with the `/TalentisOS/` base path and deploys the static `dist` artifact to GitHub Pages. Browser data remains local-only.

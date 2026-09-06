@@ -1,7 +1,12 @@
 # Phase 06 — 30–60–90 Leadership Roadmap
 
-**Status:** IMPLEMENTED — pending validation and Founder approval  
+**Status:** APPROVED / BASELINED
+
 **Authority:** Founder
+
+**Founder approval date:** 2026-09-06
+
+**Controlling implementation baseline:** `65a089426ae0fa53d45b5fba309b597819eea947`
 
 ## Purpose
 
