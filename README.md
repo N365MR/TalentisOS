@@ -6,7 +6,7 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phase 03 delivers End of Day: a local daily close record captures wins and a close-out note, while selected open tasks are carried by canonical reference into the next workday’s Morning Huddle. The default handoff respects the Monday–Friday rhythm, moving Friday selections to Monday. The daily record is included in backup and restore; Morning Huddle and Today’s Work remain dedicated future phases.
+Phases 03 and 04 deliver the End of Day → Morning Huddle handoff: a local daily close record carries selected open tasks by canonical reference into a persisted, aligned Morning Huddle. The default handoff respects the Monday–Friday rhythm, moving Friday selections to Monday. Morning Huddle stores only task references and alignment context, then exposes canonical commitments for the future Today’s Work phase.
 
 ## Run and verify
 

@@ -13,6 +13,6 @@
 | REQ-A11Y-001 | Semantic, keyboard, contrast, and reduced-motion baseline | Accessibility | High | 00 | Documented | Manual/automated inspection | — |
 | REQ-PWA-001 | Static GitHub Pages-compatible PWA foundation | PWA | High | 00 | Existing foundation | Build/asset inspection | DEC-0002 |
 | REQ-EOD-001 | End-of-Day workflow | EOD | High | 03 | Deferred | Future acceptance | — |
-| REQ-HUD-001 | Morning Huddle workflow | Huddle | High | 05 | Deferred | Future acceptance | — |
+| REQ-HUD-001 | Morning Huddle workflow | Huddle | High | 04 | Approved / Baselined | Founder approval 2026-09-06; implementation `0de128311440191eaf641dfd9948bafd524d7cd8` | Canonical task references; Phase 05 consumes aligned commitments |
 | REQ-TASK-001 | Canonical task engine | Tasks | Critical | 02 | Deferred | Future acceptance | DEC-0003 |
 | REQ-KPI-001 | KPI status and corrective-action model | KPIs | Medium | 08 | Deferred | Future acceptance | — |
