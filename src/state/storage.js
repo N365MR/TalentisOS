@@ -45,6 +45,10 @@ export function migrateDatabase(database, oldVersion, transaction) {
     const tasks = transaction.objectStore(STORE_NAMES.tasks);
     if (!tasks.indexNames.contains('by-priority')) tasks.createIndex('by-priority', 'priority');
   }
+  if (oldVersion < 5 && !database.objectStoreNames.contains(STORE_NAMES.endOfDay)) {
+    const records = database.createObjectStore(STORE_NAMES.endOfDay, { keyPath: 'id' });
+    records.createIndex('by-date', 'date', { unique: true });
+  }
 }
 
 const knownStores = new Set(Object.values(STORE_NAMES));

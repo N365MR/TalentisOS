@@ -1,6 +1,6 @@
 import { EXPORT_FORMAT, EXPORT_VERSION, STORE_NAMES, isSupportedExport, nowIso } from './schema.js';
 import { getAllRecords, replaceStoreRecords } from './storage.js';
-export async function createExportEnvelope() { const [tasks, settings] = await Promise.all([getAllRecords(STORE_NAMES.tasks), getAllRecords(STORE_NAMES.settings)]); return { format: EXPORT_FORMAT, exportVersion: EXPORT_VERSION, exportedAt: nowIso(), data: { tasks, settings } }; }
+export async function createExportEnvelope() { const [tasks, endOfDay, settings] = await Promise.all([getAllRecords(STORE_NAMES.tasks), getAllRecords(STORE_NAMES.endOfDay), getAllRecords(STORE_NAMES.settings)]); return { format: EXPORT_FORMAT, exportVersion: EXPORT_VERSION, exportedAt: nowIso(), data: { tasks, endOfDay, settings } }; }
 export function parseImport(text) { let value; try { value = JSON.parse(text); } catch { throw new TypeError('That file is not valid JSON.'); } if (!isSupportedExport(value)) throw new TypeError('This file is not a supported TalentisOS export (version 1).'); return value; }
 // Replacement is only called after explicit UI confirmation; validation happens before the transaction.
-export async function importEnvelope(envelope) { if (!isSupportedExport(envelope)) throw new TypeError('This import cannot be validated.'); await replaceStoreRecords({ [STORE_NAMES.tasks]: envelope.data.tasks, [STORE_NAMES.settings]: envelope.data.settings }); }
+export async function importEnvelope(envelope) { if (!isSupportedExport(envelope)) throw new TypeError('This import cannot be validated.'); await replaceStoreRecords({ [STORE_NAMES.tasks]: envelope.data.tasks, [STORE_NAMES.endOfDay]: envelope.data.endOfDay || [], [STORE_NAMES.settings]: envelope.data.settings }); }

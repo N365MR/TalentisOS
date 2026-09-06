@@ -6,7 +6,7 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phase 02 adds the canonical local task engine: one stable task record can be referenced by End of Day, Morning Huddle, Today’s Work, and future leadership workflows without cloning work. It includes task lifecycle, scheduling, flags, blocked/waiting states, tags, subtasks, carry metadata, workflow references, and a responsive Tasks surface. Daily workflow and leadership-tool routes remain intentionally lightweight placeholders until their authorised phases.
+Phase 03 delivers End of Day: a local daily close record captures wins and a close-out note, while selected open tasks are carried by canonical reference into the next workday’s Morning Huddle. The default handoff respects the Monday–Friday rhythm, moving Friday selections to Monday. The daily record is included in backup and restore; Morning Huddle and Today’s Work remain dedicated future phases.
 
 ## Run and verify
 

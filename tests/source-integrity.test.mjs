@@ -4,7 +4,7 @@ import test from 'node:test';
 
 test('app shell loads the Phase 01 application foundation', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /type="module" src="\.\/src\/main\.js\?v=phase02"/);
+  assert.match(html, /type="module" src="\.\/src\/main\.js\?v=phase03"/);
   assert.match(html, /<div id="app"/);
   const render = await readFile(new URL('../src/ui/render.js', import.meta.url), 'utf8');
   assert.match(render, /Your Daily Leadership Playbook/);
@@ -20,7 +20,7 @@ test('service worker provides a versioned same-origin application shell cache', 
   const worker = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.match(worker, /caches\.open/);
   assert.match(worker, /caches\.match/);
-  assert.match(worker, /talentisos-shell-v6/);
+  assert.match(worker, /talentisos-shell-v7/);
   assert.match(worker, /self\.location\.origin/);
 });
 
@@ -35,11 +35,11 @@ test('storage and transfer layers remain separate from views', async () => {
   assert.match(transfer, /parseImport/);
 });
 
-test('startup renders a shell if task retrieval fails and task domain normalises legacy records', async () => {
+test('startup renders a shell if workspace retrieval fails and task domain normalises legacy records', async () => {
   const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
   const tasks = await readFile(new URL('../src/state/tasks.js', import.meta.url), 'utf8');
-  assert.match(main, /try \{ tasks = await listTasks\(\); \} catch/);
-  assert.match(main, /renderApp\(root, getRoute\(\), tasks\)/);
+  assert.match(main, /Promise\.all\(\[listTasks\(\), getEndOfDay/);
+  assert.match(main, /renderApp\(root, getRoute\(\), tasks, endOfDay/);
   assert.match(tasks, /export function normaliseTask/);
   assert.match(tasks, /subtasks: Array\.isArray\(task\.subtasks\)/);
 });
