@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { localDate, nextWorkday } from '../src/state/end-of-day.js';
+import { activeTop3TaskIds, localDate, nextWorkday } from '../src/state/end-of-day.js';
 import { createEndOfDayRecord, isEndOfDayRecord } from '../src/state/schema.js';
 
 test('moves every weekday to the next default workday without creating a weekend handoff', () => {
@@ -25,4 +25,13 @@ test('creates a valid persisted End of Day record with canonical task identifier
   assert.equal(record.workDate, '2026-09-11');
   assert.deepEqual(record.top3TaskIds, ['task-2', 'task-1']);
   assert.equal(isEndOfDayRecord(record), true);
+});
+
+test('derives active Top 3 from canonical open task state while retaining selection order', () => {
+  const active = activeTop3TaskIds(['task-2', 'task-1', 'task-3'], [
+    { id: 'task-1', status: 'open' },
+    { id: 'task-2', status: 'completed' },
+    { id: 'task-3', status: 'open' },
+  ]);
+  assert.deepEqual(active, ['task-1', 'task-3']);
 });

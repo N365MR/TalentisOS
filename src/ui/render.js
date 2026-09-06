@@ -1,6 +1,6 @@
 import { ROUTES, routeLabels } from './router.js';
 import { subtaskProgress, taskView } from '../state/tasks.js';
-import { nextWorkday } from '../state/end-of-day.js';
+import { activeTop3TaskIds, nextWorkday } from '../state/end-of-day.js';
 
 const dailyRoutes = [ROUTES.DAILY, ROUTES.END_OF_DAY, ROUTES.MORNING_HUDDLE, ROUTES.TODAY];
 const moreRoutes = [ROUTES.TASKS, ROUTES.ROADMAP, ROUTES.KPIS, ROUTES.ISSUES, ROUTES.MEETINGS, ROUTES.IMPROVEMENT, ROUTES.PLAYBOOKS, ROUTES.ANALYTICS, ROUTES.SETTINGS];
@@ -11,7 +11,7 @@ function navList(routes, route) { const nav = el('nav', { className: 'nav-list' 
 function navItem(item, route) { return el('a', { className: `nav-item ${item === route ? 'is-active' : ''}`, href: `#${item}`, 'aria-current': item === route ? 'page' : undefined }, icon(routeIcon(item)), el('span', {}, routeLabels[item])); }
 function main(route, tasks, endOfDay, today, eodHistory) { const main = el('main', { className: 'main-content', id: 'main-content', tabindex: '-1' }); main.append(route === ROUTES.DAILY ? dailyView() : route === ROUTES.END_OF_DAY ? endOfDayView(tasks, endOfDay, today, eodHistory) : route === ROUTES.TASKS ? tasksView(tasks) : route === ROUTES.SETTINGS ? settingsView() : placeholder(route)); return main; }
 function endOfDayView(tasks, record, today, history = []) {
-  const destination = record?.nextWorkday || nextWorkday(today); const selected = new Set(record?.outstandingTaskIds || record?.taskIds || []); const top3 = new Set(record?.top3TaskIds || []);
+  const destination = record?.nextWorkday || nextWorkday(today); const selected = new Set(record?.outstandingTaskIds || record?.taskIds || []); const top3 = new Set(activeTop3TaskIds(record?.top3TaskIds, tasks));
   const completed = tasks.filter(task => task.status === 'completed' && task.completedAt?.slice(0, 10) === today);
   const relevant = tasks.filter(task => task.status === 'open' && !task.someday && (task.dueDate === today || task.dueDate < today || task.urgent || task.flagged || task.blocked || task.waiting || selected.has(task.id))).sort((a, b) => (b.urgent - a.urgent) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999'));
   const candidateTasks = tasks.filter(task => task.status === 'open' && !task.someday).sort((a, b) => (b.urgent - a.urgent) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999'));

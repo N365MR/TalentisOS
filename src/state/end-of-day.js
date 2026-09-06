@@ -27,6 +27,10 @@ export async function setTomorrowTop3(date, taskIds) {
   if (ids.some(id => !open.has(id))) throw new TypeError('Only open canonical tasks can be selected.');
   return saveEndOfDay({ ...record, top3TaskIds: ids, status: record.status === 'not-started' ? 'in-progress' : record.status });
 }
+export function activeTop3TaskIds(taskIds, tasks) {
+  const open = new Set((tasks || []).filter(task => task?.status === 'open').map(task => task.id));
+  return [...new Set((taskIds || []).filter(id => open.has(id)))];
+}
 export async function closeEndOfDay(input) {
   const date = input?.workDate || input?.date || localDate(); const destination = nextWorkday(date); const selected = [...new Set((input?.taskIds ?? input?.outstandingTaskIds ?? []).filter(Boolean))]; const tasks = await listTasks(); const selectedOpen = tasks.filter(task => task.status === 'open' && selected.includes(task.id)).map(task => task.id);
   for (const id of selectedOpen) { await addTaskReference(id, { type: 'eod', sourceId: date, date }); await carryTaskForward(id, { type: 'huddle', sourceId: destination, date: destination, fromDate: date }); }
