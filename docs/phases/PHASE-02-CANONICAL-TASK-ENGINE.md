@@ -1,6 +1,14 @@
 # Phase 02 — Canonical Task Engine, Subtasks & Workflow Reference Model
 
-**Status:** IMPLEMENTED — AWAITING FOUNDER ACCEPTANCE
+**Status:** APPROVED / BASELINED / LOCKED
+
+## Approval and baseline record
+
+Founder approval was confirmed on 2026-09-06. The controlling approved implementation is `4c16a189ddcd5d558a5947c802f1f91cbb674da2` (`feat: complete Phase 02 canonical task engine`); the subsequent governance documentation commit records, but does not replace, that implementation baseline.
+
+Phase 02 is locked as the canonical task architecture: **one task, one identity, many workflow references**. Future workflow modules must reference the canonical task, retain its single completion state, prevent duplicate workflow references, and preserve safe IndexedDB migration compatibility. Material changes require Founder-approved change control.
+
+Founder acceptance includes the live one-task/three-reference test (`eod`, `huddle`, `today`), duplicate prevention, canonical completion, safe reference removal, temporary-data cleanup, and responsive acceptance at 1440×900, 768×1024 and 390×844. Automated validation passed with 16 tests, syntax checks, production build and `git diff --check`.
 
 ## Launch recovery
 
