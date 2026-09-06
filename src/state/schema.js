@@ -1,7 +1,7 @@
-export const SCHEMA_VERSION = 5;
-export const EXPORT_VERSION = 2;
+export const SCHEMA_VERSION = 6;
+export const EXPORT_VERSION = 3;
 export const EXPORT_FORMAT = 'TalentisOS';
-export const STORE_NAMES = Object.freeze({ metadata: 'metadata', tasks: 'tasks', endOfDay: 'endOfDay', settings: 'settings' });
+export const STORE_NAMES = Object.freeze({ metadata: 'metadata', tasks: 'tasks', endOfDay: 'endOfDay', morningHuddles: 'morningHuddles', settings: 'settings' });
 
 export function nowIso(now = new Date()) { return now.toISOString(); }
 export function createId(randomUUID = globalThis.crypto?.randomUUID?.bind(globalThis.crypto)) {
@@ -27,7 +27,15 @@ export function createEndOfDayRecord(input, { id = createId(), now = nowIso() } 
     nextWorkday: input?.nextWorkday ?? null, completedAt: input?.completedAt ?? null, createdAt: input?.createdAt ?? now, updatedAt: input?.updatedAt ?? now
   };
 }
+export function createMorningHuddleRecord(input, { id = createId(), now = nowIso() } = {}) {
+  const workDate = String(input?.workDate ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(workDate)) throw new TypeError('A Morning Huddle work date is required.');
+  const ids = values => [...new Set((Array.isArray(values) ? values : []).filter(value => typeof value === 'string' && value))];
+  const items = values => (Array.isArray(values) ? values : []).filter(value => value && typeof value === 'object' && typeof value.id === 'string' && typeof value.title === 'string');
+  return { id, workDate, status: ['draft', 'in-progress', 'completed'].includes(input?.status) ? input.status : 'draft', sourceEodDate: input?.sourceEodDate || null, sourceEodId: input?.sourceEodId || null, carryoverTaskIds: ids(input?.carryoverTaskIds), top3TaskIds: ids(input?.top3TaskIds).slice(0, 3), commitmentTaskIds: ids(input?.commitmentTaskIds), risks: items(input?.risks), customerIssues: items(input?.customerIssues), decisions: items(input?.decisions), resourceSupportItems: items(input?.resourceSupportItems), recognitionItems: items(input?.recognitionItems), notes: String(input?.notes ?? ''), history: Array.isArray(input?.history) ? [...input.history] : [], startedAt: input?.startedAt ?? null, completedAt: input?.completedAt ?? null, createdAt: input?.createdAt ?? now, updatedAt: input?.updatedAt ?? now };
+}
 export function isMetadataRecord(value) { return Boolean(value) && typeof value === 'object' && value.schemaVersion === SCHEMA_VERSION && typeof value.initializedAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isTaskRecord(value) { return Boolean(value) && typeof value === 'object' && typeof value.id === 'string' && value.id.length > 0 && typeof value.title === 'string' && value.title.trim().length > 0 && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isEndOfDayRecord(value) { return Boolean(value) && typeof value === 'object' && typeof value.id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.date) && Array.isArray(value.taskIds) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
-export function isSupportedExport(value) { const isLegacy = value?.exportVersion === 1; return Boolean(value) && typeof value === 'object' && value.format === EXPORT_FORMAT && (value.exportVersion === EXPORT_VERSION || isLegacy) && typeof value.exportedAt === 'string' && value.data && typeof value.data === 'object' && Array.isArray(value.data.tasks) && Array.isArray(value.data.settings) && (!isLegacy ? Array.isArray(value.data.endOfDay) && value.data.endOfDay.every(isEndOfDayRecord) : true) && value.data.tasks.every(isTaskRecord); }
+export function isMorningHuddleRecord(value) { return Boolean(value) && typeof value === 'object' && typeof value.id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.workDate) && Array.isArray(value.carryoverTaskIds) && Array.isArray(value.top3TaskIds) && Array.isArray(value.commitmentTaskIds) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
+export function isSupportedExport(value) { const legacy = value?.exportVersion === 1 || value?.exportVersion === 2; return Boolean(value) && typeof value === 'object' && value.format === EXPORT_FORMAT && (value.exportVersion === EXPORT_VERSION || legacy) && typeof value.exportedAt === 'string' && value.data && typeof value.data === 'object' && Array.isArray(value.data.tasks) && Array.isArray(value.data.settings) && (!legacy ? Array.isArray(value.data.endOfDay) && Array.isArray(value.data.morningHuddles) && value.data.endOfDay.every(isEndOfDayRecord) && value.data.morningHuddles.every(isMorningHuddleRecord) : true) && value.data.tasks.every(isTaskRecord); }

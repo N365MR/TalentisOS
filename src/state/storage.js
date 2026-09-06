@@ -49,6 +49,10 @@ export function migrateDatabase(database, oldVersion, transaction) {
     const records = database.createObjectStore(STORE_NAMES.endOfDay, { keyPath: 'id' });
     records.createIndex('by-date', 'date', { unique: true });
   }
+  if (oldVersion < 6 && !database.objectStoreNames.contains(STORE_NAMES.morningHuddles)) {
+    const records = database.createObjectStore(STORE_NAMES.morningHuddles, { keyPath: 'id' });
+    records.createIndex('by-work-date', 'workDate', { unique: true });
+  }
 }
 
 const knownStores = new Set(Object.values(STORE_NAMES));

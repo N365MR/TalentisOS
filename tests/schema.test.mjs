@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SCHEMA_VERSION, createMetadataRecord, createTaskRecord, isMetadataRecord, isSupportedExport, isTaskRecord } from '../src/state/schema.js';
+import { SCHEMA_VERSION, createMetadataRecord, createMorningHuddleRecord, createTaskRecord, isMetadataRecord, isMorningHuddleRecord, isSupportedExport, isTaskRecord } from '../src/state/schema.js';
 
 test('creates a valid metadata-only foundation record', () => {
   const metadata = createMetadataRecord('2026-09-05T00:00:00.000Z');
@@ -21,4 +21,13 @@ test('rejects incomplete metadata and validates a versioned export', () => {
   const task = createTaskRecord({ title: 'One task' }, { id: 'task-1', now: '2026-09-05T00:00:00.000Z' });
   assert.equal(isSupportedExport({ format: 'TalentisOS', exportVersion: 1, exportedAt: '2026-09-05T00:00:00.000Z', data: { tasks: [task], settings: [] } }), true);
   assert.equal(isSupportedExport({ format: 'Other', exportVersion: 1, exportedAt: 'now', data: { tasks: [], settings: [] } }), false);
+});
+
+test('creates one valid, deduplicated Morning Huddle model for a workday', () => {
+  const huddle = createMorningHuddleRecord({ workDate: '2026-09-14', carryoverTaskIds: ['task-1', 'task-1'], top3TaskIds: ['task-2', 'task-1'], commitmentTaskIds: ['task-1', 'task-1'] }, { id: 'huddle-1', now: '2026-09-14T08:00:00.000Z' });
+  assert.equal(huddle.id, 'huddle-1');
+  assert.deepEqual(huddle.carryoverTaskIds, ['task-1']);
+  assert.deepEqual(huddle.top3TaskIds, ['task-2', 'task-1']);
+  assert.deepEqual(huddle.commitmentTaskIds, ['task-1']);
+  assert.equal(isMorningHuddleRecord(huddle), true);
 });

@@ -4,7 +4,7 @@ import test from 'node:test';
 
 test('app shell loads the Phase 01 application foundation', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /type="module" src="\.\/src\/main\.js\?v=phase03-1"/);
+  assert.match(html, /type="module" src="\.\/src\/main\.js\?v=phase04-1"/);
   assert.match(html, /<div id="app"/);
   const render = await readFile(new URL('../src/ui/render.js', import.meta.url), 'utf8');
   assert.match(render, /Your Daily Leadership Playbook/);
@@ -40,6 +40,7 @@ test('startup renders a shell if workspace retrieval fails and task domain norma
   const tasks = await readFile(new URL('../src/state/tasks.js', import.meta.url), 'utf8');
   assert.match(main, /Promise\.all\(\[listTasks\(\), getEndOfDay/);
   assert.match(main, /renderApp\(root, getRoute\(\), tasks, endOfDay/);
+  assert.match(main, /assembleMorningHuddle/);
   assert.match(tasks, /export function normaliseTask/);
   assert.match(tasks, /subtasks: Array\.isArray\(task\.subtasks\)/);
 });
