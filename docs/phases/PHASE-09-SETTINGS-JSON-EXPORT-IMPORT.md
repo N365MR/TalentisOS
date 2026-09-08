@@ -1,5 +1,13 @@
 # Phase 09 — Settings, JSON Export & Import
 
+**Result:** PASS
+
+**Status:** APPROVED / BASELINED
+
+**Founder approval:** confirmed 2026-09-08
+
+**Approved implementation:** `1ae367b` — `feat: add Phase 09 settings backup and recovery`
+
 ## Outcome
 
 Settings gives a local-first user a clear backup, restore and removal path without adding a server, account, analytics, or second task system. GitHub Pages serves only the app shell; live data remains in the current browser and device.
@@ -20,7 +28,9 @@ There is no approved sample-data mechanism, so no sample reset is exposed. “Cl
 
 ## Data integrity and evidence
 
-Affected IndexedDB stores are the eight listed above. Canonical task identity is preserved because exports/imports store task records once and all consuming modules retain task IDs. Automated transfer tests cover malformed/foreign/future rejection, legacy normalization, reference validation, envelope metadata, summary and filename. Full project checks are recorded with this delivery after execution.
+Affected IndexedDB stores are the eight listed above. Canonical task identity is preserved because exports/imports store task records once and all consuming modules retain task IDs. Automated transfer tests cover malformed/foreign/future rejection, legacy normalization, reference validation, envelope metadata, summary and filename.
+
+Delivery validation passed: `npm test` (43/43), `npm run check`, `npm run build`, and `git diff --check`. Browser Settings checks passed at desktop, iPad, and iPhone widths. The export implementation and unit coverage passed, but the local test browser did not surface a captured download event; this is recorded as a test-environment limitation, not a failed export implementation.
 
 ## Known limitation
 

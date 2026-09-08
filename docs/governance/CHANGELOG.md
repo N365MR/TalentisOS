@@ -5,7 +5,9 @@
 
 ## Unreleased
 
-- Implemented Phase 09 Settings, JSON Export & Import: a local-first Settings experience, complete v6 export envelope, validated atomic replacement import preview, intentional clear-to-first-run flow, and service-worker cache refresh. Awaiting validation and Founder acceptance.
+- Approved and baselined Phase 09 — Settings, JSON Export & Import. Founder approval confirmed 2026-09-08; controlling implementation baseline `1ae367b`. Validation passed: `npm test` (43/43), `npm run check`, `npm run build`, and `git diff --check`. The local test browser did not surface a captured export download event; implementation and unit coverage passed.
+
+- Implemented Phase 09 Settings, JSON Export & Import: a local-first Settings experience, complete v6 export envelope, validated atomic replacement import preview, intentional clear-to-first-run flow, and service-worker cache v13.
 
 - Approved and baselined Phase 08 — Home / Daily Leadership Dashboard & Next Best Action V1. Founder approval date: 2026-09-08. Controlling implementation baseline: `d18183ea3fea85223222d172df212ab0d6784b15`; delivery validation, including GitHub Pages deployment run `34230441383`, passed.
 
