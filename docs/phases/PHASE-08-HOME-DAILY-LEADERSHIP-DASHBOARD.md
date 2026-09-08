@@ -1,6 +1,12 @@
 # Phase 08 — Home / Daily Leadership Dashboard & Next Best Action V1
 
-**Status:** IMPLEMENTED — awaiting Founder approval and baselining.
+**Status:** APPROVED / BASELINED — Founder approval 2026-09-08. Controlling approved implementation: `d18183ea3fea85223222d172df212ab0d6784b15` (`feat: implement Phase 08 leadership dashboard`).
+
+## Approval and validation record
+
+Founder approval was confirmed on 2026-09-08. Delivery validation passed: 40/40 automated tests, syntax checks, production build, seeded IndexedDB browser validation, desktop/iPad/iPhone responsive review, refresh synchronisation, no duplicate-record behaviour, and successful GitHub Pages deployment run `34230441383`.
+
+Phase 08 is the controlling baseline for the read-only Home / Daily Leadership Dashboard and deterministic Next Best Action v1. It preserves one canonical task record, creates no dashboard-owned operational records, and requires no IndexedDB migration or JSON transfer-model change.
 
 ## Scope delivered
 

@@ -14,7 +14,7 @@
 | 05A | GitHub Pages Production Runtime | IMPLEMENTED — pending deployment verification and Founder approval |
 | 06 | 30-60-90 Leadership Roadmap | APPROVED / BASELINED — Founder approval date: 2026-09-06; controlling implementation baseline: `65a089426ae0fa53d45b5fba309b597819eea947` |
 | 07 | KPI / Scorecard Engine | IMPLEMENTED / AWAITING FOUNDER ACCEPTANCE |
-| 08 | Home / Daily Leadership Dashboard & Next Best Action V1 | IMPLEMENTED — awaiting Founder approval and baselining |
+| 08 | Home / Daily Leadership Dashboard & Next Best Action V1 | APPROVED / BASELINED — Founder approval 2026-09-08; controlling implementation baseline `d18183ea3fea85223222d172df212ab0d6784b15` |
 | 09 | Issues / IDS / 5 Whys | NOT STARTED |
 | 10 | Meetings & Action Integration | NOT STARTED |
 | 11 | Leadership Conversations | NOT STARTED |
