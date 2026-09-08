@@ -39,7 +39,8 @@ test('startup renders a shell if workspace retrieval fails and task domain norma
   const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
   const tasks = await readFile(new URL('../src/state/tasks.js', import.meta.url), 'utf8');
   assert.match(main, /Promise\.all\(\[listTasks\(\), getEndOfDay/);
-  assert.match(main, /renderApp\(root, getRoute\(\), tasks, endOfDay/);
+  assert.match(main, /const route = getRoute\(\)/);
+  assert.match(main, /renderApp\(root, route, tasks, endOfDay/);
   assert.match(main, /assembleMorningHuddle/);
   assert.match(tasks, /export function normaliseTask/);
   assert.match(tasks, /subtasks: Array\.isArray\(task\.subtasks\)/);

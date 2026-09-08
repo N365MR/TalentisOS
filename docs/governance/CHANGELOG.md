@@ -5,6 +5,8 @@
 
 ## Unreleased
 
+- Implemented Phase 08 Home / Daily Leadership Dashboard & Next Best Action V1: a read-only dashboard projection with deterministic exception precedence, daily-rhythm deep links, canonical task/KPI/Huddle attention and no data-model, migration, or transfer change. Awaiting Founder acceptance.
+
 - Implemented Phase 07 KPI / Scorecard Engine: local KPI definitions and reporting entries, deterministic threshold/status/trend evaluation, Scorecard exception-first UI, canonical corrective task references, Morning Huddle exception projection, IndexedDB v9, and export/import v5. Awaiting Founder acceptance.
 
 - Approved and baselined Phase 06 — 30–60–90 Leadership Roadmap. Founder approval date: 2026-09-06. Controlling implementation baseline: `65a089426ae0fa53d45b5fba309b597819eea947`.

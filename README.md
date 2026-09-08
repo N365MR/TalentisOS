@@ -6,7 +6,7 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phase 07 delivers a local-first KPI Scorecard. It evaluates deterministic current-period status, surfaces amber/red exceptions first, and links corrective action only through the existing canonical task engine and Morning Huddle references.
+Phase 08 adds Home, a read-only daily leadership dashboard. It makes the deterministic Next Best Action, daily rhythm, task/KPI/Huddle exceptions, Top 3, and completed-today momentum visible without creating a second system of record.
 
 ## Production runtime
 
