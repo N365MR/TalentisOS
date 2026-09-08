@@ -6,7 +6,7 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phase 08 adds Home, a read-only daily leadership dashboard. It makes the deterministic Next Best Action, daily rhythm, task/KPI/Huddle exceptions, Top 3, and completed-today momentum visible without creating a second system of record.
+Phase 09 adds Settings for clear local-first storage guidance, complete versioned JSON backup, validated replacement restore, and deliberate local-data clearing. It preserves Home as a read-only dashboard and every existing canonical workflow.
 
 ## Production runtime
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'talentisos-shell-v12';
+const CACHE_NAME = 'talentisos-shell-v13';
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.svg', './icons/icon-512.svg'];
 
 self.addEventListener('install', event => {

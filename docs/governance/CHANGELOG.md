@@ -5,6 +5,8 @@
 
 ## Unreleased
 
+- Implemented Phase 09 Settings, JSON Export & Import: a local-first Settings experience, complete v6 export envelope, validated atomic replacement import preview, intentional clear-to-first-run flow, and service-worker cache refresh. Awaiting validation and Founder acceptance.
+
 - Approved and baselined Phase 08 — Home / Daily Leadership Dashboard & Next Best Action V1. Founder approval date: 2026-09-08. Controlling implementation baseline: `d18183ea3fea85223222d172df212ab0d6784b15`; delivery validation, including GitHub Pages deployment run `34230441383`, passed.
 
 - Implemented Phase 08 Home / Daily Leadership Dashboard & Next Best Action V1: a read-only dashboard projection with deterministic exception precedence, daily-rhythm deep links, canonical task/KPI/Huddle attention and no data-model, migration, or transfer change.

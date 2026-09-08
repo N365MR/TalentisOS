@@ -20,7 +20,7 @@ test('service worker provides a versioned same-origin application shell cache', 
   const worker = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.match(worker, /caches\.open/);
   assert.match(worker, /caches\.match/);
-  assert.match(worker, /talentisos-shell-v12/);
+  assert.match(worker, /talentisos-shell-v13/);
   assert.match(worker, /self\.location\.origin/);
 });
 
@@ -51,7 +51,7 @@ test('task detail editing and destructive task deletion use a confirmed canonica
   const tasks = await readFile(new URL('../src/state/tasks.js', import.meta.url), 'utf8');
   assert.match(main, /openTaskDialog/);
   assert.match(main, /Delete this task/);
-  assert.match(main, /deleting \? 'Delete task' : 'Replace data'/);
+  assert.match(main, /Delete task', true/);
   assert.match(tasks, /REFERENCE_TYPES/);
   assert.match(tasks, /carryHistory/);
   assert.match(tasks, /sameReference/);
