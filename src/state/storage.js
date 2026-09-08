@@ -60,6 +60,10 @@ export function migrateDatabase(database, oldVersion, transaction) {
     entries.createIndex('by-kpi-period', ['kpiId', 'periodKey'], { unique: true });
     entries.createIndex('by-kpi', 'kpiId');
   }
+  if (oldVersion < 10 && !database.objectStoreNames.contains(STORE_NAMES.conversations)) {
+    const conversations = database.createObjectStore(STORE_NAMES.conversations, { keyPath: 'id' });
+    conversations.createIndex('by-status', 'status'); conversations.createIndex('by-follow-up-date', 'followUpDate'); conversations.createIndex('by-updated-at', 'updatedAt');
+  }
 }
 
 const knownStores = new Set(Object.values(STORE_NAMES));

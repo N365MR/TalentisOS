@@ -6,7 +6,7 @@ This repository is the canonical TalentisOS repository. The approved documentati
 
 ## Current state
 
-Phase 09 adds Settings for clear local-first storage guidance, complete versioned JSON backup, validated replacement restore, and deliberate local-data clearing. It preserves Home as a read-only dashboard and every existing canonical workflow.
+Phase 10 adds Leadership Conversations: private, guided praise, feedback, coaching, delegation, expectations and difficult-conversation preparation with optional canonical follow-up task links. It remains local-first, excludes HR records, and preserves Home as a read-only dashboard and every existing canonical workflow. **IMPLEMENTED — AWAITING FOUNDER APPROVAL.**
 
 ## Production runtime
 

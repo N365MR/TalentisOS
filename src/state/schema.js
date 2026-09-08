@@ -1,7 +1,7 @@
-export const SCHEMA_VERSION = 9;
-export const EXPORT_VERSION = 6;
+export const SCHEMA_VERSION = 10;
+export const EXPORT_VERSION = 7;
 export const EXPORT_FORMAT = 'TalentisOS';
-export const STORE_NAMES = Object.freeze({ metadata: 'metadata', tasks: 'tasks', endOfDay: 'endOfDay', morningHuddles: 'morningHuddles', roadmap: 'roadmap', settings: 'settings', kpis: 'kpis', kpiEntries: 'kpiEntries' });
+export const STORE_NAMES = Object.freeze({ metadata: 'metadata', tasks: 'tasks', endOfDay: 'endOfDay', morningHuddles: 'morningHuddles', roadmap: 'roadmap', settings: 'settings', kpis: 'kpis', kpiEntries: 'kpiEntries', conversations: 'conversations' });
 
 export const ROADMAP_ID = 'leadership-roadmap';
 export const ROADMAP_MILESTONES = Object.freeze([
@@ -60,6 +60,16 @@ export function createRoadmapRecord(input = {}, { now = nowIso() } = {}) {
   return { id: ROADMAP_ID, milestones, createdAt: typeof input?.createdAt === 'string' ? input.createdAt : now, updatedAt: typeof input?.updatedAt === 'string' ? input.updatedAt : now };
 }
 const KPI_DIRECTIONS = new Set(['higher', 'lower', 'within-range']);
+export const CONVERSATION_TYPES = Object.freeze(['praise', 'feedback', 'coaching', 'delegation', 'expectations', 'difficult']);
+export const CONVERSATION_STATUSES = Object.freeze(['draft', 'prepared', 'held', 'follow_up_due', 'closed']);
+export const CONVERSATION_TEMPLATE_FIELDS = Object.freeze({
+  praise: ['Situation', 'Specific contribution or behaviour', 'Positive impact', 'Recognition or next action'],
+  feedback: ['Situation', 'Observable behaviour', 'Impact', 'Desired change or expectation', 'Agreed next step'],
+  coaching: ['Goal', 'Current reality', 'Options considered', 'Way forward or commitment'],
+  delegation: ['Outcome required', 'Authority or decision rights', 'Deadline', 'Guardrails or constraints', 'Support required', 'Check-in date'],
+  expectations: ['Expected standard or outcome', 'How success will be evidenced', 'Support or resources available', 'Review date', 'Agreed action'],
+  difficult: ['Preparation or facts', 'Intended opening', 'Questions to explore', 'Agreement or action']
+});
 const KPI_FREQUENCIES = new Set(['daily', 'weekly', 'monthly', 'quarterly']);
 const numeric = value => value === null || value === undefined || String(value).trim() === '' ? null : Number.isFinite(Number(value)) ? Number(value) : null;
 const range = value => ({ min: numeric(value?.min), max: numeric(value?.max) });
@@ -78,6 +88,21 @@ export function createKpiEntryRecord(input, { id = createId(), now = nowIso() } 
   if (!kpiId || !/^\d{4}-(?:\d{2}|Q[1-4]|W\d{2}|\d{2}-\d{2})$/.test(periodKey) || actual === null) throw new TypeError('A KPI entry requires a KPI, valid reporting period, and numeric actual.');
   return { id, kpiId, periodKey, actual, notes: String(input?.notes ?? '').trim(), history: Array.isArray(input?.history) ? [...input.history] : [{ id: createId(), type: 'reported', timestamp: now, actual }], createdAt: input?.createdAt ?? now, updatedAt: input?.updatedAt ?? now };
 }
+const cleanText = value => String(value ?? '').trim();
+const cleanIds = values => [...new Set((Array.isArray(values) ? values : []).filter(value => typeof value === 'string' && value.trim()).map(value => value.trim()))];
+export function createConversationRecord(input, { id = createId(), now = nowIso() } = {}) {
+  const title = cleanText(input?.title); const type = cleanText(input?.type);
+  if (!title) throw new TypeError('A conversation title is required.');
+  if (!CONVERSATION_TYPES.includes(type)) throw new TypeError('A supported conversation type is required.');
+  const status = CONVERSATION_STATUSES.includes(input?.status) ? input.status : 'draft';
+  const date = cleanText(input?.conversationDate) || null;
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new TypeError('Use a valid conversation date.');
+  const followUpDate = cleanText(input?.followUpDate) || null;
+  if (followUpDate && !/^\d{4}-\d{2}-\d{2}$/.test(followUpDate)) throw new TypeError('Use a valid follow-up date.');
+  const agreedActions = (Array.isArray(input?.agreedActions) ? input.agreedActions : []).filter(action => action && typeof action === 'object').map(action => ({ id: typeof action.id === 'string' ? action.id : createId(), title: cleanText(action.title), taskId: typeof action.taskId === 'string' ? action.taskId : null })).filter(action => action.title || action.taskId);
+  const templateFields = Object.fromEntries((CONVERSATION_TEMPLATE_FIELDS[type] || []).map(label => [label, cleanText(input?.templateFields?.[label])]).filter(([, value]) => value));
+  return { id, title, type, roleReference: cleanText(input?.roleReference ?? input?.personOrRole), notes: cleanText(input?.notes), conversationDate: date, status, intendedOutcome: cleanText(input?.intendedOutcome), discussionPoints: cleanText(input?.discussionPoints), templateFields, agreedActions, followUpDate, linkedTaskIds: cleanIds(input?.linkedTaskIds), workflowRefs: { kpiId: cleanText(input?.workflowRefs?.kpiId) || null, roadmapMilestoneId: cleanText(input?.workflowRefs?.roadmapMilestoneId) || null }, createdAt: input?.createdAt ?? now, updatedAt: input?.updatedAt ?? now, heldAt: input?.heldAt ?? (status === 'held' || status === 'follow_up_due' || status === 'closed' ? now : null), closedAt: input?.closedAt ?? (status === 'closed' ? now : null) };
+}
 export function isMetadataRecord(value) { return Boolean(value) && typeof value === 'object' && value.schemaVersion === SCHEMA_VERSION && typeof value.initializedAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isTaskRecord(value) { return Boolean(value) && typeof value === 'object' && typeof value.id === 'string' && value.id.length > 0 && typeof value.title === 'string' && value.title.trim().length > 0 && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isEndOfDayRecord(value) { return Boolean(value) && typeof value === 'object' && typeof value.id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.date) && Array.isArray(value.taskIds) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
@@ -85,4 +110,5 @@ export function isMorningHuddleRecord(value) { return Boolean(value) && typeof v
 export function isRoadmapRecord(value) { return Boolean(value) && value.id === ROADMAP_ID && Array.isArray(value.milestones) && value.milestones.length === ROADMAP_MILESTONES.length && value.milestones.every((milestone, index) => { const [id, stage, title, outcome] = ROADMAP_MILESTONES[index]; return milestone?.id === id && milestone.stage === stage && milestone.title === title && milestone.outcome === outcome && ['not-started', 'in-progress', 'completed'].includes(milestone.status) && (milestone.status !== 'completed' || typeof milestone.completedAt === 'string'); }) && typeof value.createdAt === 'string' && typeof value.updatedAt === 'string'; }
 export function isKpiRecord(value) { try { const record = createKpiRecord(value, { id: value.id, now: value.createdAt }); const ranges = [record.target, record.warning, record.offTrack]; const validRanges = ranges.every(item => Number.isFinite(item.min) && Number.isFinite(item.max) && item.min <= item.max); const nested = record.direction === 'higher' ? record.target.max >= record.warning.max && record.warning.max >= record.offTrack.max : record.direction === 'lower' ? record.target.min <= record.warning.min && record.warning.min <= record.offTrack.min : record.offTrack.min <= record.warning.min && record.warning.min <= record.target.min && record.target.max <= record.warning.max && record.warning.max <= record.offTrack.max; return Boolean(value) && typeof value.id === 'string' && record.createdAt === value.createdAt && typeof value.updatedAt === 'string' && validRanges && nested; } catch { return false; } }
 export function isKpiEntryRecord(value) { try { return Boolean(value) && typeof value.id === 'string' && createKpiEntryRecord(value, { id: value.id, now: value.createdAt }).createdAt === value.createdAt && typeof value.updatedAt === 'string'; } catch { return false; } }
+export function isConversationRecord(value) { try { const record = createConversationRecord(value, { id: value.id, now: value.createdAt }); return Boolean(value) && typeof value.id === 'string' && record.createdAt === value.createdAt && typeof value.updatedAt === 'string'; } catch { return false; } }
 export function isSupportedExport(value) { return Boolean(value) && typeof value === 'object' && value.format === EXPORT_FORMAT && Number.isInteger(value.exportVersion) && value.exportVersion >= 1 && value.exportVersion <= EXPORT_VERSION && typeof value.exportedAt === 'string' && !Number.isNaN(Date.parse(value.exportedAt)) && value.data && typeof value.data === 'object' && Array.isArray(value.data.tasks) && Array.isArray(value.data.settings) && value.data.tasks.every(isTaskRecord); }

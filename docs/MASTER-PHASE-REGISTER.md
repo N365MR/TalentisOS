@@ -16,8 +16,8 @@
 | 07 | KPI / Scorecard Engine | IMPLEMENTED / AWAITING FOUNDER ACCEPTANCE |
 | 08 | Home / Daily Leadership Dashboard & Next Best Action V1 | APPROVED / BASELINED — Founder approval 2026-09-08; controlling implementation baseline `d18183ea3fea85223222d172df212ab0d6784b15` |
 | 09 | Settings, JSON Export & Import | APPROVED / BASELINED — Founder approval confirmed 2026-09-08; controlling implementation baseline `1ae367b` |
-| 10 | Meetings & Action Integration | NOT STARTED |
-| 11 | Leadership Conversations | NOT STARTED |
+| 10 | Leadership Conversations | IMPLEMENTED — pending Founder approval |
+| 11 | Meetings & Action Integration | NOT STARTED |
 | 12 | Risks, Blockers & Decisions | NOT STARTED |
 | 13 | Continuous Improvement / Kaizen | NOT STARTED |
 | 14 | SOPs / Playbooks / Frameworks | NOT STARTED |

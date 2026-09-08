@@ -4,7 +4,7 @@ import { createRecord, deleteRecord, getAllRecords, getRecord, updateRecord } fr
 const open = task => task.status === 'open';
 const stamp = (task, type, metadata = {}, now = nowIso()) => ({ ...task, history: [...(task.history || []), { id: createId(), type, timestamp: now, metadata }], updatedAt: now });
 const taskDate = () => new Date().toISOString().slice(0, 10);
-const REFERENCE_TYPES = new Set(['eod', 'huddle', 'today', 'meeting', 'kpi', 'issue', 'rock', 'roadmap', 'improvement']);
+const REFERENCE_TYPES = new Set(['eod', 'huddle', 'today', 'meeting', 'kpi', 'issue', 'rock', 'roadmap', 'improvement', 'conversation']);
 
 export async function createTask(input) { const task = makeTask(input); await createRecord(STORE_NAMES.tasks, task); return task; }
 export async function getTask(id) { const task = await getRecord(STORE_NAMES.tasks, id); return task ? normaliseTask(task) : task; }

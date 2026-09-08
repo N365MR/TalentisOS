@@ -3,7 +3,7 @@ const open = task => task?.status === 'open' && !task.someday;
 const byPriority = (a, b) => String(a.dueDate || '9999-12-31').localeCompare(String(b.dueDate || '9999-12-31')) || String(a.title).localeCompare(String(b.title));
 const taskAction = (task, reason, kind = 'task') => ({ kind, title: task.title, reason, href: '#tasks', label: 'Open task', task });
 
-export function dashboardProjection({ tasks = [], huddle = null, endOfDay = null, todayWork = null, scorecard = [], date } = {}) {
+export function dashboardProjection({ tasks = [], huddle = null, endOfDay = null, todayWork = null, scorecard = [], conversationsDue = [], date } = {}) {
   const active = tasks.filter(open);
   const corrective = scorecard.filter(item => item.status === 'off-track').flatMap(item => item.corrective?.linked || []).filter(open).sort(byPriority);
   const overdueUrgent = active.filter(task => task.urgent || (task.dueDate && task.dueDate < date)).sort((a, b) => Number(b.urgent) - Number(a.urgent) || byPriority(a, b));
@@ -11,7 +11,8 @@ export function dashboardProjection({ tasks = [], huddle = null, endOfDay = null
   const commitments = active.filter(task => (huddle?.commitmentTaskIds || []).includes(task.id)).sort(byPriority);
   const huddleItems = ['risks', 'customerIssues', 'decisions'].flatMap(section => (huddle?.[section] || []).map(item => ({ ...item, section })));
   const top = (todayWork?.top || []).filter(entry => open(entry.task));
-  const action = corrective[0] ? taskAction(corrective[0], 'Open corrective action for an off-track KPI.', 'kpi-corrective')
+  const action = conversationsDue[0] ? { kind: 'conversation-follow-up', title: conversationsDue[0].title, reason: `Follow-up ${conversationsDue[0].followUpDate < date ? 'is overdue' : 'is due'} for a leadership conversation.`, href: '#conversations?view=follow-up', label: 'Open Conversations' }
+    : corrective[0] ? taskAction(corrective[0], 'Open corrective action for an off-track KPI.', 'kpi-corrective')
     : overdueUrgent[0] ? taskAction(overdueUrgent[0], overdueUrgent[0].urgent ? 'Urgent work needs your attention.' : 'This task is overdue.', 'overdue-urgent')
     : blockedWaiting[0] ? taskAction(blockedWaiting[0], blockedWaiting[0].blocked ? 'This task is blocked and needs follow-up.' : 'This task is waiting for follow-up.', 'blocked-waiting')
     : commitments[0] ? taskAction(commitments[0], 'An open Morning Huddle commitment needs follow-up.', 'huddle-commitment')
@@ -23,6 +24,6 @@ export function dashboardProjection({ tasks = [], huddle = null, endOfDay = null
   const taskAttention = active.filter(task => task.urgent || task.blocked || task.waiting || (task.dueDate && task.dueDate < date)).sort((a, b) => Number(b.urgent) - Number(a.urgent) || byPriority(a, b));
   const kpiExceptions = scorecard.filter(item => item.status === 'off-track' || item.status === 'at-risk');
   const completed = tasks.filter(task => task.status === 'completed' && task.completedAt?.slice(0, 10) === date);
-  return { action, taskAttention, top, kpiExceptions, huddleItems, commitments, huddleAttention: [...commitments, ...huddleItems], completed,
+  return { action, taskAttention, top, kpiExceptions, conversationsDue, huddleItems, commitments, huddleAttention: [...commitments, ...huddleItems], completed,
     rhythm: { endOfDay: endOfDay?.status === 'complete' ? 'Complete' : endOfDay?.status === 'in-progress' ? 'In progress' : 'Ready to prepare', huddle: !huddle ? 'Ready to prepare' : huddle.status === 'completed' ? 'Complete' : `${(huddle.top3TaskIds || []).length} Top 3 aligned`, today: `${todayWork?.progress?.completed || 0} of ${todayWork?.progress?.total || 0} complete` } };
 }

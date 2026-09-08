@@ -5,6 +5,8 @@
 
 ## Unreleased
 
+- Implemented Phase 10 Leadership Conversations & Coaching Toolkit — local guided preparation, canonical follow-up task links, follow-up projections, IndexedDB v10 and export/import v7. IMPLEMENTED — AWAITING FOUNDER APPROVAL.
+
 - Approved and baselined Phase 09 — Settings, JSON Export & Import. Founder approval confirmed 2026-09-08; controlling implementation baseline `1ae367b`. Validation passed: `npm test` (43/43), `npm run check`, `npm run build`, and `git diff --check`. The local test browser did not surface a captured export download event; implementation and unit coverage passed.
 
 - Implemented Phase 09 Settings, JSON Export & Import: a local-first Settings experience, complete v6 export envelope, validated atomic replacement import preview, intentional clear-to-first-run flow, and service-worker cache v13.
