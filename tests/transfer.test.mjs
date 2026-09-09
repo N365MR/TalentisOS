@@ -40,5 +40,5 @@ test('provides a safe backup filename and non-sensitive import summary', () => {
   const task = createTaskRecord({ title: 'Export me' }, { id: 'task-a', now: '2026-09-05T00:00:00.000Z' });
   const parsed = parseImport(JSON.stringify({ format: 'TalentisOS', exportVersion: 1, exportedAt: '2026-09-06T01:02:03.000Z', data: { tasks: [task], settings: [] } }));
   assert.equal(backupFilename(parsed.exportedAt), 'talentisos-backup-20260906-010203.json');
-  assert.deepEqual(importSummary(parsed).counts, { tasks: 1, endOfDay: 0, morningHuddles: 0, roadmap: 1, kpis: 0, kpiEntries: 0, conversations: 0, settings: 0 });
+  assert.deepEqual(importSummary(parsed).counts, { tasks: 1, endOfDay: 0, morningHuddles: 0, roadmap: 1, kpis: 0, kpiEntries: 0, conversations: 0, issues: 0, settings: 0 });
 });

@@ -64,6 +64,10 @@ export function migrateDatabase(database, oldVersion, transaction) {
     const conversations = database.createObjectStore(STORE_NAMES.conversations, { keyPath: 'id' });
     conversations.createIndex('by-status', 'status'); conversations.createIndex('by-follow-up-date', 'followUpDate'); conversations.createIndex('by-updated-at', 'updatedAt');
   }
+  if (oldVersion < 11 && !database.objectStoreNames.contains(STORE_NAMES.issues)) {
+    const issues = database.createObjectStore(STORE_NAMES.issues, { keyPath: 'id' });
+    issues.createIndex('by-status', 'status'); issues.createIndex('by-priority', 'priority'); issues.createIndex('by-updated-at', 'updatedAt');
+  }
 }
 
 const knownStores = new Set(Object.values(STORE_NAMES));

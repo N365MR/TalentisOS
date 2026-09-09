@@ -20,7 +20,7 @@ test('service worker provides a versioned same-origin application shell cache', 
   const worker = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
   assert.match(worker, /caches\.open/);
   assert.match(worker, /caches\.match/);
-  assert.match(worker, /talentisos-shell-v15/);
+  assert.match(worker, /talentisos-shell-v16/);
   assert.match(worker, /self\.location\.origin/);
 });
 

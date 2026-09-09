@@ -17,7 +17,7 @@
 | 08 | Home / Daily Leadership Dashboard & Next Best Action V1 | APPROVED / BASELINED — Founder approval 2026-09-08; controlling implementation baseline `d18183ea3fea85223222d172df212ab0d6784b15` |
 | 09 | Settings, JSON Export & Import | APPROVED / BASELINED — Founder approval confirmed 2026-09-08; controlling implementation baseline `1ae367b` |
 | 10 | Leadership Conversations & Coaching Toolkit | APPROVED / BASELINED — Founder approval date: 2026-09-09; controlling implementation baseline `6a511ba60052c4d3159924164d8818fe47974fb5` |
-| 11 | Meetings & Action Integration | NOT STARTED |
+| 11 | Issues, Decisions & Continuous Improvement | IMPLEMENTED — pending Founder approval |
 | 12 | Risks, Blockers & Decisions | NOT STARTED |
 | 13 | Continuous Improvement / Kaizen | NOT STARTED |
 | 14 | SOPs / Playbooks / Frameworks | NOT STARTED |
