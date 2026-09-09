@@ -1,6 +1,10 @@
-# Phase 10 — Leadership Conversations
+# Phase 10 — Leadership Conversations & Coaching Toolkit
 
-**Status:** IMPLEMENTED — pending Founder approval
+**Status:** APPROVED / BASELINED
+
+Founder approved Phase 10 — Leadership Conversations & Coaching Toolkit on 2026-09-09.
+
+**Controlling implementation baseline:** `6a511ba60052c4d3159924164d8818fe47974fb5` (`feat: add Phase 10 leadership conversations toolkit`)
 
 ## Objective and non-goals
 
@@ -22,4 +26,8 @@ Backup format v7 exports conversations alongside existing stores. Import accepts
 
 ## Coverage and validation
 
-Automated coverage includes record validation, all type prompt defaults, due/overdue projections, linked canonical task completion/reopen projection, and v7/legacy export-import handling. Manual browser checks remain pending Founder acceptance at desktop, iPad and iPhone widths.
+Completed scope includes local-first conversation records and templates; Praise, Feedback, Coaching, Delegation, Expectations and Difficult Conversations; follow-up projections and filters; canonical task linking without duplication; IndexedDB schema v10; JSON export/import v7 compatibility; privacy boundaries; documentation and automated tests.
+
+Validation baseline: `npm test` — 49 passing; `npm run check` — passed; `npm run build` — passed; `git diff --check` — passed.
+
+Phase 11 has not started.

@@ -5,7 +5,7 @@
 
 ## Unreleased
 
-- Implemented Phase 10 Leadership Conversations & Coaching Toolkit — local guided preparation, canonical follow-up task links, follow-up projections, IndexedDB v10 and export/import v7. IMPLEMENTED — AWAITING FOUNDER APPROVAL.
+- Approved and baselined Phase 10 — Leadership Conversations & Coaching Toolkit. Founder approval confirmed 2026-09-09; controlling implementation baseline `6a511ba60052c4d3159924164d8818fe47974fb5`. Validation baseline: `npm test` (49 passing), `npm run check`, `npm run build`, and `git diff --check` passed. Phase 11 has not started.
 
 - Approved and baselined Phase 09 — Settings, JSON Export & Import. Founder approval confirmed 2026-09-08; controlling implementation baseline `1ae367b`. Validation passed: `npm test` (43/43), `npm run check`, `npm run build`, and `git diff --check`. The local test browser did not surface a captured export download event; implementation and unit coverage passed.
 
