@@ -1,5 +1,6 @@
 const CACHE_VERSION = 'talentisos-shell-v2'
 const BUILD_MANIFEST = './asset-manifest.json'
+const CONNECTION_PROBE_PARAM = 'talentisos-connection-check'
 const SHELL_ASSETS = ['./', './index.html', BUILD_MANIFEST, './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png']
 
 async function cacheProductionShell() {
@@ -17,7 +18,12 @@ async function cacheProductionShell() {
 self.addEventListener('install', (event) => event.waitUntil(cacheProductionShell().then(() => self.skipWaiting())))
 self.addEventListener('activate', (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('talentisos-shell-') && key !== CACHE_VERSION).map((key) => caches.delete(key)))).then(() => self.clients.claim())))
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return
+  const url = new URL(event.request.url)
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return
+  if (url.searchParams.has(CONNECTION_PROBE_PARAM)) {
+    event.respondWith(fetch(event.request))
+    return
+  }
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).then((response) => { const copy = response.clone(); caches.open(CACHE_VERSION).then((cache) => cache.put('./', copy)); return response }).catch(() => caches.match('./').then((response) => response || caches.match('./index.html'))))
     return
