@@ -1,11 +1,11 @@
 # TalentisOS Master Phase Register
 
-Baseline: 2026-09-19 at `625b19015b15319546e9c56e8cbcde02c0339862`. The approved sequence is controlled by [TalentisOS-Implementation-Phases.md](TalentisOS-Implementation-Phases.md); do not start a later phase before the preceding phase passes its exit gate and receives founder approval.
+Controlling Phase 00 implementation baseline: `5e496fb525f0de32608e208c7affa8746773ffbe` (`docs: establish Phase 00 governance baseline`), approved 2026-09-19. The approved sequence is controlled by [TalentisOS-Implementation-Phases.md](TalentisOS-Implementation-Phases.md); do not start a later phase before the preceding phase passes its exit gate and receives founder approval.
 
 | Phase | Approved outcome | Status | Evidence / next gate |
 | --- | --- | --- | --- |
-| 00 | Repository, governance and product-contract reconciliation | **Pass — awaiting founder approval** | Documentation baseline and build evidence recorded; no code changed. |
-| 01 | App shell, design system, PWA and persistence baseline | Not started | Begins only after Phase 00 approval. |
+| 00 | Repository, governance and product-contract reconciliation | **Complete — approved** | Controlling implementation SHA `5e496fb525f0de32608e208c7affa8746773ffbe`; documentation-only scope, build passed, and no test/check script was available. |
+| 01 | App shell, design system, PWA and persistence baseline | Not started | May begin after this governance-baseline record is committed. |
 | 02 | Canonical task engine, workday utility and relationships | Not started | Depends on Phase 01. |
 | 03 | End of Day, carry-over and next-workday integrity | Not started | Depends on Phase 02. |
 | 04 | Morning Huddle, Today and Home decision surface | Not started | Depends on Phase 03. |
@@ -20,4 +20,4 @@ Baseline: 2026-09-19 at `625b19015b15319546e9c56e8cbcde02c0339862`. The approved
 | 13 | Training 360 role-based capability coverage | Deferred after Core | Later capability; preserve role/skill privacy boundary. |
 | 14 | Search, analytics, annual review and remaining advanced tools | Deferred after Core | Later capability after Core live-use validation. |
 
-Phase 00 is documentation-complete but has not been approved by the founder. This register must be updated with actual validation evidence when each phase is implemented.
+Phase 00 is founder-approved and complete. This register must be updated with actual validation evidence when each subsequent phase is implemented.

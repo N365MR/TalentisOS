@@ -9,3 +9,4 @@
 | D-005 | 2026-09-19 | Later capabilities remain deferred and must not be exposed in default navigation before their enablement rules are met. | Product Specification: Launch hierarchy and Capability-status policy. | Active |
 | D-006 | 2026-09-19 | Deployment status is unknown, not assumed absent externally. | No deployment, Pages or CI configuration is tracked in this repository. | Active |
 | D-007 | 2026-09-19 | Phase 00 makes documentation-only changes; source/runtime behaviour is preserved. | Phase 00 scope and repository inspection. | Active |
+| D-008 | 2026-09-19 | Founder approved Phase 00 as complete, with `5e496fb525f0de32608e208c7affa8746773ffbe` as its controlling implementation SHA. | Founder approval after recorded build, repository and documentation validation evidence. | Active |
