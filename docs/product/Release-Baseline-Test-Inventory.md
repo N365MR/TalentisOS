@@ -4,14 +4,14 @@ Baseline commit inspected: `625b19015b15319546e9c56e8cbcde02c0339862` on 2026-09
 
 | Validation area | Command / method | Result | Evidence and limitation |
 | --- | --- | --- | --- |
-| Automated tests | No test command available | Not available | `package.json` defines no `test` script and no test files/framework are tracked. |
-| Source checks | No lint/type-check command available | Not available | `package.json` defines no `lint`, `check` or type-check script. |
-| Production build | `npm run build` | Pass | Vite 8.3.0 transformed 9 modules and produced `dist/` successfully in 62 ms. |
-| Manual visible-route inspection | Read `index.html`, `src/main.js`, `src/counter.js`, `src/style.css` | Completed | One Vite starter landing surface with Vite/JavaScript documentation/community links and a counter; no TalentisOS routes or modules. |
-| Data-model inspection | File inventory and source inspection | Completed | No data-model document, persistence code, migration, import/export or relationship tests found. |
-| Deployment/PWA inspection | File inventory including config patterns | Completed | No tracked GitHub Pages, CI, hosting config, manifest or service-worker files found. |
-| Product workflow, responsive and accessibility checks | Not applicable at baseline | Not available | No TalentisOS workflow exists to validate at 390 px, 768 px or 1440 px. Required once Phase 01 begins. |
+| Automated tests | `npm test` | Pass | Node's built-in test runner executed eight Phase 01 checks: timezone validation, Core-route allow-list, PWA assets/manifest, cache cleanup, connection probe, registration timing and v2 migration guard. |
+| Source checks | `node --check` and manifest JSON parse | Pass | Active JavaScript modules, service worker and Vite config parse; `manifest.webmanifest` parses as JSON. No lint/type-check tool is installed. |
+| Production build | `npm run build` | Pass | Vite 8.3.0 transformed 7 modules and produced the relative-path static shell successfully in 34 ms. |
+| Manual visible-route inspection | Browser inspection | Pass | Today/Home opens by default; exactly five Core destinations are available. The five pages remain shell-only foundations, not simulated product workflows. |
+| Phase 01 database bootstrap and migration inspection | Source and browser persistence check | Pass with limitation | An initial empty v1 database was safely repaired by the additive v2 migration; `settings` and `drafts` were available and a saved `Australia/Melbourne` settings record persisted through reload. |
+| Phase 01 PWA asset and service-worker inspection | Production build, Pages artifact and device inspection | Pass | Manifest JSON, 192/512/180 px PNG assets, relative Pages path, registration and cache-versioned service worker pass checks. Mac, iPhone and iPad each had an active Pages-origin controller and only the current shell cache. Mac independently verified v4→v5 replacement and v4 deletion. |
+| Responsive and accessibility checks | Browser inspection at 390 px, 768 px and 1440 px; device install checks | Pass | 390 px menu, 768/1440 px desktop navigation, visible keyboard focus, reduced-motion rule and no horizontal overflow passed. Mac, iPhone and iPad install, offline launch, non-colour offline status and timezone persistence passed. |
 
 ## Build execution record
 
-Executed `npm run build` on 2026-09-19. Result: pass. Vite emitted `dist/index.html` and bundled CSS, JavaScript and starter image assets. This establishes build-tooling health only; it is not product acceptance evidence.
+Executed `npm test`, `npm run build`, JavaScript syntax checks and manifest JSON validation. All passed. Manual browser inspection passed at 390 px, 768 px and 1440 px, including mobile menu behaviour, Core navigation, keyboard focus, reduced-motion rule presence, no horizontal overflow and persisted timezone settings. Pages-origin clean install, automatic registration, cache update, offline launch and persisted timezone checks completed on Mac, iPhone and iPad; the Mac v4→v5 transition removed the prior cache.

@@ -16,3 +16,7 @@ The records below describe the verified repository baseline at commit `625b19015
 - [Documented Gap List](Documented-Gap-List.md) records known, evidenced gaps and conflicts.
 - [Module Status List](Module-Status-List.md) records what is implemented, incomplete, hidden or deferred.
 - [Release-Baseline Test Inventory](Release-Baseline-Test-Inventory.md) records available automated and manual evidence.
+
+## Phase 01 foundation
+
+- [Phase 01 data model and migration baseline](Phase-01-Data-Model.md) defines the versioned IndexedDB stores and the boundary for local drafts and the leadership-workday timezone preference.

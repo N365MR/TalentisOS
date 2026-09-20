@@ -4,9 +4,9 @@ Status definitions: **implemented** requires inspected code and relevant test ev
 
 | Module / surface | Status | Evidence and constraint |
 | --- | --- | --- |
-| Vite starter landing surface and counter | Incomplete | Implemented as starter code in `src/main.js` and `src/counter.js`; it is not a TalentisOS product surface and has no tests. |
-| TalentisOS app shell, Core navigation and product routes | Deferred | No product routing/navigation code found; Phase 01. |
-| Persistence, migrations, settings and local drafts | Deferred | No IndexedDB/local-draft/settings code found; Phase 01. |
+| Vite starter landing surface and counter | Replaced | The starter view is no longer rendered; the unused starter counter source remains outside the active entry point. |
+| TalentisOS app shell and Core navigation framework | Implemented — approval pending | Semantic shell exposes only Today, Prepare tomorrow, Start the day, Conversations and Tasks. The surfaces are foundation-only; no workflows or advanced routes are exposed. |
+| Persistence, migrations, settings and local drafts | Implemented — approval pending | IndexedDB schema v2 provides `settings` and `drafts`; the saved leadership-workday timezone and validated draft API form the Phase 01 persistence baseline. |
 | Canonical task engine and workday utility | Deferred | No task/domain code or data model found; Phase 02. |
 | End of Day and carry-over | Deferred | No implementation found; Phase 03. |
 | Morning Huddle, Today and Home | Deferred | No implementation found; Phase 04. |
@@ -21,4 +21,4 @@ Status definitions: **implemented** requires inspected code and relevant test ev
 | Training 360 | Deferred | No implementation found; later capability with role/skill-only privacy boundary. |
 | Search, analytics, operating calendar, scenarios and annual review | Deferred | No implementation found; Phase 14 and later enablement. |
 
-No product module is marked implemented. No product module is marked hidden because no product module or navigation exists yet. Deferred modules must remain absent from production navigation when implemented until their governing availability rule is met.
+The Phase 01 shell is implemented pending founder approval. All later product modules remain deferred and absent from production navigation.

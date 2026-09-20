@@ -5,6 +5,7 @@
 ### Added
 
 - Phase 00 governance baseline: requirements index, master phase register, project status register, decision log, documented gap list, module status list and release-baseline test inventory.
+- Phase 01 shell, IndexedDB schema v2, draft API, leadership-workday timezone preference, PWA assets and data-model baseline. Founder approval remains required before Phase 02.
 
 ### Changed
 
@@ -14,10 +15,11 @@
 ### Verified
 
 - Documented clean pre-change working tree, branch/HEAD, locally available `origin/main` parity, package scripts, visible starter surface and absence of tracked test, data-model and deployment configuration.
+- Phase 01: eight focused Node tests, JavaScript syntax checks, production build, persisted settings at schema v2, Core navigation and 390 px/768 px/1440 px shell checks. Pages-origin clean install, automatic registration, cache update, offline launch and persistence passed on Mac, iPhone and iPad. The Mac independently completed the v4-to-v5 cache transition with v4 removal and `Australia/Hobart` persistence.
 
 ### Not changed
 
-- No application source, runtime behaviour, dependency, deployment, commit or push was changed.
+- No packages were installed; `main` was not committed or pushed. The temporary `gh-pages` validation artifact remains separate from the uncommitted Phase 01 source.
 
 ## Governance baseline approval — 2026-09-19
 
