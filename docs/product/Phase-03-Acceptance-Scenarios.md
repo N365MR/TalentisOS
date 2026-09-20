@@ -1,5 +1,7 @@
 # Phase 03 acceptance scenarios
 
+Controlling implementation: `cb45dfa3045791fc489974b23cae1029d7c02327` (`feat: implement Phase 03 End of Day workflow`).
+
 | Scenario | Expected result | Evidence |
 | --- | --- | --- |
 | One EOD per workday | Opening Prepare tomorrow creates or resumes only `eod_YYYY-MM-DD`; saved closeout fields persist after reload. | `phase03.test.js`; Safari validation PASS at `127.0.0.1:5193`. |

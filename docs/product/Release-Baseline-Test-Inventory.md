@@ -18,6 +18,8 @@ Phase 01 controlling implementation commit: `a2fb0a869295f0696f5318c70a820c77fe2
 
 ## Phase 03 validation record — 2026-09-20
 
+Controlling implementation commit: `cb45dfa3045791fc489974b23cae1029d7c02327` (`feat: implement Phase 03 End of Day workflow`).
+
 | Validation area | Command / method | Result | Evidence and limitation |
 | --- | --- | --- |
 | Automated tests | `npm test` | Pass | 27 Node tests passed, including EOD identity/resume, Top 3 integrity, individual/selected/all canonical carry, carry history idempotence, Friday–Sunday Monday behaviour, Quick Capture due-date regression and read-only completed EOD controls. |
