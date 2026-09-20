@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { archiveTask, createQuickTask, restoreTask, subtaskProgress, validateTask } from '../src/domain/task.js'
 import { repairTaskReferences, taskDeletionConfirmation } from '../src/domain/references.js'
@@ -24,6 +25,20 @@ test('quick capture accepts only its small required shape and prevents duplicate
   assert.equal(first.status, 'open')
   assert.equal(first.category, '')
   assert.throws(() => validateTask({ ...first, typedLinks: [{ recordType: 'risk', recordId: 'r1', relationship: 'mitigates' }, { recordType: 'risk', recordId: 'r1', relationship: 'mitigates' }] }), /Duplicate typed links/)
+})
+
+test('Quick Capture preserves an optional selected ISO due date and leaves an empty field null', () => {
+  assert.equal(createQuickTask({ title: 'No date selected', dueDate: null }, fixedNow).dueDate, null)
+  assert.equal(createQuickTask({ title: 'Date selected', dueDate: '2026-09-20' }, fixedNow).dueDate, '2026-09-20')
+})
+
+test('Today and Tasks use the shared FormData Quick Capture path', () => {
+  const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
+  assert.match(source, /current\.id === 'today' \|\| current\.id === 'tasks'/)
+  assert.match(source, /function taskSurface\(\)/)
+  assert.match(source, /new FormData\(form\)/)
+  assert.match(source, /submittedDueDate.*\\d\{4\}-\\d\{2\}-\\d\{2\}/)
+  assert.match(source, /Due date \(optional\)/)
 })
 
 test('subtask progress and blocked or waiting context rules are enforced', () => {

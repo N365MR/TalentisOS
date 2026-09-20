@@ -16,4 +16,13 @@ Phase 01 controlling implementation commit: `a2fb0a869295f0696f5318c70a820c77fe2
 
 ## Build execution record
 
+## Phase 03 validation record — 2026-09-20
+
+| Validation area | Command / method | Result | Evidence and limitation |
+| --- | --- | --- |
+| Automated tests | `npm test` | Pass | 27 Node tests passed, including EOD identity/resume, Top 3 integrity, individual/selected/all canonical carry, carry history idempotence, Friday–Sunday Monday behaviour, Quick Capture due-date regression and read-only completed EOD controls. |
+| Source checks | `node --check src/main.js`, `node --check src/persistence/database.js`, `node --check src/domain/eod.js`, `git diff --check` | Pass | Active Phase 03 modules parse and no whitespace errors were found. |
+| Production build | `npm run build` | Pass | Vite transformed 11 modules and emitted a Pages-compatible relative-path build. |
+| Safari workflow validation | Safari at `http://127.0.0.1:5193/` | Pass | Founder-recorded final validation confirmed Quick Capture date persistence; individual, selected-subset and carry-all canonical carry/history and task-view synchronisation; EOD save/resume; completion persistence; read-only completed-EOD controls; 390/768/1440-class no-overflow checks; keyboard access; and reduced motion. |
+
 Executed `npm test`, `npm run build`, JavaScript syntax checks and manifest JSON validation. All passed. Manual browser inspection passed at 390 px, 768 px and 1440 px, including mobile menu behaviour, Core navigation, keyboard focus, reduced-motion rule presence, no horizontal overflow and persisted timezone settings. Pages-origin clean install, automatic registration, cache update, offline launch and persisted timezone checks completed on Mac, iPhone and iPad; the Mac v4→v5 transition removed the prior cache. Phase 01 result: PASS — ready for founder approval.

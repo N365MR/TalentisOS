@@ -66,10 +66,12 @@ test('service worker registration starts independently of persistence bootstrap'
   assert.match(source, /registerServiceWorker\(\)\nstart\(\)/)
 })
 
-test('database schema retains additive migrations through the Phase 02 task store', () => {
+test('database schema retains additive migrations through the Phase 03 End of Day store', () => {
   const source = readFileSync(new URL('../src/persistence/database.js', import.meta.url), 'utf8')
-  assert.equal(DATABASE_VERSION, 3)
+  assert.equal(DATABASE_VERSION, 4)
   assert.match(source, /event\.oldVersion < 2/)
   assert.match(source, /event\.oldVersion < 3/)
+  assert.match(source, /event\.oldVersion < 4/)
   assert.match(source, /TASKS_STORE/)
+  assert.match(source, /EODS_STORE/)
 })

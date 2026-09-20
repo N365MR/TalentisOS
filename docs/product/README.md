@@ -25,3 +25,7 @@ The records below describe the verified repository baseline at commit `625b19015
 - [Phase 02 canonical task data dictionary](Phase-02-Data-Model.md)
 - [Phase 02 relationship map](Phase-02-Relationship-Map.md)
 - [Phase 02 acceptance scenarios](Phase-02-Acceptance-Scenarios.md)
+## Phase 03 End of Day
+
+- [Phase 03 End of Day data model](Phase-03-Data-Model.md)
+- [Phase 03 acceptance scenarios](Phase-03-Acceptance-Scenarios.md)

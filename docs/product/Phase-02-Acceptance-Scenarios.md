@@ -2,7 +2,7 @@
 
 | Scenario | Expected result | Evidence |
 | --- | --- | --- |
-| Quick Capture on Today or Tasks | A title creates one IndexedDB task; urgency and due date remain optional. | `phase02.test.js`; manual browser check pending founder review. |
+| Quick Capture on Today or Tasks | A title creates one IndexedDB task; urgency and due date remain optional. An empty native date control persists `null`; only a committed ISO `YYYY-MM-DD` selection persists a due date. | `phase02.test.js`; repeat Safari manual check pending founder review. |
 | Detail edit and completion | Editing retains the stable ID; completion changes that same record and is visible in all task views. | Task identity/domain tests; manual browser check pending. |
 | Blocked/waiting | Save is rejected without context; open/completed tasks cannot retain blocked/waiting context. | Domain test. |
 | Subtasks | Completed/total is derived from the canonical subtask list. | Domain test. |
