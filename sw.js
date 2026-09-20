@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'talentisos-shell-v4'
+const CACHE_VERSION = 'talentisos-shell-v5'
 const BUILD_MANIFEST = './asset-manifest.json'
 const CONNECTION_PROBE_PARAM = 'talentisos-connection-check'
 const SHELL_ASSETS = ['./', './index.html', BUILD_MANIFEST, './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png']
