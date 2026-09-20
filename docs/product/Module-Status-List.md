@@ -7,7 +7,7 @@ Status definitions: **implemented** requires inspected code and relevant test ev
 | Vite starter landing surface and counter | Replaced | The starter view is no longer rendered; the unused starter counter source remains outside the active entry point. |
 | TalentisOS app shell and Core navigation framework | Implemented — PASS, approval pending | Controlling SHA `a2fb0a869295f0696f5318c70a820c77fe20b317`; semantic shell exposes only Today, Prepare tomorrow, Start the day, Conversations and Tasks. The surfaces are foundation-only; no workflows or advanced routes are exposed. |
 | Persistence, migrations, settings and local drafts | Implemented — PASS, approval pending | Controlling SHA `a2fb0a869295f0696f5318c70a820c77fe20b317`; IndexedDB schema v2 provides `settings` and `drafts`; the saved leadership-workday timezone and validated draft API form the Phase 01 persistence baseline. |
-| Canonical task engine and workday utility | Deferred | No task/domain code or data model found; Phase 02. |
+| Canonical task engine and workday utility | Implemented — validation pending | Schema v3 IndexedDB `tasks` store provides one canonical record; task validation, typed links, archive/restore/delete repair, workday utility and Today/Tasks capture/views are enabled. Later workflow records remain deferred. |
 | End of Day and carry-over | Deferred | No implementation found; Phase 03. |
 | Morning Huddle, Today and Home | Deferred | No implementation found; Phase 04. |
 | Needs attention: risks, blockers, decisions and handovers | Deferred | No implementation found; Phase 05. |

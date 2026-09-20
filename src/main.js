@@ -1,142 +1,60 @@
 import './style.css'
-import { getSettings, openDatabase, updateLeadershipTimezone } from './persistence/database.js'
+import { archiveCanonicalTask, getSettings, listTasks, quickCaptureTask, restoreCanonicalTask, saveTask, setTaskCompleted, deleteCanonicalTask, linkedTaskReferences } from './persistence/database.js'
+import { dateInTimezone } from './domain/workday.js'
+import { taskDeletionConfirmation } from './domain/references.js'
 import { registerServiceWorker } from './pwa.js'
 
 const routes = [
-  { id: 'today', label: 'Today', title: 'Today', description: 'A calm place to begin your leadership day.' },
-  { id: 'prepare-tomorrow', label: 'Prepare tomorrow', title: 'Prepare tomorrow', description: 'Set yourself up for the next workday.' },
-  { id: 'start-day', label: 'Start the day', title: 'Start the day', description: 'Begin with a clear leadership rhythm.' },
-  { id: 'conversations', label: 'Conversations', title: 'Conversations', description: 'Prepare for the conversations that matter.' },
-  { id: 'tasks', label: 'Tasks', title: 'Tasks', description: 'Keep your commitments in one reliable place.' },
+  { id: 'today', label: 'Today', title: 'Today', description: 'Capture what matters, then move it forward.' },
+  { id: 'prepare-tomorrow', label: 'Prepare tomorrow', title: 'Prepare tomorrow', description: 'This workflow arrives in a later approved phase.' },
+  { id: 'start-day', label: 'Start the day', title: 'Start the day', description: 'This workflow arrives in a later approved phase.' },
+  { id: 'conversations', label: 'Conversations', title: 'Conversations', description: 'This workflow arrives in a later approved phase.' },
+  { id: 'tasks', label: 'Tasks', title: 'Tasks', description: 'One reliable record for every commitment.' },
 ]
-
+const views = [['inbox', 'Inbox'], ['today', 'Today'], ['upcoming', 'Upcoming'], ['anytime', 'Anytime'], ['someday', 'Someday'], ['flagged', 'Flagged'], ['urgent', 'Urgent'], ['completed', 'Completed']]
 const app = document.querySelector('#app')
-let settings
-let menuButton
-let navigation
-let connectionCheck = 0
-
-function currentRoute() {
-  const routeId = window.location.hash.replace('#/', '') || 'today'
-  return routes.find((route) => route.id === routeId) || routes[0]
+let settings; let tasks = []; let activeView = 'inbox'; let menuButton; let navigation; let connectionCheck = 0
+const escape = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character])
+const route = () => routes.find((item) => item.id === (location.hash.replace('#/', '') || 'today')) || routes[0]
+const today = () => dateInTimezone(new Date(), settings.leadershipWorkdayTimezone)
+function visibleTasks() {
+  const open = tasks.filter((task) => !task.archivedAt)
+  if (activeView === 'completed') return open.filter((task) => task.status === 'completed')
+  if (activeView === 'today') return open.filter((task) => task.status !== 'completed' && task.dueDate === today())
+  if (activeView === 'upcoming') return open.filter((task) => task.status !== 'completed' && task.dueDate && task.dueDate > today())
+  if (activeView === 'anytime') return open.filter((task) => task.status !== 'completed' && !task.dueDate && !task.category)
+  if (activeView === 'someday') return open.filter((task) => task.status !== 'completed' && task.category.toLowerCase() === 'someday')
+  if (activeView === 'flagged') return open.filter((task) => task.status !== 'completed' && task.flagged)
+  if (activeView === 'urgent') return open.filter((task) => task.status !== 'completed' && task.urgent)
+  return open.filter((task) => task.status !== 'completed' && !task.dueDate)
 }
-
-function buildNavigation(route) {
-  return routes.map(({ id, label }) => `
-    <li><a href="#/${id}" ${id === route.id ? 'aria-current="page"' : ''}>${label}</a></li>
-  `).join('')
-}
-
+function taskMarkup(task) { const progress = `${task.subtasks.filter((item) => item.completed).length}/${task.subtasks.length}`; return `<li class="task-card"><label><input class="task-complete" type="checkbox" data-id="${task.id}" ${task.status === 'completed' ? 'checked' : ''} aria-label="Mark ${escape(task.title)} complete" /><span class="task-title ${task.status === 'completed' ? 'is-complete' : ''}">${escape(task.title)}</span></label><div class="task-meta">${task.urgent ? '<span>Urgent</span>' : ''}${task.flagged ? '<span>Flagged</span>' : ''}${task.status === 'blocked' || task.status === 'waiting' ? `<span>${escape(task.status)}</span>` : ''}${task.dueDate ? `<span>Due ${escape(task.dueDate)}${task.dueTime ? ` ${escape(task.dueTime)}` : ''}</span>` : ''}${task.subtasks.length ? `<span>${progress} subtasks</span>` : ''}</div><button class="text-button edit-task" type="button" data-id="${task.id}">Edit</button></li>` }
+function captureMarkup() { return `<section class="capture-panel" aria-labelledby="capture-title"><div><p class="eyebrow">Quick Capture</p><h2 id="capture-title">Add a task</h2><p>Only a title is needed. Urgency and a due date are optional.</p></div><form id="quick-capture" class="capture-form"><label>Task title<input name="title" required maxlength="240" autocomplete="off" /></label><label class="checkbox-label"><input name="urgent" type="checkbox" /> Urgent</label><label>Due date <input name="dueDate" type="date" /></label><button type="submit">Add task</button><p class="form-message" role="status" aria-live="polite"></p></form></section>` }
+function tasksMarkup() { return `<section class="task-workspace" aria-labelledby="task-views-title"><div class="task-view-tabs" role="tablist" aria-label="Task views">${views.map(([id, label]) => `<button type="button" role="tab" aria-selected="${activeView === id}" data-view="${id}">${label}</button>`).join('')}<button type="button" class="archive-toggle" id="show-archived">Archived</button></div><h2 id="task-views-title">${escape(views.find(([id]) => id === activeView)[1])}</h2><ul class="task-list">${visibleTasks().map(taskMarkup).join('') || '<li class="empty-state">Nothing here yet. Capture the next useful action.</li>'}</ul></section>` }
 function render() {
-  const route = currentRoute()
-  document.title = `${route.title} · TalentisOS`
-  app.innerHTML = `
-    <a class="skip-link" href="#main-content">Skip to content</a>
-    <header class="site-header">
-      <a class="brand" href="#/today" aria-label="TalentisOS, Today"><span class="brand-mark" aria-hidden="true">T</span><span>TalentisOS</span></a>
-      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation"><span aria-hidden="true">☰</span><span>Menu</span></button>
-      <nav id="primary-navigation" class="primary-navigation" aria-label="Core navigation"><ul>${buildNavigation(route)}</ul></nav>
-    </header>
-    <main id="main-content" tabindex="-1">
-      <section class="intro" aria-labelledby="page-title">
-        <p class="eyebrow"><span aria-hidden="true">●</span> Private, local workspace</p>
-        <h1 id="page-title">${route.title}</h1>
-        <p class="lede">${route.description}</p>
-      </section>
-      <section class="foundation-panel" aria-labelledby="foundation-title">
-        <div><p class="status-label"><span aria-hidden="true">✓</span> Foundation ready</p><h2 id="foundation-title">Your workspace is prepared</h2><p>This early version establishes the dependable shell, local storage and offline support. Leadership workflows will appear only when they are complete and approved.</p></div>
-        <dl class="foundation-details"><div><dt>Storage</dt><dd><span aria-hidden="true">✓</span> Stored on this device</dd></div><div><dt>Connection</dt><dd id="connection-status"><span aria-hidden="true">●</span> Checking connection</dd></div></dl>
-      </section>
-      <section class="preference-panel" aria-labelledby="timezone-title">
-        <div><p class="eyebrow">Workday preference</p><h2 id="timezone-title">Leadership workday timezone</h2><p>Used for future workday calculations. Changing it will never move existing work between days.</p></div>
-        <form id="timezone-form" class="timezone-form"><label for="timezone">Timezone</label><div class="timezone-control"><input id="timezone" name="timezone" list="timezone-options" autocomplete="off" required /><datalist id="timezone-options"></datalist><button type="submit">Save preference</button></div><p id="timezone-message" class="form-message" role="status" aria-live="polite"></p></form>
-      </section>
-    </main>
-    <footer class="site-footer"><p id="update-notice" class="update-notice" role="status" hidden>A newer version is ready. Refresh when you are ready to use it.</p><p>TalentisOS keeps your information in this browser on this device.</p></footer>
-  `
-  menuButton = app.querySelector('.menu-toggle')
-  navigation = app.querySelector('.primary-navigation')
-  menuButton.addEventListener('click', toggleMenu)
-  navigation.addEventListener('click', closeMenu)
-  populateTimezoneForm()
-  updateConnectionStatus()
+  const current = route(); document.title = `${current.title} · TalentisOS`; const taskSurface = current.id === 'today' || current.id === 'tasks'
+  app.innerHTML = `<a class="skip-link" href="#main-content">Skip to content</a><header class="site-header"><a class="brand" href="#/today" aria-label="TalentisOS, Today"><span class="brand-mark" aria-hidden="true">T</span><span>TalentisOS</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">☰ <span>Menu</span></button><nav id="primary-navigation" class="primary-navigation" aria-label="Core navigation"><ul>${routes.map((item) => `<li><a href="#/${item.id}" ${item.id === current.id ? 'aria-current="page"' : ''}>${item.label}</a></li>`).join('')}</ul></nav></header><main id="main-content" tabindex="-1"><section class="intro" aria-labelledby="page-title"><p class="eyebrow"><span aria-hidden="true">●</span> Private, local workspace</p><h1 id="page-title">${current.title}</h1><p class="lede">${current.description}</p></section>${taskSurface ? `${captureMarkup()}${tasksMarkup()}` : '<section class="foundation-panel"><div><p class="status-label">Foundation surface</p><h2>Kept deliberately out of scope</h2><p>This destination remains available in the Core shell, but its workflow is not enabled until its approved phase. Tasks captured here would create an unnecessary duplicate path, so use Today or Tasks.</p></div></section>'}</main><footer class="site-footer"><p id="connection-status" role="status">Checking connection</p><p>TalentisOS keeps your information in this browser on this device.</p></footer>`
+  menuButton = app.querySelector('.menu-toggle'); navigation = app.querySelector('.primary-navigation'); menuButton.addEventListener('click', () => { const open = menuButton.getAttribute('aria-expanded') === 'true'; menuButton.setAttribute('aria-expanded', String(!open)); navigation.classList.toggle('is-open', !open) }); navigation.addEventListener('click', () => { menuButton.setAttribute('aria-expanded', 'false'); navigation.classList.remove('is-open') }); if (taskSurface) bindTaskEvents(); updateConnectionStatus()
 }
-
-function toggleMenu() {
-  const isOpen = menuButton.getAttribute('aria-expanded') === 'true'
-  menuButton.setAttribute('aria-expanded', String(!isOpen))
-  navigation.classList.toggle('is-open', !isOpen)
-}
-
-function closeMenu() {
-  menuButton.setAttribute('aria-expanded', 'false')
-  navigation.classList.remove('is-open')
-}
-
 async function updateConnectionStatus() {
-  const element = app.querySelector('#connection-status')
-  if (!element) return
-  const checkId = ++connectionCheck
-  element.innerHTML = navigator.onLine
-    ? '<span aria-hidden="true">●</span> Checking connection'
-    : '<span aria-hidden="true">○</span> Browser reports offline — checking connection'
-
-  const controller = new AbortController()
-  const timeout = window.setTimeout(() => controller.abort(), 3000)
-  try {
-    const probeUrl = new URL('./asset-manifest.json', window.location.href)
-    probeUrl.searchParams.set('talentisos-connection-check', '1')
-    const response = await fetch(probeUrl, { cache: 'no-store', signal: controller.signal })
-    if (!response.ok) throw new Error('Connection probe was unsuccessful.')
-    if (checkId === connectionCheck && element.isConnected) element.innerHTML = '<span aria-hidden="true">●</span> Online'
-  } catch {
-    if (checkId === connectionCheck && element.isConnected) element.innerHTML = '<span aria-hidden="true">○</span> Offline — shell available'
-  } finally {
-    window.clearTimeout(timeout)
-  }
+  const element = app.querySelector('#connection-status'); if (!element) return; const checkId = ++connectionCheck; element.textContent = navigator.onLine ? 'Checking connection' : 'Browser reports offline — checking connection'
+  const controller = new AbortController(); const timeout = window.setTimeout(() => controller.abort(), 3000)
+  try { const probeUrl = new URL('./asset-manifest.json', window.location.href); probeUrl.searchParams.set('talentisos-connection-check', '1'); const response = await fetch(probeUrl, { cache: 'no-store', signal: controller.signal }); if (!response.ok) throw new Error('Connection probe was unsuccessful.'); if (checkId === connectionCheck && element.isConnected) element.textContent = 'Online' } catch { if (checkId === connectionCheck && element.isConnected) element.textContent = 'Offline — shell available' } finally { window.clearTimeout(timeout) }
 }
-
-function populateTimezoneForm() {
-  const input = app.querySelector('#timezone')
-  const list = app.querySelector('#timezone-options')
-  input.value = settings.leadershipWorkdayTimezone
-  const timezones = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : ['UTC', settings.leadershipWorkdayTimezone]
-  list.innerHTML = [...new Set(['UTC', ...timezones])].map((timezone) => `<option value="${timezone}"></option>`).join('')
-  app.querySelector('#timezone-form').addEventListener('submit', saveTimezone)
+async function refresh() { tasks = await listTasks({ includeArchived: true }); render() }
+function bindTaskEvents() {
+  app.querySelector('#quick-capture')?.addEventListener('submit', async (event) => { event.preventDefault(); const form = event.currentTarget; const message = form.querySelector('.form-message'); try { await quickCaptureTask({ title: form.title.value, urgent: form.urgent.checked, dueDate: form.dueDate.value || null }); form.reset(); message.textContent = 'Task added.'; await refresh() } catch (error) { message.textContent = error.message } })
+  app.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => { activeView = button.dataset.view; render() })); app.querySelectorAll('.task-complete').forEach((input) => input.addEventListener('change', async () => { await setTaskCompleted(input.dataset.id, input.checked); await refresh() })); app.querySelectorAll('.edit-task').forEach((button) => button.addEventListener('click', () => openEditor(button.dataset.id))); app.querySelector('#show-archived')?.addEventListener('click', openArchived)
 }
-
-async function saveTimezone(event) {
-  event.preventDefault()
-  const input = app.querySelector('#timezone')
-  const message = app.querySelector('#timezone-message')
-  try {
-    settings = await updateLeadershipTimezone(input.value.trim())
-    input.value = settings.leadershipWorkdayTimezone
-    message.textContent = 'Saved on this device. It applies to future workday calculations.'
-  } catch (error) { message.textContent = error.message }
+function parseSubtasks(value) { return value.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => ({ title: line.replace(/^\[x\]\s*/i, '').replace(/^\[ \]\s*/, ''), completed: /^\[x\]/i.test(line) })) }
+function parseLinks(value) { return value.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => { const [recordType, recordId, relationship] = line.split('|').map((part) => part?.trim()); return { recordType, recordId, relationship } }) }
+function openEditor(id) {
+  const task = tasks.find((item) => item.id === id); if (!task) return; const subtasks = task.subtasks.map((item) => `${item.completed ? '[x]' : '[ ]'} ${item.title}`).join('\n'); const links = task.typedLinks.map((item) => `${item.recordType}|${item.recordId}|${item.relationship}`).join('\n'); const dialog = document.createElement('dialog'); dialog.className = 'task-dialog'
+  dialog.innerHTML = `<form method="dialog" class="detail-form"><div class="dialog-heading"><h2>Edit task</h2><button value="cancel" aria-label="Close task editor">×</button></div><label>Title<input name="title" required maxlength="240" value="${escape(task.title)}" /></label><label>Notes<textarea name="notes">${escape(task.notes)}</textarea></label><div class="field-grid"><label>Status<select name="status">${['open', 'blocked', 'waiting', 'completed'].map((value) => `<option ${task.status === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label><label>Priority<select name="priority">${['none', 'low', 'medium', 'high'].map((value) => `<option ${task.priority === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label><label>Due date<input name="dueDate" type="date" value="${task.dueDate || ''}" /></label><label>Due time<input name="dueTime" type="time" value="${task.dueTime || ''}" /></label></div><label class="checkbox-label"><input name="urgent" type="checkbox" ${task.urgent ? 'checked' : ''} /> Urgent</label><label class="checkbox-label"><input name="flagged" type="checkbox" ${task.flagged ? 'checked' : ''} /> Flagged</label><label>Category<input name="category" value="${escape(task.category)}" /></label><label>Tags (comma separated)<input name="tags" value="${escape(task.tags.join(', '))}" /></label><label>Blocked or waiting context<input name="stateContext" value="${escape(task.stateContext)}" /></label><label>Subtasks (one per line; completed lines begin [x])<textarea name="subtasks">${escape(subtasks)}</textarea></label><label>Typed links (one per line: type | ID | relationship)<textarea name="typedLinks">${escape(links)}</textarea></label><p class="image-note">Optional local image metadata: JPEG, PNG or WebP; maximum 2 MB. Image bytes are not stored in this phase.</p><label>Image metadata<input name="image" type="file" accept="image/jpeg,image/png,image/webp" /></label><div class="dialog-actions"><button type="button" class="archive-action">Archive</button><button type="button" class="delete-action">Delete permanently</button><button value="cancel">Cancel</button><button type="submit">Save changes</button></div><p class="form-message" role="status" aria-live="polite"></p></form>`
+  document.body.append(dialog); dialog.showModal(); const form = dialog.querySelector('form'); form.addEventListener('submit', async (event) => { event.preventDefault(); const data = new FormData(form); const file = data.get('image'); try { const image = file?.size ? { name: file.name, type: file.type, size: file.size, localKey: null } : task.image; await saveTask({ ...task, id, title: data.get('title'), notes: data.get('notes'), status: data.get('status'), priority: data.get('priority'), dueDate: data.get('dueDate') || null, dueTime: data.get('dueTime') || null, urgent: data.get('urgent') === 'on', flagged: data.get('flagged') === 'on', category: data.get('category'), tags: data.get('tags').split(','), stateContext: data.get('stateContext'), subtasks: parseSubtasks(data.get('subtasks')), typedLinks: parseLinks(data.get('typedLinks')), image }); dialog.close(); await refresh() } catch (error) { form.querySelector('.form-message').textContent = error.message } }); form.querySelector('.archive-action').addEventListener('click', async () => { await archiveCanonicalTask(id); dialog.close(); await refresh() }); form.querySelector('.delete-action').addEventListener('click', async () => { const refs = await linkedTaskReferences(id); if (window.confirm(taskDeletionConfirmation(refs))) { await deleteCanonicalTask(id); dialog.close(); await refresh() } }); dialog.addEventListener('close', () => dialog.remove())
 }
-
-function renderFailure(message) {
-  app.innerHTML = `<main class="recovery-state"><p class="eyebrow"><span aria-hidden="true">!</span> Storage unavailable</p><h1>TalentisOS cannot safely save information here.</h1><p>${message}</p><p>Use a current Safari, Chrome, Edge or Firefox browser with site storage enabled. If you have existing TalentisOS data, return to the browser where it was created and export it before clearing browser data.</p></main>`
-}
-
-async function start() {
-  if (!('indexedDB' in window) || !('Promise' in window)) return renderFailure('This browser does not support the local storage required by TalentisOS.')
-  try {
-    await openDatabase()
-    settings = await getSettings()
-    render()
-    window.addEventListener('hashchange', render)
-    window.addEventListener('online', updateConnectionStatus)
-    window.addEventListener('offline', updateConnectionStatus)
-    window.addEventListener('visibilitychange', () => {
-      if (!document.hidden) updateConnectionStatus()
-    })
-  } catch (error) {
-    renderFailure('Browser storage could not be opened. No information has been saved by TalentisOS in this session.')
-    console.error('TalentisOS storage bootstrap failed:', error)
-  }
-}
-
+function openArchived() { const archived = tasks.filter((task) => task.archivedAt); const dialog = document.createElement('dialog'); dialog.className = 'task-dialog'; dialog.innerHTML = `<form method="dialog" class="detail-form"><div class="dialog-heading"><h2>Archived tasks</h2><button aria-label="Close archived tasks">×</button></div><ul class="task-list">${archived.map((task) => `<li class="task-card"><span>${escape(task.title)}</span><button type="button" data-restore="${task.id}">Restore</button></li>`).join('') || '<li class="empty-state">No archived tasks.</li>'}</ul></form>`; document.body.append(dialog); dialog.showModal(); dialog.querySelectorAll('[data-restore]').forEach((button) => button.addEventListener('click', async () => { await restoreCanonicalTask(button.dataset.restore); dialog.close(); await refresh() })); dialog.addEventListener('close', () => dialog.remove()) }
+function renderFailure(message) { app.innerHTML = `<main class="recovery-state"><p class="eyebrow">Storage unavailable</p><h1>TalentisOS cannot safely save information here.</h1><p>${escape(message)}</p></main>` }
+async function start() { if (!('indexedDB' in window)) return renderFailure('This browser does not support the local storage required by TalentisOS.'); try { settings = await getSettings(); await refresh(); window.addEventListener('hashchange', render); window.addEventListener('online', updateConnectionStatus); window.addEventListener('offline', updateConnectionStatus) } catch (error) { renderFailure('Browser storage could not be opened. No information has been saved by TalentisOS in this session.'); console.error('TalentisOS storage bootstrap failed:', error) } }
 registerServiceWorker()
 start()

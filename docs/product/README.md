@@ -20,3 +20,8 @@ The records below describe the verified repository baseline at commit `625b19015
 ## Phase 01 foundation
 
 - [Phase 01 data model and migration baseline](Phase-01-Data-Model.md) defines the versioned IndexedDB stores and the boundary for local drafts and the leadership-workday timezone preference.
+## Phase 02 canonical task engine
+
+- [Phase 02 canonical task data dictionary](Phase-02-Data-Model.md)
+- [Phase 02 relationship map](Phase-02-Relationship-Map.md)
+- [Phase 02 acceptance scenarios](Phase-02-Acceptance-Scenarios.md)

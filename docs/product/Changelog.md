@@ -4,6 +4,8 @@
 
 ### Added
 
+- Phase 02 canonical task engine: IndexedDB schema v3 task store, validated stable IDs, workday utility, Quick Capture, task views, detail editing, completion, archive/restore and atomic task-reference repair.
+- Phase 02 data dictionary, relationship map, acceptance scenarios and 14 focused automated tests.
 - Phase 00 governance baseline: requirements index, master phase register, project status register, decision log, documented gap list, module status list and release-baseline test inventory.
 - Phase 01 shell, IndexedDB schema v2, draft API, leadership-workday timezone preference, PWA assets and data-model baseline. Founder approval remains required before Phase 02.
 
