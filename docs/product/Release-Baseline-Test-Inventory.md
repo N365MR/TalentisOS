@@ -2,6 +2,8 @@
 
 Baseline commit inspected: `625b19015b15319546e9c56e8cbcde02c0339862` on 2026-09-19.
 
+Phase 01 controlling implementation commit: `a2fb0a869295f0696f5318c70a820c77fe20b317` (`feat: establish Phase 01 app shell, PWA and persistence baseline`).
+
 | Validation area | Command / method | Result | Evidence and limitation |
 | --- | --- | --- | --- |
 | Automated tests | `npm test` | Pass | Node's built-in test runner executed eight Phase 01 checks: timezone validation, Core-route allow-list, PWA assets/manifest, cache cleanup, connection probe, registration timing and v2 migration guard. |
@@ -14,4 +16,4 @@ Baseline commit inspected: `625b19015b15319546e9c56e8cbcde02c0339862` on 2026-09
 
 ## Build execution record
 
-Executed `npm test`, `npm run build`, JavaScript syntax checks and manifest JSON validation. All passed. Manual browser inspection passed at 390 px, 768 px and 1440 px, including mobile menu behaviour, Core navigation, keyboard focus, reduced-motion rule presence, no horizontal overflow and persisted timezone settings. Pages-origin clean install, automatic registration, cache update, offline launch and persisted timezone checks completed on Mac, iPhone and iPad; the Mac v4→v5 transition removed the prior cache.
+Executed `npm test`, `npm run build`, JavaScript syntax checks and manifest JSON validation. All passed. Manual browser inspection passed at 390 px, 768 px and 1440 px, including mobile menu behaviour, Core navigation, keyboard focus, reduced-motion rule presence, no horizontal overflow and persisted timezone settings. Pages-origin clean install, automatic registration, cache update, offline launch and persisted timezone checks completed on Mac, iPhone and iPad; the Mac v4→v5 transition removed the prior cache. Phase 01 result: PASS — ready for founder approval.

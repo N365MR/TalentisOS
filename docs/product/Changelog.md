@@ -11,15 +11,17 @@
 
 - Expanded the product documentation README with links to the Phase 00 governance baseline.
 - Founder approved Phase 00. Its controlling implementation SHA is `5e496fb525f0de32608e208c7affa8746773ffbe`.
+- Committed the Phase 01 implementation baseline as `a2fb0a869295f0696f5318c70a820c77fe20b317` (`feat: establish Phase 01 app shell, PWA and persistence baseline`).
 
 ### Verified
 
 - Documented clean pre-change working tree, branch/HEAD, locally available `origin/main` parity, package scripts, visible starter surface and absence of tracked test, data-model and deployment configuration.
 - Phase 01: eight focused Node tests, JavaScript syntax checks, production build, persisted settings at schema v2, Core navigation and 390 px/768 px/1440 px shell checks. Pages-origin clean install, automatic registration, cache update, offline launch and persistence passed on Mac, iPhone and iPad. The Mac independently completed the v4-to-v5 cache transition with v4 removal and `Australia/Hobart` persistence.
+- Phase 01 result: PASS — ready for founder approval.
 
 ### Not changed
 
-- No packages were installed; `main` was not committed or pushed. The temporary `gh-pages` validation artifact remains separate from the uncommitted Phase 01 source.
+- No packages were installed. The temporary generated-only `gh-pages` validation branch remains separate from the committed Phase 01 source and must be retained until the post-approval deployment decision.
 
 ## Governance baseline approval — 2026-09-19
 

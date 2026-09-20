@@ -8,16 +8,17 @@
 | Repository | `~/Desktop/GitHub/TalentisOS` |
 | Current branch | `main` |
 | Controlling Phase 00 implementation SHA | `5e496fb525f0de32608e208c7affa8746773ffbe` (`docs: establish Phase 00 governance baseline`) |
+| Controlling Phase 01 implementation SHA | `a2fb0a869295f0696f5318c70a820c77fe20b317` (`feat: establish Phase 01 app shell, PWA and persistence baseline`) |
 | HEAD before this governance-record update | `5e496fb525f0de32608e208c7affa8746773ffbe` |
 | Working tree before Phase 00 edits | Clean |
 | Local `origin/main` parity | Equal: `main...origin/main` = `0 0` |
-| Recent history | `5e496fb docs: establish Phase 00 governance baseline`; `625b190 docs: add TalentisOS product documentation`; `d16a36f chore: establish TalentisOS Vite foundation` |
+| Recent history | `a2fb0a8 feat: establish Phase 01 app shell, PWA and persistence baseline`; `5e496fb docs: establish Phase 00 governance baseline`; `625b190 docs: add TalentisOS product documentation` |
 | Runtime | Vite 8, vanilla JavaScript ES modules and CSS |
 | Product implementation state | Phase 01 semantic shell is implemented, pending founder approval; it exposes only the five approved Core destinations and no product workflows. |
 | Data model / persistence | IndexedDB schema v2 provides additive settings/drafts bootstrap and a saved leadership-workday timezone preference. Import/export and domain records remain deferred. |
 | Tests and checks | `npm test` runs eight Node built-in focused tests; source syntax, manifest and production-build checks pass. |
 | Deployment / GitHub Pages configuration | Temporary generated-only `gh-pages` validation branch serves `https://n365mr.github.io/TalentisOS/`; latest validation artifact is cache v5. |
-| Current release state | Phase 01 is ready for founder approval. A later production release remains subject to the Phase 08 release gate. |
+| Current release state | Phase 01 PASS — ready for founder approval. A later production release remains subject to the Phase 08 release gate. |
 
 ## Phase 00 outcome
 
@@ -27,4 +28,4 @@ See [Documented Gap List](Documented-Gap-List.md), [Module Status List](Module-S
 
 ## Phase 01 implementation evidence
 
-Phase 01 was implemented in the working tree on 2026-09-19 without a commit to `main`. Browser inspection verified the shell at 390 px, 768 px and 1440 px; the 390 px hamburger exposes exactly five Core destinations, the desktop navigation is visible at 768 px and 1440 px, and no horizontal overflow was observed. Keyboard tab focus reaches the skip link with a visible focus indicator. Mac, iPhone and iPad Pages-origin installs registered the service worker, retained only the current shell cache, opened offline and preserved the saved timezone. The Mac clean install automatically registered, then independently transitioned from cache v4 to v5, deleted v4, preserved `Australia/Hobart`, and reopened offline. iPhone retained `Australia/Adelaide`; iPad retained `Australia/Brisbane`.
+Phase 01 implementation is controlled by `a2fb0a869295f0696f5318c70a820c77fe20b317` (`feat: establish Phase 01 app shell, PWA and persistence baseline`). Browser inspection verified the shell at 390 px, 768 px and 1440 px; the 390 px hamburger exposes exactly five Core destinations, the desktop navigation is visible at 768 px and 1440 px, and no horizontal overflow was observed. Keyboard tab focus reaches the skip link with a visible focus indicator. Mac, iPhone and iPad Pages-origin installs registered the service worker, retained only the current shell cache, opened offline and preserved the saved timezone. The Mac clean install automatically registered, then independently transitioned from cache v4 to v5, deleted v4, preserved `Australia/Hobart`, and reopened offline. iPhone retained `Australia/Adelaide`; iPad retained `Australia/Brisbane`. Phase 01 is PASS and ready for founder approval.

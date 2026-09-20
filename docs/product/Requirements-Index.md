@@ -4,6 +4,8 @@
 
 This index reconciles the product contract with the repository at baseline commit `625b19015b15319546e9c56e8cbcde02c0339862`, inspected on 2026-09-19. The [Product Specification](TalentisOS-Product-Specification.md) remains the controlling product decision document; the [Implementation Phases](TalentisOS-Implementation-Phases.md) remain the approved build sequence.
 
+Phase 01 controlling implementation commit: `a2fb0a869295f0696f5318c70a820c77fe20b317` (`feat: establish Phase 01 app shell, PWA and persistence baseline`); validation result: PASS — ready for founder approval.
+
 Status meanings: **verified** means code and relevant evidence were inspected; **planned** means required but not yet implemented; **not evidenced** means no relevant implementation or test evidence exists.
 
 | Contract area | Controlling specification section | Approved phase(s) | Baseline evidence | Status / next verification |

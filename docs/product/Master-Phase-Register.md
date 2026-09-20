@@ -5,7 +5,7 @@ Controlling Phase 00 implementation baseline: `5e496fb525f0de32608e208c7affa8746
 | Phase | Approved outcome | Status | Evidence / next gate |
 | --- | --- | --- | --- |
 | 00 | Repository, governance and product-contract reconciliation | **Complete — approved** | Controlling implementation SHA `5e496fb525f0de32608e208c7affa8746773ffbe`; documentation-only scope, build passed, and no test/check script was available. |
-| 01 | App shell, design system, PWA and persistence baseline | **Ready for founder approval** | Semantic five-destination shell, IndexedDB schema v2, local drafts, saved timezone, PWA manifest/icon/service worker and eight focused tests are complete. Mac, iPhone and iPad Pages-origin install, registration, cache, update, offline and persistence evidence passed; Mac independently verified v4→v5 cache replacement. |
+| 01 | App shell, design system, PWA and persistence baseline | **PASS — ready for founder approval** | Controlling implementation SHA `a2fb0a869295f0696f5318c70a820c77fe20b317`; semantic five-destination shell, IndexedDB schema v2, local drafts, saved timezone, PWA manifest/icon/service worker and eight focused tests are complete. Mac, iPhone and iPad Pages-origin install, registration, cache, update, offline and persistence evidence passed; Mac independently verified v4→v5 cache replacement. |
 | 02 | Canonical task engine, workday utility and relationships | Not started | Depends on Phase 01. |
 | 03 | End of Day, carry-over and next-workday integrity | Not started | Depends on Phase 02. |
 | 04 | Morning Huddle, Today and Home decision surface | Not started | Depends on Phase 03. |
