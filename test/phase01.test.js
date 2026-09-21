@@ -36,18 +36,19 @@ test('production shell caching uses Vite’s generated entry asset manifest', ()
   assert.match(source, /caches\.delete\(key\)/)
 })
 
-test('connection status uses a network-only same-origin probe', () => {
-  const appSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
-  const workerSource = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8')
-  assert.match(appSource, /asset-manifest\.json/)
-  assert.match(appSource, /talentisos-connection-check/)
-  assert.match(appSource, /new AbortController\(\)/)
-  assert.match(appSource, /window\.setTimeout\(\(\) => controller\.abort\(\), 3000\)/)
-  assert.match(appSource, /fetch\(probeUrl, \{ cache: 'no-store', signal: controller\.signal \}\)/)
-  assert.match(appSource, /window\.clearTimeout\(timeout\)/)
-  assert.match(workerSource, /CONNECTION_PROBE_PARAM/)
-  assert.match(workerSource, /url\.searchParams\.has\(CONNECTION_PROBE_PARAM\)/)
-  assert.match(workerSource, /event\.respondWith\(fetch\(event\.request\)\)/)
+test('service worker bypasses Vite development modules without changing production cache paths', () => {
+  const source = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8')
+  const bypass = "if (isViteDevelopmentRequest(url)) {\n    event.respondWith(fetch(event.request))\n    return\n  }"
+
+  assert.match(source, /url\.pathname\.startsWith\('\/src\/'\)/)
+  assert.match(source, /url\.pathname\.startsWith\('\/@vite\/'\)/)
+  assert.match(source, /url\.pathname\.startsWith\('\/@id\/'\)/)
+  assert.match(source, /url\.pathname\.startsWith\('\/node_modules\/\.vite\/'\)/)
+  assert.ok(source.includes(bypass))
+  assert.ok(source.indexOf(bypass) < source.indexOf("if (event.request.mode === 'navigate')"))
+  assert.ok(source.indexOf(bypass) < source.indexOf('event.respondWith(caches.match(event.request)'))
+  assert.match(source, /cache\.put\('\.\/\', copy\)/)
+  assert.match(source, /caches\.match\('\.\/'\)\.then\(\(response\) => response \|\| caches\.match\('\.\/index\.html'\)\)/)
 })
 
 test('service worker registration does not miss an already-complete document', () => {
@@ -63,15 +64,17 @@ test('service worker registration does not miss an already-complete document', (
 test('service worker registration starts independently of persistence bootstrap', () => {
   const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
   assert.equal([...source.matchAll(/\bregisterServiceWorker\(\)/g)].length, 1)
-  assert.match(source, /registerServiceWorker\(\)\nstart\(\)/)
+  assert.match(source, /registerServiceWorker\(\); start\(\)/)
 })
 
-test('database schema retains additive migrations through the Phase 03 End of Day store', () => {
+test('database schema retains additive migrations through the Phase 04 Huddle store', () => {
   const source = readFileSync(new URL('../src/persistence/database.js', import.meta.url), 'utf8')
-  assert.equal(DATABASE_VERSION, 4)
+  assert.equal(DATABASE_VERSION, 5)
   assert.match(source, /event\.oldVersion < 2/)
   assert.match(source, /event\.oldVersion < 3/)
   assert.match(source, /event\.oldVersion < 4/)
+  assert.match(source, /event\.oldVersion < 5/)
   assert.match(source, /TASKS_STORE/)
   assert.match(source, /EODS_STORE/)
+  assert.match(source, /HUDDLES_STORE/)
 })

@@ -43,15 +43,38 @@ test('individual, selected-subset and carry-all operations preserve canonical ta
   const carriedAll = tasks.map((task) => carryTask(task, { fromWorkday: '2026-09-20', toWorkday: '2026-09-21', eodId: 'eod_2026-09-20', now }))
   assert.deepEqual(carriedSelected.map((task) => task.id), ['task_a', 'task_b'])
   assert.deepEqual(carriedAll.map((task) => task.id), ['task_a', 'task_b', 'task_c'])
-  assert.match(source, /data-carry="\$\{task\.id\}"/)
+  assert.match(source, /data-carry="\$\{item\.id\}"/)
+  assert.match(source, /class="carry-select"/)
   assert.match(source, /id="carry-selected"/)
   assert.match(source, /id="carry-all"/)
+})
+
+test('Sunday-to-Monday EOD carry renders prepared state and removes repeat controls', () => {
+  const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
+  const task = createQuickTask({ title: 'Sunday carry', dueDate: '2026-09-20' }, now)
+  const carried = carryTask(task, { fromWorkday: '2026-09-20', toWorkday: '2026-09-21', eodId: 'eod_2026-09-20', now })
+  const prepared = carried.carryHistory.some((entry) => entry.eodId === 'eod_2026-09-20' && entry.toWorkday === '2026-09-21')
+  assert.equal(prepared, true)
+  assert.match(source, /entry\.eodId === eod\.id && entry\.toWorkday === target/)
+  assert.match(source, /Prepared for \$\{target\}/)
+  assert.match(source, /prepared \? ''/)
+})
+
+test('selected carry targets only selected IDs and carry-all targets every eligible ID', () => {
+  const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
+  const first = createQuickTask({ title: 'First' }, now); const second = createQuickTask({ title: 'Second' }, now)
+  const selected = [first.id]
+  assert.deepEqual(selected, [first.id])
+  assert.notEqual(selected[0], second.id)
+  assert.match(source, /const selectedCarryIds/)
+  assert.match(source, /carryMessage\(selectedCarryIds\(\)\)/)
+  assert.match(source, /querySelectorAll\('\.carry-select'\)/)
 })
 
 test('completed and archived tasks are excluded from EOD carrying', () => {
   const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
   const database = readFileSync(new URL('../src/persistence/database.js', import.meta.url), 'utf8')
-  assert.match(source, /task\.status !== 'completed'/)
+  assert.match(source, /item\.status !== 'completed'/)
   assert.match(database, /if \(existing\.status === 'completed' \|\| existing\.archivedAt\) continue/)
 })
 
@@ -75,6 +98,14 @@ test('a Quick-Captured task due on the EOD workday is eligible for review', () =
   assert.equal(eligible, true)
 })
 
+test('Save progress retains an exact live confirmation after the EOD refresh', () => {
+  const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
+  assert.match(source, /if \(!complete\) eodSaveMessage = 'End of Day progress saved\.'/)
+  assert.match(source, /eodSaveMessage = 'End of Day progress saved\.'; await refresh\(\)/)
+  assert.match(source, /const saveFeedback = !done \? `<p class="form-message" role="status" aria-live="polite">\$\{escape\(eodSaveMessage\)\}<\/p>` : ''/)
+  assert.match(source, /<\/div>\$\{saveFeedback\}<\/form>/)
+})
+
 test('completed EOD renders a read-only closeout and binds no EOD mutation controls', () => {
   const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
   const completed = validateEod({ ...createEod('2026-09-20', now), taskIds: ['task_a'], top3TaskIds: ['task_a'], recognition: 'Thank the team', lessons: 'Start earlier', status: 'completed' }, { now })
@@ -82,16 +113,18 @@ test('completed EOD renders a read-only closeout and binds no EOD mutation contr
   assert.deepEqual(completed.top3TaskIds, ['task_a'])
   assert.equal(completed.recognition, 'Thank the team')
   assert.equal(completed.lessons, 'Start earlier')
-  assert.match(source, /const isCompleted = eod\.status === 'completed'/)
-  assert.match(source, /!isCompleted && outstanding\.length/)
-  assert.match(source, /isEod && eod\?\.status !== 'completed'\) bindEodEvents\(\)/)
-  assert.match(source, /Top 3 for \$\{escape\(target\)\}/)
-  assert.match(source, /complete \|\| readOnly \? ''/)
-  assert.doesNotMatch(source.slice(source.indexOf('const closeout = isCompleted'), source.indexOf('function render()')), /isCompleted \?[^]*data-carry/)
+  assert.match(source, /const done = eod\.status === 'completed'/)
+  assert.match(source, /!done && eligible\.length/)
+  assert.match(source, /const controls = done \|\| complete/)
+  assert.doesNotMatch(source.slice(source.indexOf('function eodSurface()'), source.indexOf('function huddleSurface()')), /done \?[^]*carry-select/)
+  assert.match(source, /const carryFeedback = !done/)
+  const surface = source.slice(source.indexOf('function eodSurface()'), source.indexOf('function huddleSurface()'))
+  const completedBranch = surface.slice(surface.indexOf('${done ?'), surface.indexOf(' : `<section'))
+  assert.doesNotMatch(completedBranch, /eod-closeout|saveFeedback|Save progress/)
 })
 
 test('viewing a completed EOD does not call a task mutation function', () => {
   const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
-  const surface = source.slice(source.indexOf('function eodSurface()'), source.indexOf('function render()'))
+  const surface = source.slice(source.indexOf('function eodSurface()'), source.indexOf('function huddleSurface()'))
   assert.doesNotMatch(surface, /resolveEodTask\(|carryEodTasks\(|saveEod\(/)
 })

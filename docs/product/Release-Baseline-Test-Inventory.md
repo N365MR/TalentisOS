@@ -18,6 +18,15 @@ Phase 01 controlling implementation commit: `a2fb0a869295f0696f5318c70a820c77fe2
 
 ## Phase 03 validation record — 2026-09-20
 
+## Phase 04 validation record — 2026-09-20
+
+| Validation area | Command / method | Result | Evidence and limitation |
+| --- | --- | --- |
+| Automated tests | `npm test` | Pass | 37 Node tests, including EOD-to-Huddle context, duplicate-safe commitment linking/resume, ordering, canonical completion identity, EOD carry/save feedback and the local Vite service-worker bypass. |
+| Local Vite service-worker module bypass | `npm test`; Safari localhost revalidation | Pass | `/src/`, `/@vite/`, `/@id/`, and `/node_modules/.vite/` are network-only and excluded from the TalentisOS shell cache. Safari confirmed the current EOD module and visible feedback load without stale source. Production built-asset caching and offline-shell fallback remain covered. |
+| Source checks and build | `node --check` and `npm run build` | Pass | `public/sw.js`, `src/main.js`, `src/persistence/database.js`, `src/domain/eod.js` and `src/domain/huddle.js` parse; Vite built 12 modules. |
+| Manual workflow | Seeded Safari local browser workflow | Pass | Real Sunday 2026-09-20 EOD to Monday 2026-09-21 Huddle inherited carried canonical tasks, Top 3 and recognition without re-entry. Completing the linked canonical task once synchronised Huddle, Home, Today and Tasks. Carry/save feedback, EOD read-only completion, 390/768/1440 layouts, no overflow, keyboard access, reduced motion, navigation and persistence passed. |
+
 Controlling implementation commit: `cb45dfa3045791fc489974b23cae1029d7c02327` (`feat: implement Phase 03 End of Day workflow`).
 
 | Validation area | Command / method | Result | Evidence and limitation |

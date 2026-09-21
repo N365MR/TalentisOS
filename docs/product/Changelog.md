@@ -4,6 +4,8 @@
 
 ### Added
 
+- Phase 04 Morning Huddle, Home and Today's Work: additive IndexedDB v5 Huddle references, live prior-EOD carry/Top 3/recognition context, and canonical task completion across daily views.
+- Phase 04 data model and acceptance scenarios.
 - Phase 03 End of Day workflow: additive IndexedDB v4 `eods` store, resumable daily closeout, canonical task completion/archive, duplicate-safe carry-forward and concise Top 3/recognition/lesson references.
 - Phase 03 EOD data model and acceptance scenarios, with focused unit coverage for EOD identity/resume, Top 3 limits, carry integrity/idempotence, same-record completion and Friday–Sunday Monday handling.
 - Phase 02 canonical task engine: IndexedDB schema v3 task store, validated stable IDs, workday utility, Quick Capture, task views, detail editing, completion, archive/restore and atomic task-reference repair.
@@ -19,6 +21,7 @@
 
 ### Verified
 
+- Phase 04 daily loop passed final seeded Safari validation across the real Sunday 2026-09-20 EOD to Monday 2026-09-21 Huddle transition: carried canonical tasks, Top 3 and recognition loaded without re-entry; one completion synchronised across Huddle, Home, Today and Tasks; carry/save feedback, completed-EOD read-only behavior and 390/768/1440 accessibility checks passed. Phase 04 is ready for founder approval.
 - Phase 03 controlling implementation `cb45dfa3045791fc489974b23cae1029d7c02327` (`feat: implement Phase 03 End of Day workflow`) passed final Safari validation: selected Quick Capture due dates; individual, selected-subset and carry-all same-task EOD carry/history; Top 3/recognition/lesson resume; completed-EOD read-only state; 390/768/1440-class no-overflow; keyboard access; and reduced motion. Phase 03 is ready for founder approval.
 - Phase 02 implementation commit `1afc7229294f0ff0f44bf930b4367ca2d1fba13f`: canonical tasks/IndexedDB v3, Today/Tasks Quick Capture, edit/complete/archive/restore, workday/date utility, typed references and atomic permanent-delete repair passed. Final browser deletion validation confirmed the linked title, stable ID and `depends-on` relationship before deletion; Target removal, Linked reference repair and Unrelated preservation passed. Responsive 390 px/768 px/1440 px, keyboard/reduced-motion, 15/15 tests and build passed. Phase 02 is PASS — ready for founder approval.
 - Documented clean pre-change working tree, branch/HEAD, locally available `origin/main` parity, package scripts, visible starter surface and absence of tracked test, data-model and deployment configuration.

@@ -32,12 +32,11 @@ test('Quick Capture preserves an optional selected ISO due date and leaves an em
   assert.equal(createQuickTask({ title: 'Date selected', dueDate: '2026-09-20' }, fixedNow).dueDate, '2026-09-20')
 })
 
-test('Today and Tasks use the shared FormData Quick Capture path', () => {
+test('Tasks uses the shared FormData Quick Capture path', () => {
   const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
-  assert.match(source, /current\.id === 'today' \|\| current\.id === 'tasks'/)
-  assert.match(source, /function taskSurface\(\)/)
+  assert.match(source, /function captureAndTasks\(\)/)
   assert.match(source, /new FormData\(form\)/)
-  assert.match(source, /submittedDueDate.*\\d\{4\}-\\d\{2\}-\\d\{2\}/)
+  assert.match(source, /dueDate: \/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\//)
   assert.match(source, /Due date \(optional\)/)
 })
 

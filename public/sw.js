@@ -3,6 +3,13 @@ const BUILD_MANIFEST = './asset-manifest.json'
 const CONNECTION_PROBE_PARAM = 'talentisos-connection-check'
 const SHELL_ASSETS = ['./', './index.html', BUILD_MANIFEST, './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png']
 
+function isViteDevelopmentRequest(url) {
+  return url.pathname.startsWith('/src/')
+    || url.pathname.startsWith('/@vite/')
+    || url.pathname.startsWith('/@id/')
+    || url.pathname.startsWith('/node_modules/.vite/')
+}
+
 async function cacheProductionShell() {
   const cache = await caches.open(CACHE_VERSION)
   const manifestResponse = await fetch(BUILD_MANIFEST, { cache: 'no-cache' })
@@ -21,6 +28,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return
   if (url.searchParams.has(CONNECTION_PROBE_PARAM)) {
+    event.respondWith(fetch(event.request))
+    return
+  }
+  if (isViteDevelopmentRequest(url)) {
     event.respondWith(fetch(event.request))
     return
   }

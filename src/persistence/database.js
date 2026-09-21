@@ -3,12 +3,14 @@ import { archiveTask, createQuickTask, restoreTask, validateTask } from '../doma
 import { findTaskReferences, repairTaskReferences } from '../domain/references.js'
 import { dateInTimezone, nextWorkday, validateTimezone } from '../domain/workday.js'
 import { addEodTaskIds, carryTask, createEod, validateEod } from '../domain/eod.js'
+import { addHuddleTaskIds, createHuddle, validateHuddle } from '../domain/huddle.js'
 
-export const DATABASE_VERSION = 4
+export const DATABASE_VERSION = 5
 const SETTINGS_STORE = 'settings'
 const DRAFTS_STORE = 'drafts'
 const TASKS_STORE = 'tasks'
 const EODS_STORE = 'eods'
+const HUDDLES_STORE = 'huddles'
 const WORKSPACE_SETTINGS_ID = 'workspace'
 let databasePromise
 
@@ -29,6 +31,8 @@ export function openDatabase() {
       if (event.oldVersion < 3) addStore(database, TASKS_STORE)
       // v4 adds End of Day records; task records remain in their original store and are never copied.
       if (event.oldVersion < 4) addStore(database, EODS_STORE)
+      // v5 adds resumable Huddles. They hold task IDs only, never task copies.
+      if (event.oldVersion < 5) addStore(database, HUDDLES_STORE)
     }
     request.onsuccess = () => { const database = request.result; database.onversionchange = () => database.close(); resolve(database) }
     request.onerror = () => reject(request.error || new Error('Unable to open browser storage.'))
@@ -146,7 +150,7 @@ export async function linkedTaskReferences(id) {
 
 export async function deleteCanonicalTask(id, { replacementTaskId = null } = {}) {
   const database = await openDatabase()
-  const transaction = database.transaction([TASKS_STORE, EODS_STORE], 'readwrite')
+  const transaction = database.transaction([TASKS_STORE, EODS_STORE, HUDDLES_STORE], 'readwrite')
   const store = transaction.objectStore(TASKS_STORE)
   const tasks = await requestResult(store.getAll())
   if (!tasks.some((task) => task.id === id)) { transaction.abort(); throw new Error('This task no longer exists.') }
@@ -159,6 +163,13 @@ export async function deleteCanonicalTask(id, { replacementTaskId = null } = {})
     const nextId = replacementTaskId || null
     const replace = (ids) => [...new Set(ids.flatMap((taskId) => taskId === id ? (nextId ? [nextId] : []) : [taskId]))]
     transaction.objectStore(EODS_STORE).put(validateEod({ ...eod, taskIds: replace(eod.taskIds), top3TaskIds: replace(eod.top3TaskIds) }, { existing: eod }))
+  }
+  const huddles = await requestResult(transaction.objectStore(HUDDLES_STORE).getAll())
+  for (const huddle of huddles) {
+    if (!huddle.taskIds.includes(id)) continue
+    const nextId = replacementTaskId || null
+    const replace = (ids) => [...new Set(ids.flatMap((taskId) => taskId === id ? (nextId ? [nextId] : []) : [taskId]))]
+    transaction.objectStore(HUDDLES_STORE).put(validateHuddle({ ...huddle, taskIds: replace(huddle.taskIds), top3TaskIds: replace(huddle.top3TaskIds), commitmentTaskIds: replace(huddle.commitmentTaskIds) }, { existing: huddle }))
   }
   store.delete(id)
   await transactionDone(transaction)
@@ -238,4 +249,49 @@ export async function carryEodTasks(eodId, taskIds) {
   eodStore.put(addEodTaskIds(eod, taskIds, now))
   await transactionDone(transaction)
   return { targetWorkday, carried }
+}
+
+export async function getOrCreateHuddle(workday = null) {
+  const settings = await getSettings()
+  const day = workday || dateInTimezone(new Date(), settings.leadershipWorkdayTimezone)
+  const database = await openDatabase()
+  const transaction = database.transaction([HUDDLES_STORE, EODS_STORE, TASKS_STORE], 'readwrite')
+  const huddleStore = transaction.objectStore(HUDDLES_STORE)
+  const existing = await requestResult(huddleStore.get(`huddle_${day}`))
+  if (existing) { await transactionDone(transaction); return existing }
+  const eods = await requestResult(transaction.objectStore(EODS_STORE).getAll())
+  const source = eods.filter((candidate) => nextWorkday(candidate.workday, settings.leadershipWorkdayTimezone) === day).sort((a, b) => b.workday.localeCompare(a.workday))[0]
+  const allTasks = await requestResult(transaction.objectStore(TASKS_STORE).getAll())
+  const byId = new Map(allTasks.map((task) => [task.id, task]))
+  const carriedIds = source ? source.taskIds.filter((id) => byId.get(id)?.carryHistory?.some((entry) => entry.eodId === source.id && entry.toWorkday === day)) : []
+  const top3TaskIds = source ? source.top3TaskIds.filter((id) => byId.has(id)) : []
+  const huddle = createHuddle(day, { sourceEodId: source?.id || null, taskIds: [...carriedIds, ...top3TaskIds], top3TaskIds, recognition: source?.recognition || '' })
+  huddleStore.add(huddle)
+  await transactionDone(transaction)
+  return huddle
+}
+
+export async function saveHuddle(input) {
+  const database = await openDatabase()
+  const transaction = database.transaction(HUDDLES_STORE, 'readwrite')
+  const store = transaction.objectStore(HUDDLES_STORE)
+  const existing = input.id ? await requestResult(store.get(input.id)) : null
+  const huddle = validateHuddle(input, { existing })
+  await requestResult(store.put(huddle))
+  await transactionDone(transaction)
+  return huddle
+}
+
+export async function addTasksToHuddle(huddleId, taskIds) {
+  const database = await openDatabase()
+  const transaction = database.transaction([HUDDLES_STORE, TASKS_STORE], 'readwrite')
+  const huddleStore = transaction.objectStore(HUDDLES_STORE)
+  const huddle = await requestResult(huddleStore.get(huddleId))
+  if (!huddle) { transaction.abort(); throw new Error('This Morning Huddle no longer exists.') }
+  const found = await Promise.all(taskIds.map((id) => requestResult(transaction.objectStore(TASKS_STORE).get(id))))
+  if (found.some((task) => !task)) { transaction.abort(); throw new Error('One of these tasks no longer exists.') }
+  const next = addHuddleTaskIds(huddle, taskIds)
+  huddleStore.put(next)
+  await transactionDone(transaction)
+  return next
 }
