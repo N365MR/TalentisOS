@@ -18,7 +18,9 @@ Phase 01 controlling implementation commit: `a2fb0a869295f0696f5318c70a820c77fe2
 
 ## Phase 03 validation record — 2026-09-20
 
-## Phase 04 validation record — 2026-09-20
+## Phase 04 validation record — 2026-09-21
+
+Controlling implementation commit: `322601deda92397febc44e55df50aa2883fc4d88` (`feat: implement Phase 04 daily decision surface`).
 
 | Validation area | Command / method | Result | Evidence and limitation |
 | --- | --- | --- |

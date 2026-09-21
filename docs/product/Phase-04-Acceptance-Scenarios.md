@@ -1,5 +1,7 @@
 # Phase 04 acceptance scenarios
 
+Controlling implementation commit: `322601deda92397febc44e55df50aa2883fc4d88` (`feat: implement Phase 04 daily decision surface`).
+
 | Scenario | Expected result | Evidence |
 | --- | --- | --- |
 | EOD to Huddle | A prior EOD's carry-over IDs, Top 3 and recognition populate the target-workday Huddle without re-entry. | `phase04.test.js`. |
