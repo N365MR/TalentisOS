@@ -4,6 +4,7 @@
 
 ### Added
 
+- Phase 05 implementation (uncommitted): IndexedDB v7 structured Risk, Decision and Handover stores, lifecycle validation, atomic canonical task-reference repair, a contextual Needs attention route, and Home/EOD/Huddle/Today exception retrieval. No packages installed, committed, pushed or deployed.
 - Phase 04 Morning Huddle, Home and Today's Work: additive IndexedDB v5 Huddle references, live prior-EOD carry/Top 3/recognition context, and canonical task completion across daily views.
 - Phase 04 data model and acceptance scenarios.
 - Phase 03 End of Day workflow: additive IndexedDB v4 `eods` store, resumable daily closeout, canonical task completion/archive, duplicate-safe carry-forward and concise Top 3/recognition/lesson references.

@@ -4,13 +4,17 @@ import { findTaskReferences, repairTaskReferences } from '../domain/references.j
 import { dateInTimezone, nextWorkday, validateTimezone } from '../domain/workday.js'
 import { addEodTaskIds, carryTask, createEod, validateEod } from '../domain/eod.js'
 import { addHuddleTaskIds, createHuddle, validateHuddle } from '../domain/huddle.js'
+import { createDecision, createHandover, createRisk, replaceTaskId, validateAttentionImport, validateDecision, validateHandover, validateRisk } from '../domain/attention.js'
 
-export const DATABASE_VERSION = 5
+export const DATABASE_VERSION = 7
 const SETTINGS_STORE = 'settings'
 const DRAFTS_STORE = 'drafts'
 const TASKS_STORE = 'tasks'
 const EODS_STORE = 'eods'
 const HUDDLES_STORE = 'huddles'
+const RISKS_STORE = 'risks'
+const DECISIONS_STORE = 'decisions'
+const HANDOVERS_STORE = 'handovers'
 const WORKSPACE_SETTINGS_ID = 'workspace'
 let databasePromise
 
@@ -33,6 +37,8 @@ export function openDatabase() {
       if (event.oldVersion < 4) addStore(database, EODS_STORE)
       // v5 adds resumable Huddles. They hold task IDs only, never task copies.
       if (event.oldVersion < 5) addStore(database, HUDDLES_STORE)
+      // v6/v7 add and repair structured Phase 05 stores; they only retain canonical task IDs.
+      if (event.oldVersion < 7) { addStore(database, RISKS_STORE); addStore(database, DECISIONS_STORE); addStore(database, HANDOVERS_STORE) }
     }
     request.onsuccess = () => { const database = request.result; database.onversionchange = () => database.close(); resolve(database) }
     request.onerror = () => reject(request.error || new Error('Unable to open browser storage.'))
@@ -88,6 +94,26 @@ export async function listTasks({ includeArchived = false } = {}) {
   const tasks = await requestResult(database.transaction(TASKS_STORE, 'readonly').objectStore(TASKS_STORE).getAll())
   return tasks.filter((task) => includeArchived || !task.archivedAt).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 }
+
+async function listStore(name, { includeArchived = false } = {}) {
+  const database = await openDatabase()
+  const records = await requestResult(database.transaction(name, 'readonly').objectStore(name).getAll())
+  return records.filter((record) => includeArchived || !record.archivedAt).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+}
+export const listRisks = (options) => listStore(RISKS_STORE, options)
+export const listDecisions = (options) => listStore(DECISIONS_STORE, options)
+export const listHandovers = (options) => listStore(HANDOVERS_STORE, options)
+export async function listAttention(options = {}) { return [...await listRisks(options), ...await listDecisions(options), ...await listHandovers(options)].sort((a, b) => a.reviewDate.localeCompare(b.reviewDate)) }
+
+async function saveAttention(storeName, validator, input) {
+  const database = await openDatabase(); const transaction = database.transaction(storeName, 'readwrite'); const store = transaction.objectStore(storeName)
+  const existing = input.id ? await requestResult(store.get(input.id)) : null; const record = validator(input, { existing }); store.put(record); await transactionDone(transaction); return record
+}
+export const saveRisk = (input) => saveAttention(RISKS_STORE, validateRisk, input)
+export const saveDecision = (input) => saveAttention(DECISIONS_STORE, validateDecision, input)
+export const saveHandover = (input) => saveAttention(HANDOVERS_STORE, validateHandover, input)
+export async function createAttention(recordType, input) { return recordType === 'risk' ? saveRisk(createRisk(input)) : recordType === 'decision' ? saveDecision(createDecision(input)) : recordType === 'handover' ? saveHandover(createHandover(input)) : Promise.reject(new Error('Choose a valid Needs attention type.')) }
+export async function validateAttentionImportRecord(record) { return validateAttentionImport(record) }
 
 export async function getTask(id) {
   const database = await openDatabase()
@@ -150,7 +176,7 @@ export async function linkedTaskReferences(id) {
 
 export async function deleteCanonicalTask(id, { replacementTaskId = null } = {}) {
   const database = await openDatabase()
-  const transaction = database.transaction([TASKS_STORE, EODS_STORE, HUDDLES_STORE], 'readwrite')
+  const transaction = database.transaction([TASKS_STORE, EODS_STORE, HUDDLES_STORE, RISKS_STORE, DECISIONS_STORE, HANDOVERS_STORE], 'readwrite')
   const store = transaction.objectStore(TASKS_STORE)
   const tasks = await requestResult(store.getAll())
   if (!tasks.some((task) => task.id === id)) { transaction.abort(); throw new Error('This task no longer exists.') }
@@ -171,6 +197,14 @@ export async function deleteCanonicalTask(id, { replacementTaskId = null } = {})
     const replace = (ids) => [...new Set(ids.flatMap((taskId) => taskId === id ? (nextId ? [nextId] : []) : [taskId]))]
     transaction.objectStore(HUDDLES_STORE).put(validateHuddle({ ...huddle, taskIds: replace(huddle.taskIds), top3TaskIds: replace(huddle.top3TaskIds), commitmentTaskIds: replace(huddle.commitmentTaskIds) }, { existing: huddle }))
   }
+  const repair = async (storeName, validator, field) => {
+    const records = await requestResult(transaction.objectStore(storeName).getAll())
+    for (const record of records) if ((Array.isArray(record[field]) ? record[field] : [record[field]]).includes(id)) {
+      const value = Array.isArray(record[field]) ? replaceTaskId(record[field], id, replacementTaskId) : (record[field] === id ? replacementTaskId : record[field])
+      transaction.objectStore(storeName).put(validator({ ...record, [field]: value }, { existing: record }))
+    }
+  }
+  await repair(RISKS_STORE, validateRisk, 'mitigationTaskId'); await repair(DECISIONS_STORE, validateDecision, 'followUpTaskIds'); await repair(HANDOVERS_STORE, validateHandover, 'linkedTaskIds')
   store.delete(id)
   await transactionDone(transaction)
   return { references, repaired: references.length }
