@@ -4,7 +4,7 @@
 
 ### Added
 
-- Phase 05 implementation (uncommitted): IndexedDB v7 structured Risk, Decision and Handover stores, lifecycle validation, atomic canonical task-reference repair, a contextual Needs attention route, and Home/EOD/Huddle/Today exception retrieval. No packages installed, committed, pushed or deployed.
+- Phase 05 implementation: IndexedDB v7 structured Risk, Decision and Handover stores, lifecycle validation, atomic canonical task-reference repair, a contextual Needs attention route, and Home/EOD/Huddle/Today exception retrieval.
 - Phase 04 Morning Huddle, Home and Today's Work: additive IndexedDB v5 Huddle references, live prior-EOD carry/Top 3/recognition context, and canonical task completion across daily views.
 - Phase 04 data model and acceptance scenarios.
 - Phase 03 End of Day workflow: additive IndexedDB v4 `eods` store, resumable daily closeout, canonical task completion/archive, duplicate-safe carry-forward and concise Top 3/recognition/lesson references.
@@ -22,6 +22,7 @@
 
 ### Verified
 
+- Phase 05 controlling implementation `d36ebec1df0f6e25bde9896a75b548246d0e0158` (`feat: implement Phase 05 needs-attention workflows`) passed Risk, Decision and Handover lifecycle/history validation; canonical task link/replace/unlink integrity; seeded daily-loop retrieval through Home, EOD, Huddle, Today and Tasks; 390/768/1440 responsive checks; keyboard focus; reduced motion; and no red console errors. Founder approved the phase on 2026-09-23.
 - Phase 04 implementation `322601deda92397febc44e55df50aa2883fc4d88` (`feat: implement Phase 04 daily decision surface`) passed final seeded Safari validation across the real Sunday 2026-09-20 EOD to Monday 2026-09-21 Huddle transition: canonical carry-over, Top 3 and recognition loaded without re-entry; Home derived the next best action, Today's Work used the approved attention order, and one completion synchronised across Huddle, Home, Today and Tasks. Carry/save feedback, completed-EOD read-only behavior, localhost Vite `/src` and HMR cache bypass, and 390/768/1440 accessibility checks passed. Phase 04 is ready for founder approval.
 - Phase 03 controlling implementation `cb45dfa3045791fc489974b23cae1029d7c02327` (`feat: implement Phase 03 End of Day workflow`) passed final Safari validation: selected Quick Capture due dates; individual, selected-subset and carry-all same-task EOD carry/history; Top 3/recognition/lesson resume; completed-EOD read-only state; 390/768/1440-class no-overflow; keyboard access; and reduced motion. Phase 03 is ready for founder approval.
 - Phase 02 implementation commit `1afc7229294f0ff0f44bf930b4367ca2d1fba13f`: canonical tasks/IndexedDB v3, Today/Tasks Quick Capture, edit/complete/archive/restore, workday/date utility, typed references and atomic permanent-delete repair passed. Final browser deletion validation confirmed the linked title, stable ID and `depends-on` relationship before deletion; Target removal, Linked reference repair and Unrelated preservation passed. Responsive 390 px/768 px/1440 px, keyboard/reduced-motion, 15/15 tests and build passed. Phase 02 is PASS — ready for founder approval.

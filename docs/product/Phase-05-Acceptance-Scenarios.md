@@ -1,5 +1,7 @@
 # Phase 05 acceptance scenarios
 
+Controlling implementation: `d36ebec1df0f6e25bde9896a75b548246d0e0158` (`feat: implement Phase 05 needs-attention workflows`), approved 2026-09-23.
+
 | Scenario | Expected outcome | Evidence |
 | --- | --- | --- |
 | Risk closure | A risk cannot resolve without a note; one mitigation task ID remains linked. | `phase05.test.js` |
