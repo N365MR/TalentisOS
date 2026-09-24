@@ -1,5 +1,7 @@
 # Phase 06 acceptance scenarios — Start Here, First 7 Days and roadmap
 
+Controlling implementation: `46920f25637406fcff0e5133c0dc34e4f4544d29` (`feat: implement Phase 06 new leader orientation`), approved 2026-09-24.
+
 | Scenario | Expected result | Evidence |
 | --- | --- | --- |
 | Four-question Start Here | Responsibility, workdays, weekly outcome and tomorrow attention save in one local orientation record; no account or profile is required. | `phase06.test.js`; manual Safari check pending |
