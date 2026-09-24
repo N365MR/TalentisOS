@@ -29,3 +29,7 @@ The records below describe the verified repository baseline at commit `625b19015
 
 - [Phase 03 End of Day data model](Phase-03-Data-Model.md)
 - [Phase 03 acceptance scenarios](Phase-03-Acceptance-Scenarios.md)
+## Phase 06 Start Here and First 7 Days
+
+- [Phase 06 orientation data model](Phase-06-Data-Model.md)
+- [Phase 06 acceptance scenarios](Phase-06-Acceptance-Scenarios.md)

@@ -5,8 +5,9 @@ import { dateInTimezone, nextWorkday, validateTimezone } from '../domain/workday
 import { addEodTaskIds, carryTask, createEod, validateEod } from '../domain/eod.js'
 import { addHuddleTaskIds, createHuddle, validateHuddle } from '../domain/huddle.js'
 import { createDecision, createHandover, createRisk, replaceTaskId, validateAttentionImport, validateDecision, validateHandover, validateRisk } from '../domain/attention.js'
+import { createOrientation, validateOrientation } from '../domain/orientation.js'
 
-export const DATABASE_VERSION = 7
+export const DATABASE_VERSION = 8
 const SETTINGS_STORE = 'settings'
 const DRAFTS_STORE = 'drafts'
 const TASKS_STORE = 'tasks'
@@ -15,6 +16,7 @@ const HUDDLES_STORE = 'huddles'
 const RISKS_STORE = 'risks'
 const DECISIONS_STORE = 'decisions'
 const HANDOVERS_STORE = 'handovers'
+const ORIENTATION_STORE = 'orientation'
 const WORKSPACE_SETTINGS_ID = 'workspace'
 let databasePromise
 
@@ -39,6 +41,8 @@ export function openDatabase() {
       if (event.oldVersion < 5) addStore(database, HUDDLES_STORE)
       // v6/v7 add and repair structured Phase 05 stores; they only retain canonical task IDs.
       if (event.oldVersion < 7) { addStore(database, RISKS_STORE); addStore(database, DECISIONS_STORE); addStore(database, HANDOVERS_STORE) }
+      // v8 adds one privacy-safe Core orientation record; it has no task copies or task references.
+      if (event.oldVersion < 8) addStore(database, ORIENTATION_STORE)
     }
     request.onsuccess = () => { const database = request.result; database.onversionchange = () => database.close(); resolve(database) }
     request.onerror = () => reject(request.error || new Error('Unable to open browser storage.'))
@@ -60,6 +64,19 @@ export async function getSettings() {
   await requestResult(store.put(settings))
   return settings
 }
+
+export async function getOrientation() {
+  const database = await openDatabase()
+  return requestResult(database.transaction(ORIENTATION_STORE, 'readonly').objectStore(ORIENTATION_STORE).get('core-orientation'))
+}
+
+export async function saveOrientation(input) {
+  const database = await openDatabase(); const transaction = database.transaction(ORIENTATION_STORE, 'readwrite'); const store = transaction.objectStore(ORIENTATION_STORE)
+  const existing = await requestResult(store.get('core-orientation')); const orientation = validateOrientation({ ...input, id: 'core-orientation' }, { existing })
+  store.put(orientation); await transactionDone(transaction); return orientation
+}
+
+export { validateOrientation, createOrientation }
 
 export { validateTimezone }
 
