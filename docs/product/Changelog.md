@@ -4,6 +4,8 @@
 
 ### Added
 
+- Phase 07 private conversation preparation: six concise flows, contextual Help Now, Weekly Review with Manager-up routine, private How I Lead commitments, interruption-safe drafts and optional canonical task references.
+- Phase 07 data model and acceptance scenarios.
 - Phase 06 Start Here, First 7 Days and current Days 1–30 roadmap: additive IndexedDB v8 orientation record, local drafts, privacy-safe observation validation, contextual Today entry points and explicitly optional canonical task creation.
 - Phase 06 data model and acceptance scenarios.
 - Phase 05 implementation: IndexedDB v7 structured Risk, Decision and Handover stores, lifecycle validation, atomic canonical task-reference repair, a contextual Needs attention route, and Home/EOD/Huddle/Today exception retrieval.
@@ -24,6 +26,7 @@
 
 ### Verified
 
+- Phase 07 controlling implementation `434f274dfe439746bb3e02616e7ce99a284b9328` (`feat(phase-07): add private conversation preparation and weekly review`) passed 70 automated tests, production build and diff check. Safari evidence covered all six conversation flows; five Help Now routes; privacy-safe rejection and formal routing; canonical task creation, linking and deletion-reference repair; Weekly Review, Manager-up and How I Lead persistence; drafts, keyboard focus, 390/768/1440 layouts, no overflow, navigation regression and existing-profile readability. Reduced-motion and saved-orientation-profile gaps are documented environment/test-data limitations closed by focused automated additive-migration coverage. Founder approved the phase on 2026-09-29.
 - Phase 06 controlling implementation `46920f25637406fcff0e5133c0dc34e4f4544d29` (`feat: implement Phase 06 new leader orientation`) passed 61 automated tests, production build and diff check. Safari evidence covered first-run completion in 1 minute 10 seconds, safe persistence/privacy rejection, draft/skip, optional canonical tasks, 390/768/1440 layouts, keyboard focus, no overflow and normal-origin console cleanliness. The unavailable local reduced-motion toggle is covered by a focused automated regression. Founder approved the phase on 2026-09-24.
 - Phase 05 controlling implementation `d36ebec1df0f6e25bde9896a75b548246d0e0158` (`feat: implement Phase 05 needs-attention workflows`) passed Risk, Decision and Handover lifecycle/history validation; canonical task link/replace/unlink integrity; seeded daily-loop retrieval through Home, EOD, Huddle, Today and Tasks; 390/768/1440 responsive checks; keyboard focus; reduced motion; and no red console errors. Founder approved the phase on 2026-09-23.
 - Phase 04 implementation `322601deda92397febc44e55df50aa2883fc4d88` (`feat: implement Phase 04 daily decision surface`) passed final seeded Safari validation across the real Sunday 2026-09-20 EOD to Monday 2026-09-21 Huddle transition: canonical carry-over, Top 3 and recognition loaded without re-entry; Home derived the next best action, Today's Work used the approved attention order, and one completion synchronised across Huddle, Home, Today and Tasks. Carry/save feedback, completed-EOD read-only behavior, localhost Vite `/src` and HMR cache bypass, and 390/768/1440 accessibility checks passed. Phase 04 is ready for founder approval.
