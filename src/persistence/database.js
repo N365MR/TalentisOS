@@ -6,8 +6,9 @@ import { addEodTaskIds, carryTask, createEod, validateEod } from '../domain/eod.
 import { addHuddleTaskIds, createHuddle, validateHuddle } from '../domain/huddle.js'
 import { createDecision, createHandover, createRisk, replaceTaskId, validateAttentionImport, validateDecision, validateHandover, validateRisk } from '../domain/attention.js'
 import { createOrientation, validateOrientation } from '../domain/orientation.js'
+import { createConversation, createWeeklyReview, validateConversation, validateHowILead, validateWeeklyReview } from '../domain/conversation.js'
 
-export const DATABASE_VERSION = 8
+export const DATABASE_VERSION = 9
 const SETTINGS_STORE = 'settings'
 const DRAFTS_STORE = 'drafts'
 const TASKS_STORE = 'tasks'
@@ -17,6 +18,9 @@ const RISKS_STORE = 'risks'
 const DECISIONS_STORE = 'decisions'
 const HANDOVERS_STORE = 'handovers'
 const ORIENTATION_STORE = 'orientation'
+const CONVERSATIONS_STORE = 'conversations'
+const WEEKLY_REVIEWS_STORE = 'weeklyReviews'
+const HOW_I_LEAD_STORE = 'howILead'
 const WORKSPACE_SETTINGS_ID = 'workspace'
 let databasePromise
 
@@ -43,6 +47,8 @@ export function openDatabase() {
       if (event.oldVersion < 7) { addStore(database, RISKS_STORE); addStore(database, DECISIONS_STORE); addStore(database, HANDOVERS_STORE) }
       // v8 adds one privacy-safe Core orientation record; it has no task copies or task references.
       if (event.oldVersion < 8) addStore(database, ORIENTATION_STORE)
+      // v9 adds private Phase 07 preparation and review records. They retain only canonical task IDs.
+      if (event.oldVersion < 9) { addStore(database, CONVERSATIONS_STORE); addStore(database, WEEKLY_REVIEWS_STORE); addStore(database, HOW_I_LEAD_STORE) }
     }
     request.onsuccess = () => { const database = request.result; database.onversionchange = () => database.close(); resolve(database) }
     request.onerror = () => reject(request.error || new Error('Unable to open browser storage.'))
@@ -104,6 +110,11 @@ export async function getDraft(id) {
   return requestResult(database.transaction(DRAFTS_STORE, 'readonly').objectStore(DRAFTS_STORE).get(id))
 }
 
+export async function discardDraft(id) {
+  const database = await openDatabase()
+  await requestResult(database.transaction(DRAFTS_STORE, 'readwrite').objectStore(DRAFTS_STORE).delete(id))
+}
+
 function transactionDone(transaction) { return new Promise((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => reject(transaction.error || new Error('Browser storage operation failed.')); transaction.onabort = () => reject(transaction.error || new Error('Browser storage operation was cancelled.')) }) }
 
 export async function listTasks({ includeArchived = false } = {}) {
@@ -120,7 +131,19 @@ async function listStore(name, { includeArchived = false } = {}) {
 export const listRisks = (options) => listStore(RISKS_STORE, options)
 export const listDecisions = (options) => listStore(DECISIONS_STORE, options)
 export const listHandovers = (options) => listStore(HANDOVERS_STORE, options)
+export const listConversations = (options) => listStore(CONVERSATIONS_STORE, options)
+export const listWeeklyReviews = (options) => listStore(WEEKLY_REVIEWS_STORE, options)
 export async function listAttention(options = {}) { return [...await listRisks(options), ...await listDecisions(options), ...await listHandovers(options)].sort((a, b) => a.reviewDate.localeCompare(b.reviewDate)) }
+
+async function saveRecord(storeName, validator, input) {
+  const database = await openDatabase(); const transaction = database.transaction(storeName, 'readwrite'); const store = transaction.objectStore(storeName)
+  const existing = input.id ? await requestResult(store.get(input.id)) : null; const record = validator(input, { existing }); store.put(record); await transactionDone(transaction); return record
+}
+export const saveConversation = (input) => saveRecord(CONVERSATIONS_STORE, validateConversation, input)
+export const saveWeeklyReview = (input) => saveRecord(WEEKLY_REVIEWS_STORE, validateWeeklyReview, input)
+export async function getHowILead() { const database = await openDatabase(); return requestResult(database.transaction(HOW_I_LEAD_STORE, 'readonly').objectStore(HOW_I_LEAD_STORE).get('how-i-lead')) }
+export const saveHowILead = (input) => saveRecord(HOW_I_LEAD_STORE, validateHowILead, { ...input, id: 'how-i-lead' })
+export { createConversation, createWeeklyReview, validateConversation, validateWeeklyReview, validateHowILead }
 
 async function saveAttention(storeName, validator, input) {
   const database = await openDatabase(); const transaction = database.transaction(storeName, 'readwrite'); const store = transaction.objectStore(storeName)
@@ -188,17 +211,20 @@ export async function restoreCanonicalTask(id) {
 }
 
 export async function linkedTaskReferences(id) {
-  return findTaskReferences(await listTasks({ includeArchived: true }), id)
+  const [tasks, conversations, reviews] = await Promise.all([listTasks({ includeArchived: true }), listConversations({ includeArchived: true }), listWeeklyReviews({ includeArchived: true })])
+  return [...findTaskReferences(tasks, id), ...conversations.filter((record) => record.followUpTaskId === id).map((record) => ({ sourceId: record.id, sourceTitle: `Conversation: ${record.flow}`, sourceType: record.recordType, relationship: 'follow-up' })), ...reviews.filter((record) => record.nextWeekTaskId === id).map((record) => ({ sourceId: record.id, sourceTitle: 'Weekly Review', sourceType: record.recordType, relationship: 'next-week-priority' }))]
 }
 
 export async function deleteCanonicalTask(id, { replacementTaskId = null } = {}) {
   const database = await openDatabase()
-  const transaction = database.transaction([TASKS_STORE, EODS_STORE, HUDDLES_STORE, RISKS_STORE, DECISIONS_STORE, HANDOVERS_STORE], 'readwrite')
+  const transaction = database.transaction([TASKS_STORE, EODS_STORE, HUDDLES_STORE, RISKS_STORE, DECISIONS_STORE, HANDOVERS_STORE, CONVERSATIONS_STORE, WEEKLY_REVIEWS_STORE], 'readwrite')
   const store = transaction.objectStore(TASKS_STORE)
   const tasks = await requestResult(store.getAll())
   if (!tasks.some((task) => task.id === id)) { transaction.abort(); throw new Error('This task no longer exists.') }
   if (replacementTaskId && !tasks.some((task) => task.id === replacementTaskId)) { transaction.abort(); throw new Error('Choose an existing replacement task.') }
-  const references = findTaskReferences(tasks, id)
+  const conversations = await requestResult(transaction.objectStore(CONVERSATIONS_STORE).getAll())
+  const reviews = await requestResult(transaction.objectStore(WEEKLY_REVIEWS_STORE).getAll())
+  const references = [...findTaskReferences(tasks, id), ...conversations.filter((record) => record.followUpTaskId === id).map((record) => ({ sourceId: record.id, sourceTitle: `Conversation: ${record.flow}`, sourceType: record.recordType, relationship: 'follow-up' })), ...reviews.filter((record) => record.nextWeekTaskId === id).map((record) => ({ sourceId: record.id, sourceTitle: 'Weekly Review', sourceType: record.recordType, relationship: 'next-week-priority' }))]
   for (const task of repairTaskReferences(tasks.filter((task) => task.id !== id), id, replacementTaskId)) store.put(task)
   const eods = await requestResult(transaction.objectStore(EODS_STORE).getAll())
   for (const eod of eods) {
@@ -222,6 +248,7 @@ export async function deleteCanonicalTask(id, { replacementTaskId = null } = {})
     }
   }
   await repair(RISKS_STORE, validateRisk, 'mitigationTaskId'); await repair(DECISIONS_STORE, validateDecision, 'followUpTaskIds'); await repair(HANDOVERS_STORE, validateHandover, 'linkedTaskIds')
+  await repair(CONVERSATIONS_STORE, validateConversation, 'followUpTaskId'); await repair(WEEKLY_REVIEWS_STORE, validateWeeklyReview, 'nextWeekTaskId')
   store.delete(id)
   await transactionDone(transaction)
   return { references, repaired: references.length }

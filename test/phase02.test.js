@@ -40,6 +40,16 @@ test('Tasks uses the shared FormData Quick Capture path', () => {
   assert.match(source, /Due date \(optional\)/)
 })
 
+test('Open task routes from the Tasks list to a canonical task detail surface', () => {
+  const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
+  assert.match(source, /const taskDetailView = \(\) => route\(\)\.id === 'tasks' && Boolean\(parts\(\)\[1\]\)/)
+  assert.match(source, /href="#\/tasks\/\$\{item\.id\}"/)
+  assert.match(source, /function taskDetailSurface\(\)/)
+  assert.match(source, /taskDetailView\(\) \? taskDetailSurface\(\) : current\.id === 'tasks' \? captureAndTasks\(\)/)
+  assert.match(source, /linkedTaskReferences\(id\)/)
+  assert.match(source, /deleteCanonicalTask\(id\)/)
+})
+
 test('subtask progress and blocked or waiting context rules are enforced', () => {
   const task = validateTask({ title: 'Run review', subtasks: [{ title: 'Read report', completed: true }, { title: 'Write summary', completed: false }], typedLinks: [] }, { now: fixedNow })
   assert.deepEqual(subtaskProgress(task), { completed: 1, total: 2 })

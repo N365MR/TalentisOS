@@ -4,22 +4,26 @@
 
 | Item | Verified state |
 | --- | --- |
-| Inspection date | 2026-09-19 |
+| Inspection date | 2026-09-24 |
 | Repository | `~/Desktop/GitHub/TalentisOS` |
 | Current branch | `main` |
 | Controlling Phase 00 implementation SHA | `5e496fb525f0de32608e208c7affa8746773ffbe` (`docs: establish Phase 00 governance baseline`) |
 | Controlling Phase 01 implementation SHA | `a2fb0a869295f0696f5318c70a820c77fe20b317` (`feat: establish Phase 01 app shell, PWA and persistence baseline`) |
 | Controlling Phase 02 implementation SHA | `1afc7229294f0ff0f44bf930b4367ca2d1fba13f` (`feat: implement Phase 02 canonical task engine`) |
+| Controlling Phase 03 implementation SHA | `cb45dfa3045791fc489974b23cae1029d7c02327` (`feat: implement Phase 03 End of Day workflow`) |
+| Controlling Phase 04 implementation SHA | `322601deda92397febc44e55df50aa2883fc4d88` (`feat: implement Phase 04 daily decision surface`) |
+| Controlling Phase 05 implementation SHA | `d36ebec1df0f6e25bde9896a75b548246d0e0158` (`feat: implement Phase 05 needs-attention workflows`) |
+| Controlling Phase 06 implementation SHA | `46920f25637406fcff0e5133c0dc34e4f4544d29` (`feat: implement Phase 06 new leader orientation`) |
 | HEAD before this governance-record update | `5e496fb525f0de32608e208c7affa8746773ffbe` |
 | Working tree before Phase 00 edits | Clean |
 | Local `origin/main` parity | Equal: `main...origin/main` = `0 0` |
 | Recent history | `a2fb0a8 feat: establish Phase 01 app shell, PWA and persistence baseline`; `5e496fb docs: establish Phase 00 governance baseline`; `625b190 docs: add TalentisOS product documentation` |
 | Runtime | Vite 8, vanilla JavaScript ES modules and CSS |
-| Product implementation state | Phase 02 canonical task engine is implemented and ready for founder approval; it retains the five approved Core destinations and does not expose later-phase workflows. |
-| Data model / persistence | IndexedDB schema v3 adds the canonical `tasks` store to Phase 01 settings/drafts; the saved leadership-workday timezone remains the shared date/workday basis. Import/export and later domain records remain deferred. |
-| Tests and checks | `npm test` runs 15 focused Node tests; relevant source syntax checks, manifest and production build pass. |
+| Product implementation state | Phase 07 conversation toolkit, contextual Help Now, Weekly Review, How I Lead and Manager-up routine are implemented in the working tree. The five approved Core destinations remain unchanged; Phase 08 and advanced modules remain deferred. |
+| Data model / persistence | IndexedDB schema v9 adds `conversations`, `weeklyReviews` and `howILead` additively to the existing Phase 01–06 stores. New records retain only optional canonical task IDs; import/export remains deferred to Phase 08. |
+| Tests and checks | `npm test` passes 69 focused Node tests; production build, relevant source syntax checks and `git diff --check` pass. Manual Safari acceptance evidence is outstanding. |
 | Deployment / GitHub Pages configuration | Temporary generated-only `gh-pages` validation branch serves `https://n365mr.github.io/TalentisOS/`; latest validation artifact is cache v5. |
-| Current release state | Phase 02 PASS — ready for founder approval. A later production release remains subject to the Phase 08 release gate. |
+| Current release state | Phase 07 is implemented but NOT READY for founder approval until required Safari acceptance evidence is recorded. A later production release remains subject to the Phase 08 release gate. |
 
 ## Phase 03 implementation evidence — 2026-09-20
 
