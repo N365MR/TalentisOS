@@ -7,6 +7,7 @@ import { addHuddleTaskIds, createHuddle, validateHuddle } from '../domain/huddle
 import { createDecision, createHandover, createRisk, replaceTaskId, validateAttentionImport, validateDecision, validateHandover, validateRisk } from '../domain/attention.js'
 import { createOrientation, validateOrientation } from '../domain/orientation.js'
 import { createConversation, createWeeklyReview, validateConversation, validateHowILead, validateWeeklyReview } from '../domain/conversation.js'
+import { BACKUP_STORES, backupHealth, backupSummary, createBackupEnvelope, parseBackupText } from '../domain/backup.js'
 
 export const DATABASE_VERSION = 9
 const SETTINGS_STORE = 'settings'
@@ -92,6 +93,51 @@ export async function updateLeadershipTimezone(timezone) {
   const database = await openDatabase()
   await requestResult(database.transaction(SETTINGS_STORE, 'readwrite').objectStore(SETTINGS_STORE).put(nextSettings))
   return nextSettings
+}
+
+export async function getBackupHealth() {
+  const settings = await getSettings()
+  return backupHealth(settings.lastSuccessfulExportAt)
+}
+
+export async function exportWorkspace() {
+  const settings = await getSettings()
+  const database = await openDatabase()
+  const transaction = database.transaction(BACKUP_STORES, 'readonly')
+  const stores = Object.fromEntries(await Promise.all(BACKUP_STORES.map(async (name) => [name, await requestResult(transaction.objectStore(name).getAll())])))
+  await transactionDone(transaction)
+  const exportedAt = new Date().toISOString()
+  // The file carries the same successful-export time that will be written only after its download is initiated.
+  stores.settings = [{ ...settings, lastSuccessfulExportAt: exportedAt, updatedAt: exportedAt }]
+  return createBackupEnvelope(stores, exportedAt)
+}
+
+export async function markSuccessfulExport(exportedAt = new Date().toISOString()) {
+  const settings = await getSettings()
+  const database = await openDatabase()
+  const transaction = database.transaction(SETTINGS_STORE, 'readwrite')
+  transaction.objectStore(SETTINGS_STORE).put({ ...settings, lastSuccessfulExportAt: exportedAt, updatedAt: new Date().toISOString() })
+  await transactionDone(transaction)
+}
+
+export function previewWorkspaceImport(text) { return backupSummary(parseBackupText(text)) }
+
+export async function replaceWorkspaceFromImport(text) {
+  // Parsing and relationship validation finish before this transaction starts, so invalid input cannot touch local data.
+  const envelope = parseBackupText(text)
+  const database = await openDatabase()
+  const transaction = database.transaction(BACKUP_STORES, 'readwrite')
+  for (const name of BACKUP_STORES) transaction.objectStore(name).clear()
+  for (const name of BACKUP_STORES) for (const record of envelope.stores[name]) transaction.objectStore(name).put(record)
+  await transactionDone(transaction)
+  return backupSummary(envelope)
+}
+
+export async function clearWorkspaceData() {
+  const database = await openDatabase()
+  const transaction = database.transaction(BACKUP_STORES, 'readwrite')
+  for (const name of BACKUP_STORES) transaction.objectStore(name).clear()
+  await transactionDone(transaction)
 }
 
 export async function saveDraft({ id, content, route = 'today' }) {

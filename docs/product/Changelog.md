@@ -4,6 +4,9 @@
 
 ### Added
 
+- Phase 08 local backup/recovery implementation: versioned full-store JSON export, preflight import validation, atomic replacement, Backup health, explicit replacement/clear confirmation, export-first reset guidance and visible archived-task restore path.
+- Phase 08 recovery procedure, supported-browser matrix and release-evidence record. The phase is not release-ready because real-device/browser, recovery-drill, volume/performance, usability and deployment evidence remains open.
+- Phase 08 isolated 5,000-task/1,000-linked-record volume fixture, Core workflow fixture and local routine-action timing checks, plus a real-device/browser, recovery and moderated-usability evidence checklist. Device evidence remains open.
 - Phase 07 private conversation preparation: six concise flows, contextual Help Now, Weekly Review with Manager-up routine, private How I Lead commitments, interruption-safe drafts and optional canonical task references.
 - Phase 07 data model and acceptance scenarios.
 - Phase 06 Start Here, First 7 Days and current Days 1–30 roadmap: additive IndexedDB v8 orientation record, local drafts, privacy-safe observation validation, contextual Today entry points and explicitly optional canonical task creation.

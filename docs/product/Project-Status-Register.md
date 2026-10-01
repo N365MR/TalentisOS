@@ -20,11 +20,11 @@
 | Local `origin/main` parity | Equal: `main...origin/main` = `0 0` |
 | Recent history | `434f274 feat(phase-07): add private conversation preparation and weekly review`; `46920f2 feat: implement Phase 06 new leader orientation`; `d36ebec feat: implement Phase 05 needs-attention workflows` |
 | Runtime | Vite 8, vanilla JavaScript ES modules and CSS |
-| Product implementation state | Phase 07 conversation toolkit, contextual Help Now, Weekly Review, How I Lead and Manager-up routine are complete and approved. The five approved Core destinations remain unchanged; Phase 08 and advanced modules remain deferred. |
-| Data model / persistence | IndexedDB schema v9 adds `conversations`, `weeklyReviews` and `howILead` additively to the existing Phase 01–06 stores. New records retain only optional canonical task IDs; import/export remains deferred to Phase 08. |
+| Product implementation state | Phase 07 is complete and approved. Phase 08 adds a Tasks-contextual Backup health/recovery surface without changing the five approved Core destinations; advanced modules remain deferred. Launch evidence remains incomplete. |
+| Data model / persistence | IndexedDB remains schema v9. Phase 08 adds a validated v1 JSON backup envelope covering all v9 stores, atomic replacement import, backup-health timestamp and export-first local reset. |
 | Tests and checks | `npm test` passes 70 focused Node tests; production build and `git diff --check` pass. Complete Safari acceptance evidence passed: all six flows, Help Now, privacy/formal routing, task-reference repair, Weekly Review, How I Lead, responsive/focus, navigation and existing-profile readability. |
 | Deployment / GitHub Pages configuration | GitHub Pages is configured from `gh-pages` at `https://n365mr.github.io/TalentisOS/` and reports `built`; the Phase 07 `main` push did not change `gh-pages` or deploy Pages. |
-| Current release state | Phase 07 is PASS and founder-approved. A later production release remains subject to the Phase 08 release gate. |
+| Current release state | **NOT READY**. Local implementation/build/test evidence, isolated Core workflow coverage and the 5,000-task/1,000-linked-record volume fixture are passing, but Phase 08’s real-device/browser, recovery-drill, supported-device timing, usability and deployment gates are open. |
 
 ## Phase 03 implementation evidence — 2026-09-20
 
