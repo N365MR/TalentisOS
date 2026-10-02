@@ -137,7 +137,7 @@ Limitation: this was plain HTTP over a local-network IP. It is valid for real-de
 ## Open evidence gates
 
 - G-010 is resolved: existing installed iPad and iPhone PWAs updated to the temporary HTTPS v7 artifact and each retained its disposable task through an offline launch. This remains temporary test-origin evidence, not production evidence.
-- Google Chrome-specific offline/service-worker-update evidence, Firefox update-cycle evidence, and all Edge lifecycle evidence remain open.
+- Google Chrome-specific service-worker update-cycle evidence, Firefox update-cycle evidence, and all Edge lifecycle evidence remain open.
 - No measured two-second mobile shell, routine-action latency, or progress-state timing evidence is recorded.
 - No moderated sessions with representative emerging leaders on a real iPhone or iPad are recorded.
 - Production smoke-test, deployment record and rollback evidence are not recorded.
@@ -171,3 +171,15 @@ This remediates the original G-010 functional defect on the temporary HTTPS test
 At the temporary HTTPS test origin, `https://talentisos-phase08-test.github.io/`, the existing installed iPhone PWA updated and reopened online. Its existing disposable “iPhone HTTPS PWA offline test task” remained visible online. With Airplane Mode on and Wi-Fi off, v7 installed-PWA launch passed: no prolonged white blank screen was observed and the task was visible offline. The iPhone was returned online and the task remained visible.
 
 This completes the iPhone v7 installed-PWA update/offline regression evidence. It preserves G-010 as resolved on the temporary v7 artifact and remains temporary public HTTPS evidence using disposable data only, not production evidence.
+
+## Founder-recorded Chrome HTTPS offline-shell check — 2026-10-02
+
+At the temporary HTTPS test origin, `https://talentisos-phase08-test.github.io/`, Google Chrome on Mac desktop loaded the app online with Tasks, Quick Capture, and Backup Health visible. The disposable “Chrome HTTPS offline test task” was created and remained visible after an online refresh. With Chrome DevTools Network set to Offline, an offline reload showed no Chrome network error page; Tasks, Quick Capture, Backup Health, and the disposable task remained visible. A failed background fetch from `sw.js` was observed during offline mode and is expected cache-first background revalidation behaviour, not a shell failure. After Network was restored to No throttling, an online refresh retained the task. No prolonged blank screen was observed.
+
+This closes the Chrome-specific HTTPS offline-shell evidence gap. It does not prove Chrome service-worker update-cycle behaviour, Firefox update-cycle behaviour, Edge lifecycle behaviour, instrumented timing, moderated usability, or production smoke/rollback evidence.
+
+## Founder-recorded Firefox HTTPS v7 offline baseline — 2026-10-02
+
+At the temporary HTTPS test origin, `https://talentisos-phase08-test.github.io/`, Firefox on Mac desktop loaded the app online with Tasks, Quick Capture, and Backup Health visible. Firefox listed a service worker for `https://talentisos-phase08-test.github.io/sw.js`. The disposable “Firefox HTTPS v7 offline baseline test” was created and remained visible after an online refresh. With Firefox Work Offline enabled, a reload showed no Firefox network error page or prolonged blank screen; Tasks, Quick Capture, Backup Health, and the disposable task remained visible. After Firefox returned online, another refresh retained the task.
+
+This completes Firefox HTTPS v7 offline baseline evidence. It preserves the installed v7 worker and disposable task as the baseline for a later Firefox service-worker update-cycle test. It does not prove Firefox update-cycle behaviour, Chrome update-cycle behaviour, Edge lifecycle behaviour, instrumented timing, moderated usability, or production smoke/rollback evidence.
