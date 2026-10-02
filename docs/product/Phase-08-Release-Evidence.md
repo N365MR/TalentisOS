@@ -137,7 +137,7 @@ Limitation: this was plain HTTP over a local-network IP. It is valid for real-de
 ## Open evidence gates
 
 - G-010 is resolved: existing installed iPad and iPhone PWAs updated to the temporary HTTPS v7 artifact and each retained its disposable task through an offline launch. This remains temporary test-origin evidence, not production evidence.
-- Google Chrome-specific service-worker update-cycle evidence, Firefox update-cycle evidence, and all Edge lifecycle evidence remain open.
+- All Edge lifecycle evidence remains open.
 - No measured two-second mobile shell, routine-action latency, or progress-state timing evidence is recorded.
 - No moderated sessions with representative emerging leaders on a real iPhone or iPad are recorded.
 - Production smoke-test, deployment record and rollback evidence are not recorded.
@@ -183,3 +183,15 @@ This closes the Chrome-specific HTTPS offline-shell evidence gap. It does not pr
 At the temporary HTTPS test origin, `https://talentisos-phase08-test.github.io/`, Firefox on Mac desktop loaded the app online with Tasks, Quick Capture, and Backup Health visible. Firefox listed a service worker for `https://talentisos-phase08-test.github.io/sw.js`. The disposable “Firefox HTTPS v7 offline baseline test” was created and remained visible after an online refresh. With Firefox Work Offline enabled, a reload showed no Firefox network error page or prolonged blank screen; Tasks, Quick Capture, Backup Health, and the disposable task remained visible. After Firefox returned online, another refresh retained the task.
 
 This completes Firefox HTTPS v7 offline baseline evidence. It preserves the installed v7 worker and disposable task as the baseline for a later Firefox service-worker update-cycle test. It does not prove Firefox update-cycle behaviour, Chrome update-cycle behaviour, Edge lifecycle behaviour, instrumented timing, moderated usability, or production smoke/rollback evidence.
+
+## Founder-recorded Chrome v7-to-v8 service-worker update cycle — 2026-10-02
+
+At the temporary HTTPS test origin, `https://talentisos-phase08-test.github.io/`, Chrome retained the existing disposable “Chrome HTTPS offline test task” before the temporary generated-artifact-only v8 update-cycle test. After the v8 artifact was live, Chrome opened and reloaded online; temporary-origin tabs and windows were closed and reopened to allow activation. The existing task persisted after the update and reopen. With DevTools Network set to Offline, a reload showed no Chrome network error page or prolonged blank screen; Tasks, Quick Capture, Backup Health, and the task remained visible. After Network was restored to No throttling, an online refresh retained the task.
+
+This completes Chrome service-worker update-cycle evidence for the isolated temporary HTTPS v7-to-v8 artifact. It does not complete Firefox update-cycle behaviour, Edge lifecycle behaviour, instrumented timing, moderated usability, or production smoke/rollback evidence.
+
+## Founder-recorded Firefox v7-to-v8 service-worker update cycle — 2026-10-02
+
+At the temporary HTTPS test origin, `https://talentisos-phase08-test.github.io/`, Firefox retained the existing disposable “Firefox HTTPS v7 offline baseline test” before the temporary generated-artifact-only v8 update-cycle test. After the v8 artifact was live, Firefox opened and reloaded online; temporary-origin tabs and windows were closed and reopened to allow activation. The existing task persisted after the update and reopen. With Firefox Work Offline enabled, a reload showed no Firefox network error page or prolonged blank screen; Tasks, Quick Capture, Backup Health, and the task remained visible. After Work Offline was disabled, an online refresh retained the task.
+
+This completes Firefox service-worker update-cycle evidence for the isolated temporary HTTPS v7-to-v8 artifact. Chrome update-cycle evidence is also complete. It does not complete Edge lifecycle behaviour, instrumented timing, moderated usability, or production smoke/rollback evidence.
