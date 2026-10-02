@@ -32,12 +32,12 @@ test('production shell caching uses Vite’s generated entry asset manifest', ()
   assert.match(source, /BUILD_MANIFEST = '\.\/asset-manifest\.json'/)
   assert.match(source, /entry\.isEntry/)
   assert.match(source, /entry\.css/)
-  assert.match(source, /talentisos-shell-v6/)
+  assert.match(source, /talentisos-shell-v7/)
   assert.match(source, /key\.startsWith\('talentisos-shell-'\) && key !== CACHE_VERSION/)
   assert.match(source, /caches\.delete\(key\)/)
 })
 
-test('service worker bypasses Vite development modules without changing production cache paths', () => {
+test('service worker serves the cached production shell before background navigation revalidation', () => {
   const source = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8')
   const bypass = "if (isViteDevelopmentRequest(url)) {\n    event.respondWith(fetch(event.request))\n    return\n  }"
 
@@ -48,8 +48,18 @@ test('service worker bypasses Vite development modules without changing producti
   assert.ok(source.includes(bypass))
   assert.ok(source.indexOf(bypass) < source.indexOf("if (event.request.mode === 'navigate')"))
   assert.ok(source.indexOf(bypass) < source.indexOf('event.respondWith(caches.match(event.request)'))
-  assert.match(source, /cache\.put\('\.\/\', copy\)/)
-  assert.match(source, /caches\.match\('\.\/'\)\.then\(\(response\) => response \|\| caches\.match\('\.\/index\.html'\)\)/)
+  assert.match(source, /function revalidateShell\(request\)/)
+  assert.match(source, /const shell = caches\.open\(CACHE_VERSION\)\.then\(\(cache\) => cache\.match\('\.\/'\)\)/)
+  assert.match(source, /event\.respondWith\(shell\.then\(\(cached\) => cached \|\| fetch\(event\.request\)/)
+  assert.match(source, /event\.waitUntil\(shell\.then\(\(cached\) => cached \? revalidateShell\(event\.request\) : undefined\)\)/)
+  assert.ok(source.indexOf("cache.match('./')") < source.indexOf('fetch(event.request).then'))
+})
+
+test('startup shell is visible before IndexedDB startup completes', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+  const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
+  assert.match(html, /id="app"><main class="recovery-state startup-state" role="status" aria-live="polite" aria-busy="true"><h1>Opening your workspace…<\/h1>/)
+  assert.match(source, /if \(!\('indexedDB' in window\)\) \{ app\.innerHTML = '<main class="recovery-state">/)
 })
 
 test('service worker registration does not miss an already-complete document', () => {

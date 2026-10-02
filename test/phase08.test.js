@@ -61,7 +61,7 @@ test('Phase 08 exposes archived tasks for restore and has a visible service-work
   const ui = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
   assert.match(ui, /Archived tasks/); assert.match(ui, /restore-task-detail/); assert.match(ui, /id="update-notice"/)
   const worker = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8')
-  assert.match(worker, /CACHE_VERSION = 'talentisos-shell-v6'/)
+  assert.match(worker, /CACHE_VERSION = 'talentisos-shell-v7'/)
 })
 
 test('Phase 08 keeps native date and clear-data controls within mobile cards', () => {

@@ -136,7 +136,7 @@ Limitation: this was plain HTTP over a local-network IP. It is valid for real-de
 
 ## Open evidence gates
 
-- iPad Safari and iPhone Safari HTTPS/PWA/offline evidence is not recorded.
+- iPad Safari installed-PWA offline launch is failed/degraded: it showed a prolonged blank screen and was not promptly usable. iPhone/iPad service-worker update-cycle evidence is also not recorded.
 - Google Chrome-specific offline/service-worker-update evidence, Firefox update-cycle evidence, and all Edge lifecycle evidence remain open.
 - No measured two-second mobile shell, routine-action latency, or progress-state timing evidence is recorded.
 - No moderated sessions with representative emerging leaders on a real iPhone or iPad are recorded.
@@ -145,3 +145,21 @@ Limitation: this was plain HTTP over a local-network IP. It is valid for real-de
 These are launch blockers. Phase 08 is therefore **NOT READY** pending founder-approved evidence collection; no deployment should be performed from this state.
 
 The exact remaining device, recovery, performance and usability steps are in `Phase-08-Manual-Evidence-Checklist.md`.
+
+## Founder-recorded iPhone HTTPS PWA install and offline check — 2026-10-02
+
+At the temporary HTTPS test origin, `https://talentisos-phase08-test.github.io/`, the app loaded, installed to the iPhone Home Screen, and opened as an installed PWA. The disposable “iPhone HTTPS PWA offline test task” persisted after closing and reopening the installed app. With Airplane Mode on and Wi-Fi off, the installed app launched offline and the task remained visible without a Safari or network error. The iPhone was returned online after the test.
+
+Limitations: this is a temporary public HTTPS test origin, not production, and used disposable data only. It does not complete iPad HTTPS PWA evidence, service-worker update-cycle evidence, the accessibility matrix, moderated usability sessions, production smoke testing, or rollback evidence.
+
+## Founder-recorded iPad HTTPS PWA offline-launch check — 2026-10-02
+
+At the temporary HTTPS test origin, `https://talentisos-phase08-test.github.io/`, the app loaded, installed to the iPad Home Screen, and opened as an installed PWA while online. The disposable “iPad HTTPS PWA offline test task” persisted after closing and reopening the installed app while online.
+
+With Airplane Mode on and Wi-Fi off, installed-PWA launch was **FAIL / DEGRADED**: the iPad showed a white blank screen for a long time, was not promptly usable, and did not promptly show the task. After waiting and/or returning online, the installed app opened again. The user-observed detail was: “it took a long time to open from a blank screen”. This is a Phase 08 launch blocker until diagnosed and remediated.
+
+Limitation: this is temporary public HTTPS test-origin evidence using disposable data only, not production evidence.
+
+## G-010 local remediation awaiting temporary HTTPS re-test — 2026-10-02
+
+The local implementation now serves cached app-shell navigations before background network revalidation, rather than waiting for an offline network request to reject. It also supplies a visible “Opening your workspace…” shell before IndexedDB startup completes and bumps the service-worker cache to `talentisos-shell-v7`. Automated regression coverage and the local production build must pass before the generated v7 artifact is published to the temporary test origin. G-010 remains open until iPad and iPhone installed-PWA offline and update-cycle re-tests pass.
